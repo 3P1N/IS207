@@ -1,29 +1,40 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import js from "@eslint/js";
+import globals from "globals";
+import react from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import importPlugin from "eslint-plugin-import";
+import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist", "node_modules"]),
   {
-    files: ['**/*.{js,jsx}'],
+    files: ["**/*.{js,jsx}"],
+    ignores: ["dist"],
     extends: [
-      js.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
+      js.configs.recommended,                   // ESLint base
+      react.configs.recommended,                // React rules
+      reactHooks.configs["recommended-latest"], // React hooks
+      reactRefresh.configs.vite,                // HMR safety
     ],
+    plugins: {
+      react,
+      "react-hooks": reactHooks,
+      import: importPlugin,
+    },
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: "latest",
       globals: globals.browser,
       parserOptions: {
-        ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
-        sourceType: 'module',
+        sourceType: "module",
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]" }],
+      "react/jsx-no-undef": "error",            // 👉 bắt lỗi thiếu import
+      "react/react-in-jsx-scope": "off",        // Vite tự thêm React 17+
+      "import/no-unresolved": "error",          // 👉 bắt lỗi đường dẫn sai
     },
   },
-])
+]);
