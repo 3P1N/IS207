@@ -20,6 +20,7 @@ import AdminLayout from "../layouts/AdminLayout";
 import UsersAdminPage from "../pages/admin/UsersAdminPage";
 import PostsAdminPage from "../pages/admin/PostsAdminPage";
 import NotFoundPage from "../pages/not-found/NotFoundPage";
+import AuthLayout from "../layouts/AuthLayout";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
@@ -28,9 +29,10 @@ export default function AppRouter() {
             <Routes>
 
                 {/* Đăng nhập, Đăng ký */}
-                <Route path="login" element={<LoginForm />} />
-                <Route path="signup" element={<SignupForm />} />
-
+                <Route element={<AuthLayout />} >
+                    <Route path="login" element={<LoginForm />} />
+                    <Route path="signup" element={<SignupForm />} />
+                </Route>
                 {/* Layout route */}
                 <Route element={<MainLayout />}>
                     <Route index element={<HomePage />} />
