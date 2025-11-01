@@ -1,16 +1,10 @@
 import { Outlet, NavLink } from "react-router-dom";
-
+import Navbar from "../shared/components/Navbar";
 export default function MainLayout() {
   return (
     <div>
       <header>
-        <nav>
-          <NavLink to="/" end>Home</NavLink>
-          <NavLink to="/explore">Explore</NavLink>
-          <NavLink to="/message">Message</NavLink>
-          <NavLink to="/profile">Profile</NavLink>
-
-        </nav>
+        <Navbar/>
       </header>
 
       <main>
