@@ -51,9 +51,10 @@ export default function AppRouter() {
                                 <Route index element={<ProfilePost />} />
                                 <Route path="about" element={<ProfileAbout />} />
                                 <Route path="friend" element={<ProfileFriend />} />
-                                <Route path="setting" element={<ProfileSetting />} />
-                            </Route>
 
+                            </Route>
+                            {/* Setting */}
+                            <Route path="setting" element={<ProfileSetting />} />
                             {/* Post detail */}
                             <Route path="post/:postId" element={<PostDetailPage />} />
 

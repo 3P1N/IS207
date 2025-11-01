@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { AppBar, Toolbar, Typography, Box, IconButton, Avatar, Button, InputBase } from "@mui/material";
-import { Home, Explore, Message, Logout, Login, Search } from "@mui/icons-material";
+import { Home, Explore, Message, Logout, Login, Search, Settings } from "@mui/icons-material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 
 
@@ -55,6 +55,9 @@ export default function Navbar() {
                     </IconButton>
                     <IconButton component={RouterLink} to="/message" color="primary">
                         <Message />
+                    </IconButton>
+                    <IconButton component={RouterLink} to="/setting" color="primary">
+                        <Settings />
                     </IconButton>
 
                     {/* Nếu user đã login */}
