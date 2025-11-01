@@ -21,57 +21,65 @@ import UsersAdminPage from "../pages/admin/UsersAdminPage";
 import PostsAdminPage from "../pages/admin/PostsAdminPage";
 import NotFoundPage from "../pages/not-found/NotFoundPage";
 import AuthLayout from "../layouts/AuthLayout";
+import AuthProvider from "./AuthProvider";
+import ProtectedRoute from "./ProtectedRoute";
+import GuestRouter from "./GuestRouter";
+
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
     return (
         <BrowserRouter>
-            <Routes>
+            <AuthProvider>
+                <Routes>
 
-                {/* Đăng nhập, Đăng ký */}
-                <Route element={<AuthLayout />} >
-                    <Route path="login" element={<LoginForm />} />
-                    <Route path="signup" element={<SignupForm />} />
-                </Route>
-                {/* Layout route */}
-                <Route element={<MainLayout />}>
-                    <Route index element={<HomePage />} />
-                    <Route path="explore" element={<ExplorePage />} />
-
-                    {/* Profile có tab */}
-                    <Route path="profile/:id" element={<ProfileLayout />}>
-                        <Route index element={<ProfilePost />} />
-                        <Route path="about" element={<ProfileAbout />} />
-                        <Route path="friend" element={<ProfileFriend />} />
-                        <Route path="setting" element={<ProfileSetting />} />
+                    <Route element={<GuestRouter />}>
+                        {/* Đăng nhập, Đăng ký */}
+                        <Route element={<AuthLayout />} >
+                            <Route path="login" element={<LoginForm />} />
+                            <Route path="signup" element={<SignupForm />} />
+                        </Route>
                     </Route>
+                    <Route element={<ProtectedRoute />}>
+                        {/* Layout route */}
+                        <Route element={<MainLayout />}>
+                            <Route index element={<HomePage />} />
+                            <Route path="explore" element={<ExplorePage />} />
 
-                    {/* Post detail */}
-                    <Route path="post/:postId" element={<PostDetailPage />} />
+                            {/* Profile có tab */}
+                            <Route path="profile/:id" element={<ProfileLayout />}>
+                                <Route index element={<ProfilePost />} />
+                                <Route path="about" element={<ProfileAbout />} />
+                                <Route path="friend" element={<ProfileFriend />} />
+                                <Route path="setting" element={<ProfileSetting />} />
+                            </Route>
 
-                    {/* Message và MessageThread (ô trò chuyện) */}
-                    <Route path="message" element={<MessageLayout />}>
-                        <Route index element={<ThreadList />} />
-                        <Route path=":threadId" element={<ThreadPage />} />
+                            {/* Post detail */}
+                            <Route path="post/:postId" element={<PostDetailPage />} />
+
+                            {/* Message và MessageThread (ô trò chuyện) */}
+                            <Route path="message" element={<MessageLayout />}>
+                                <Route index element={<ThreadList />} />
+                                <Route path=":threadId" element={<ThreadPage />} />
+                            </Route>
+
+                            {/* Phần riêng quản lý của Admin */}
+                            <Route path="admin" element={<AdminLayout />}>
+                                <Route index element={<Navigate to="users" replace />} />
+                                <Route path="users" element={<UsersAdminPage />} />
+                                <Route path="posts" element={<PostsAdminPage />} />
+                            </Route>
+
+                        </Route>
                     </Route>
+                    {/* Redirect ví dụ */}
+                    <Route path="/home" element={<Navigate to="/" replace />} />
 
-                    {/* Phần riêng quản lý của Admin */}
-                    <Route path="admin" element={<AdminLayout />}>
-                        <Route index element={<Navigate to="users" replace />} />
-                        <Route path="users" element={<UsersAdminPage />} />
-                        <Route path="posts" element={<PostsAdminPage />} />
-                    </Route>
+                    {/* 404 */}
+                    <Route path="*" element={<NotFoundPage />} />
 
-
-                </Route>
-
-                {/* Redirect ví dụ */}
-                <Route path="/home" element={<Navigate to="/" replace />} />
-
-                {/* 404 */}
-                <Route path="*" element={<NotFoundPage />} />
-
-            </Routes>
+                </Routes>
+            </AuthProvider>
         </BrowserRouter>
     );
 }
