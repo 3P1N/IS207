@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { AppBar, Toolbar, Typography, Box, IconButton, Avatar, Button, InputBase } from "@mui/material";
 import { Home, Explore, Message, Logout, Login, Search, Settings } from "@mui/icons-material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-
+import AvatarUser from "./AvatarUser";
 
 export default function Navbar() {
 
@@ -59,6 +59,8 @@ export default function Navbar() {
                     <IconButton component={RouterLink} to="/setting" color="primary">
                         <Settings />
                     </IconButton>
+                    <AvatarUser id="2" name="User" />
+
 
                     {/* Nếu user đã login */}
                     

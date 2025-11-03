@@ -60,7 +60,7 @@ export default function AppRouter() {
 
                             {/* Message và MessageThread (ô trò chuyện) */}
                             <Route path="message" element={<MessageLayout />}>
-                                <Route index element={<ThreadList />} />
+                                {/* <Route index element={<ThreadList />} /> */}
                                 <Route path=":threadId" element={<ThreadPage />} />
                             </Route>
 
