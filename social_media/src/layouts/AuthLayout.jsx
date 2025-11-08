@@ -6,9 +6,10 @@ export default function AuthLayout() {
   const { pathname } = useLocation();
   const isLogin = pathname.endsWith("/login");
 
-  const helperText = isLogin ? "Bạn chưa có tài khoản?" : "Bạn đã có tài khoản?";
+  const helperText = isLogin ? "Don't have an account?" : "Already have an account?";
   const linkTo = isLogin ? "/signup" : "/login";
-  const linkLabel = isLogin ? "Đăng ký" : "Đăng nhập";
+  const linkLabel = isLogin ? "Sign up" : "Sign in";
+
 
   return (
     <Box

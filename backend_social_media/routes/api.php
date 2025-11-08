@@ -13,7 +13,26 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+Route::middleware('auth:sanctum')->get('/me', fn (Illuminate\Http\Request $r) => $r->user());
+Route::middleware('auth:sanctum')->get('/user', fn (Illuminate\Http\Request $r) => $r->user());
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+//test role middleware
+Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('ensureRole:admin')->get('/ping', fn () => response()->json(['message' => 'pong']));
+    Route::middleware('ensureRole:user')->get('/pong', fn () => response()->json(['message' => 'ping']));
 });
+
+Route::prefix('auth')->group(function () {
+    // Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
+    Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
+    // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+});
+
+// Route::middleware('auth:sanctum')->group(function () {
+//     Route::get('/posts', [App\Http\Controllers\Api\PostController::class, 'index']);
+//     Route::post('/posts', [App\Http\Controllers\Api\PostController::class, 'store']);
+//     Route::get('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'show']);
+//     Route::put('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'update']);
+//     Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
+//     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+// });

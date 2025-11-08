@@ -4,7 +4,7 @@ import { Outlet, Navigate } from "react-router-dom";
 
 
 export default function GuestRouter() {
-    const { userData } = useContext(AuthContext);
-    return userData ?  <Navigate to="/" /> : <Outlet />;
+    const { token } = useContext(AuthContext);
+    return token ?  <Navigate to="/" /> : <Outlet />;
 
 }

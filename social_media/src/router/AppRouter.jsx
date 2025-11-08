@@ -24,7 +24,7 @@ import AuthLayout from "../layouts/AuthLayout";
 import AuthProvider from "./AuthProvider";
 import ProtectedRoute from "./ProtectedRoute";
 import GuestRouter from "./GuestRouter";
-
+import RoleRoute from "./RoleRoute";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
@@ -40,7 +40,7 @@ export default function AppRouter() {
                             <Route path="signup" element={<SignupForm />} />
                         </Route>
                     </Route>
-                    <Route element={<ProtectedRoute />}>
+                    {/* <Route element={<ProtectedRoute />}> */}
                         {/* Layout route */}
                         <Route element={<MainLayout />}>
                             <Route index element={<HomePage />} />
@@ -65,14 +65,16 @@ export default function AppRouter() {
                             </Route>
 
                             {/* Phần riêng quản lý của Admin */}
-                            <Route path="admin" element={<AdminLayout />}>
-                                <Route index element={<Navigate to="users" replace />} />
-                                <Route path="users" element={<UsersAdminPage />} />
-                                <Route path="posts" element={<PostsAdminPage />} />
-                            </Route>
+                            {/* <Route element={<RoleRoute roles={['admin']} />}> */}
+                                <Route path="admin" element={<AdminLayout />}>
+                                    <Route index element={<Navigate to="users" replace />} />
+                                    <Route path="users" element={<UsersAdminPage />} />
+                                    <Route path="posts" element={<PostsAdminPage />} />
+                                </Route>
+                            {/* </Route> */}
 
                         </Route>
-                    </Route>
+                    {/* </Route> */}
                     {/* Redirect ví dụ */}
                     <Route path="/home" element={<Navigate to="/" replace />} />
 
