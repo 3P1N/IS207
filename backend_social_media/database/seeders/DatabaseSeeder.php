@@ -15,15 +15,13 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         echo "Running DatabaseSeeder...\n";
-        \App\Models\User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => bcrypt('password'),
-            'role' => \App\Enums\Role::ADMIN,
-        ]);
-
-        \App\Models\User::factory(10)->create([
-            'role' => \App\Enums\Role::USER,
+        this->call([
+            UsersTableSeeder::class,
+            
+            FriendshipsTableSeeder::class,
+            // ConversationsTableSeeder::class,
+            // ConversationParticipantsTableSeeder::class,
+            // MessagesTableSeeder::class,
         ]);
         echo "DatabaseSeeder completed.\n";
         

@@ -53,4 +53,12 @@ class User extends Authenticatable
     {
         return $this->role === Role::USER;
     }
+    public function sentFriendRequests()
+    {
+        return $this->hasMany(Friendship::class, 'user_id');
+    }
+    public function receivedFriendRequests()
+    {
+        return $this->hasMany(Friendship::class, 'addressee_id');
+    }
 }
