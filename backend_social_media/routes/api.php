@@ -30,6 +30,7 @@ Route::prefix('auth')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/friends', [App\Http\Controllers\Api\FriendController::class, 'index']);
+    Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
 //     Route::get('/posts', [App\Http\Controllers\Api\PostController::class, 'index']);
 //     Route::post('/posts', [App\Http\Controllers\Api\PostController::class, 'store']);
 //     Route::get('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'show']);

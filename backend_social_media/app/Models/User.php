@@ -98,4 +98,15 @@ class User extends Authenticatable
             ->unique('id')
             ->values();
     }
+    public function friendships()
+    {
+        return $this->hasMany(Friendship::class, 'user_id')
+                    ->orWhere('addressee_id', $this->id);
+    }
+    // Trong User model
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_participants', 'user_id', 'conversation_id');
+    }
+
 }
