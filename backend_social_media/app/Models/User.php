@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Enums\FriendshipStatus;
+use App\Models\Friendship;
 
 class User extends Authenticatable
 {
@@ -60,5 +62,40 @@ class User extends Authenticatable
     public function receivedFriendRequests()
     {
         return $this->hasMany(Friendship::class, 'addressee_id');
+    }
+    public function friends()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'friendships',
+            'user_id',
+            'addressee_id'
+        )
+        ->wherePivot('status', FriendshipStatus::ACCEPTED)
+        ->withPivot(['status','created_at','updated_at'])
+        ->withTimestamps();
+    }
+
+    // Quan hệ bạn bè khi $this là người được nhận (chiều ngược lại)
+    public function friendsOf()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'friendships',
+            'addressee_id',
+            'user_id'
+        )
+        ->wherePivot('status', FriendshipStatus::ACCEPTED)
+        ->withPivot(['status','created_at','updated_at'])
+        ->withTimestamps();
+    }
+
+    // Helper: trả về đầy đủ bạn bè từ cả 2 chiều (Collection)
+    public function allFriends()
+    {
+        return $this->friends()->get()
+            ->merge($this->friendsOf()->get())
+            ->unique('id')
+            ->values();
     }
 }

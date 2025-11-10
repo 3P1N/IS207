@@ -1,10 +1,40 @@
 import * as React from "react";
+import { useState, useEffect, useContext } from "react";
 import { List, ListItemButton, ListItemText, ListItemAvatar, Avatar } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import ChatIcon from "@mui/icons-material/Chat";
 import AvatarUser from "../../shared/components/AvatarUser";
+import { AuthContext } from "../../router/AuthProvider";
+import { api } from "../../shared/api";
 
 export default function ThreadList() {
+  const {token} = useContext(AuthContext);
+  const [friends, setFriends] = useState([]);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      const friendsList = await getFriends();
+      setFriends(friendsList);
+    };
+
+    fetchFriends();
+  }, []);
+
+  const getFriends = async () => {
+    // Gọi API để lấy danh sách bạn bè
+    try {
+      const response = await api.get("/friends", {
+        headers: {
+          Authorization: `Bearer ${token}`, // 👈 thêm token tại đây
+        },
+      });
+      return response.data.friends; // Giả sử API trả về mảng bạn bè trong thuộc tính 'friends'
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+      return [];
+    }
+  }
+
   const threads = [
     { id: 1, name: "Nguyễn Văn A" , avatar:"image.png"},
     { id: 2, name: "Lê Thị B" , avatar:"image.png"},
@@ -22,11 +52,11 @@ export default function ThreadList() {
 
   return (
     <List sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}>
-      {threads.map((thread) => (
+      {friends.map((friend) => (
         <ListItemButton
-          key={thread.id}
+          key={friend.id}
           component={RouterLink}
-          to={`/message/${thread.id}`} // ✅ điều hướng đến /message/:id
+          to={`/message/${friend.id}`} // ✅ điều hướng đến /message/:id
           sx={{
             borderRadius: 2,
             mb: 0.5,
@@ -35,11 +65,11 @@ export default function ThreadList() {
         >
           <ListItemAvatar>
             <Avatar>
-              <AvatarUser img={thread.img} />
+              <AvatarUser img={"image.png"} />
             </Avatar>
           </ListItemAvatar>
-          <ListItemText primary={thread.name} secondary={`Tin nhắn gần nhất...`} />
-          
+          <ListItemText primary={friend.name} secondary={`Tin nhắn gần nhất...`} />
+
         </ListItemButton>
       ))}
     </List>

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 export default function PostDetailPage() {
   const [count, setCount] = useState(0); // ✅ Khai báo biến state
+  
 
   return (
     <div>
