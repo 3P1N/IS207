@@ -16,7 +16,7 @@ import ProfileSetting from "../pages/profile/ProfileSetting";
 import MessageLayout from "../pages/message/MessageLayout";
 import ThreadList from "../pages/message/ThreadList";
 import ThreadPage from "../pages/message/ThreadPage";
-import AdminLayout from "../layouts/AdminLayout";
+import AdminLayout from "../pages/admin/AdminLayout";
 import UsersAdminPage from "../pages/admin/UsersAdminPage";
 import PostsAdminPage from "../pages/admin/PostsAdminPage";
 import NotFoundPage from "../pages/not-found/NotFoundPage";
@@ -45,7 +45,7 @@ export default function AppRouter() {
                         <Route element={<MainLayout />}>
                             <Route index element={<HomePage />} />
                             <Route path="explore" element={<ExplorePage />} />
-
+                            
                             {/* Profile có tab */}
                             <Route path="profile/:id" element={<ProfileLayout />}>
                                 <Route index element={<ProfilePost />} />
