@@ -49,8 +49,8 @@ export default function AppRouter() {
                             {/* Profile có tab */}
                             <Route path="profile/:id" element={<ProfileLayout />}>
                                 <Route index element={<ProfilePost />} />
-                                <Route path="about" element={<ProfileAbout />} />
-                                <Route path="friend" element={<ProfileFriend />} />
+                                <Route path="ProfileAbout" element={<ProfileAbout />} />
+                                <Route path="ProfileFriend" element={<ProfileFriend />} />
 
                             </Route>
                             {/* Setting */}
