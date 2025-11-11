@@ -47,6 +47,9 @@ class MessageController extends Controller
             'content' => $request->input('content'),
         ]);
         $message->load('sender');
+
+        event(new \App\Events\MessageSent($message->content));
+        
         return response()->json($message, 201);
 
     }

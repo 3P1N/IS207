@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
+use App\Models\User;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,4 +16,11 @@ use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
+});
+
+
+
+Broadcast::channel('private-chat', function ($user) {
+    // Kiểm tra xem người dùng có quyền truy cập kênh chat riêng tư không
+    return $user !== null; // Chỉ cho phép người dùng đã xác thực
 });

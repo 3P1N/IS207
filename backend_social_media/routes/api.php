@@ -41,3 +41,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
     // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
 });
+
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
+

@@ -6,6 +6,7 @@ import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
+import { createEcho } from "../../shared/echo";
 
 export default function ThreadPage() {
   const { threadId } = useParams();
@@ -14,6 +15,19 @@ export default function ThreadPage() {
   const [messages, setMessages] = useState([]);
   const [loadingMessage, setLoadingMessage] = useState(false);
   const [loadingSendMessage, setLoadingSendMessage] = useState(false);
+
+  useEffect(() => {
+    // Lắng nghe sự kiện tin nhắn mới từ Echo
+    const echo = createEcho(token);
+    echo.channel(`private-chat`)
+      .listen('MessageSent', (e) => {
+        console.log("hello");
+        console.log('Message received via Echo:', e);
+        // Cập nhật danh sách tin nhắn với tin nhắn mới nhận được
+        // setMessages((prev) => [...prev, {id: Date.now(), sender: {id: 2, name: 'Người khác'}, content: e.message}]);
+      });
+
+  }, []);
 
   useEffect(() => {
     // Lấy tin nhắn khi threadId thay đổi
@@ -63,7 +77,7 @@ export default function ThreadPage() {
           Authorization: `Bearer ${token}`, // 👈 thêm token tại đây
         },
       });
-      console.log("Message sent:", response.data);
+      // console.log("Message sent:", response.data);
       // Cập nhật danh sách tin nhắn với tin nhắn mới
 
       setMessages((prev) => [...prev, response.data]);
