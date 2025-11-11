@@ -31,10 +31,13 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/friends', [App\Http\Controllers\Api\FriendController::class, 'index']);
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
-//     Route::get('/posts', [App\Http\Controllers\Api\PostController::class, 'index']);
-//     Route::post('/posts', [App\Http\Controllers\Api\PostController::class, 'store']);
-//     Route::get('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'show']);
-//     Route::put('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'update']);
-//     Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
-//     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+    Route::get('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
+    Route::post('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'store']);
+    // Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
+    // Route::get('/posts', [App\Http\Controllers\Api\PostController::class, 'index']);
+    // Route::post('/posts', [App\Http\Controllers\Api\PostController::class, 'store']);
+    // Route::get('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'show']);
+    // Route::put('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'update']);
+    // Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
+    // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
 });

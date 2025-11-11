@@ -21,4 +21,5 @@ class ConversationController extends Controller
         $conversations = $user->conversations()->with('participants.user')->get();
         return response()->json($conversations);
     }
+    
 }

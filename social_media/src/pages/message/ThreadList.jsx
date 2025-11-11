@@ -54,17 +54,16 @@ export default function ThreadList() {
   const normalizedThreads = useMemo(() => {
     return (threads || []).map((t) => {
       const participants = Array.isArray(t.participants) ? t.participants : [];
-    
-      console.log("Participants:", participants);
+
       const others = participants.filter((p) => p.user_id !== meId);
       
       const other = others[0]; // 1-1 thì chỉ cần người đầu tiên khác mình
-      console.log("Other participant:", other);
+
       const displayName =
         other?.user?.name
         ?? ( "Cuộc trò chuyện");
-      console.log("Display Name:", displayName);
-      const avatarUrl = other?.user?.avatar || "image.png";
+
+        const avatarUrl = other?.user?.avatar || "image.png";
 
       // Ưu tiên conversation_id để điều hướng
       const conversationId = t.conversation_id ?? t.id;
