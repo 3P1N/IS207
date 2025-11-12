@@ -11,9 +11,9 @@ export default function SignupForm() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Đăng ký:", formData);
+        await auth.register({ email: formData.email, password: formData.password, username: formData.username });
     };
 
     return (

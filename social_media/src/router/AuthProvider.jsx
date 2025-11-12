@@ -7,7 +7,15 @@ export default function AuthProvider({ children }) {
 
     const [userData, setUserData] = useState(null);
     // const login = (userData) => setUserData(userData);
+    
     const [token, setToken] = useState(null);
+    const register = async (userData) => {
+
+        const response = await api.post("/auth/register", userData);
+        console.log("Registration successful:", response.data);
+        return response;
+    }
+    
     const login = async (userData) => {
 
         const response = await api.post("/auth/login", userData);
