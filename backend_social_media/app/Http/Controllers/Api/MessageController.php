@@ -49,7 +49,7 @@ class MessageController extends Controller
         ]);
         $message->load('sender');
 
-        event(new \App\Events\MessageSent($message));
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
         
         return response()->json($message, 201);
 

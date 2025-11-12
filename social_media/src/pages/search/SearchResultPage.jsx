@@ -23,6 +23,7 @@ import { Feed, Person, Groups, Tune } from "@mui/icons-material";
 /* -------------------- helpers -------------------- */
 function useQuery() {
   const location = useLocation();
+  console.log("location.search:", location.search);
   return new URLSearchParams(location.search);
 }
 const highlight = (text, kw) => {
