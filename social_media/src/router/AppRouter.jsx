@@ -25,6 +25,7 @@ import AuthProvider from "./AuthProvider";
 import ProtectedRoute from "./ProtectedRoute";
 import GuestRouter from "./GuestRouter";
 import RoleRoute from "./RoleRoute";
+import PhotoPage from "../pages/photo/PhotoPage";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
@@ -57,6 +58,8 @@ export default function AppRouter() {
                             <Route path="setting" element={<ProfileSetting />} />
                             {/* Post detail */}
                             <Route path="post/:postId" element={<PostDetailPage />} />
+                            {/* Photo viewer */}
+                            <Route path="photo/:postId/:mediaId" element={<PhotoPage />} />
 
                             {/* Message và MessageThread (ô trò chuyện) */}
                             <Route path="message" element={<MessageLayout />}>
