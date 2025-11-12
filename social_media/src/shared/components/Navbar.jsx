@@ -1,14 +1,17 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { AppBar, Toolbar, Typography, Box, IconButton, Avatar, Button, InputBase } from "@mui/material";
 import { Home, Explore, Message, Logout, Login, Search, Settings } from "@mui/icons-material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AvatarUser from "./AvatarUser";
 
 export default function Navbar() {
-
-
-
-
+    const [keyword, setKeyword] = useState("");
+    const navigate = useNavigate();
+    const handleKeyPress = (e) => {
+        if (e.key === "Enter" && keyword.trim() !== ""){
+            navigate(`/search?query=${encodeURIComponent(keyword.trim())}`);
+        }
+    };
     return (
         <AppBar position="sticky" color="default" elevation={1}>
             <Toolbar sx={{ justifyContent: "space-between" }}>
@@ -41,6 +44,9 @@ export default function Navbar() {
                     <Search sx={{ color: "#888", mr: 1 }} />
                     <InputBase
                         placeholder="Tìm kiếm bạn bè hoặc bài viết..."
+                        value = {keyword}
+                        onChange = {(e) => setKeyword(e.target.value)}
+                        onKeyPress={handleKeyPress}
                         sx={{ flex: 1 }}
                     />
                 </Box>
