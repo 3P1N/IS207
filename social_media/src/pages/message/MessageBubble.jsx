@@ -3,7 +3,7 @@ import React from "react";
 import { Box, Typography, Avatar } from "@mui/material";
 
 export default function MessageBubble({ message }) {
-  const { sender, text, mine } = message;
+  const { sender, content, mine } = message;
 
   return (
     <Box
@@ -15,12 +15,16 @@ export default function MessageBubble({ message }) {
       }}
     >
       {!mine && (
-        <Avatar
-          alt={sender}
-          src="/static/images/avatar/1.jpg"
-          sx={{ width: 30, height: 30 }}
-        />
+          <Avatar
+            alt={sender.name}
+            src={sender.avatarUrl || "/static/images/avatar/1.jpg"}
+            sx={{ width: 30, height: 30 }}
+          >
+            {!sender.avatarUrl && sender.name[0].toUpperCase()}
+          </Avatar>
+        
       )}
+      
       <Box
         sx={{
           backgroundColor: mine ? "#1976d2" : "#e0e0e0",
@@ -32,7 +36,15 @@ export default function MessageBubble({ message }) {
           wordBreak: "break-word",
         }}
       >
-        <Typography variant="body2">{text}</Typography>
+        {!mine && (
+        <Typography
+            variant="caption"
+            sx={{ mb: 0.3, color: "text.secondary" }}
+          >
+            {sender.name}
+          </Typography>
+        )}
+        <Typography variant="body2">{content}</Typography>
       </Box>
     </Box>
   );

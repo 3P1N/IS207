@@ -15,13 +15,13 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         echo "Running DatabaseSeeder...\n";
-        this->call([
+        $this->call([
             UsersTableSeeder::class,
             
             FriendshipsTableSeeder::class,
-            // ConversationsTableSeeder::class,
-            // ConversationParticipantsTableSeeder::class,
-            // MessagesTableSeeder::class,
+            ConversationsTableSeeder::class,
+            ConversationParticipantsTableSeeder::class,
+            MessagesTableSeeder::class,
         ]);
         echo "DatabaseSeeder completed.\n";
         

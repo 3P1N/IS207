@@ -31,6 +31,7 @@ class Friendship extends Model
             $q->where('user_id', $userB)->where('addressee_id', $userA);
         });
     }
+    
 
 }
 

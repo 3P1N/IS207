@@ -1,3 +1,4 @@
+import './profile.css'
 const MOCK_FRIENDS = [
   {
     id: 1,

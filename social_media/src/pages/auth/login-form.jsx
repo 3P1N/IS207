@@ -1,11 +1,15 @@
 import React, { useContext, useState } from "react";
 import { useNavigate, redirect, Link as RouterLink } from "react-router-dom";
-import { TextField, Button, Card, CardContent, Typography, Box, Alert, CircularProgress } from "@mui/material";
+import {
+    TextField, Button, Card, CardContent, Typography,
+    Box, Alert,  InputAdornment, IconButton, CircularProgress
+} from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { AuthContext } from "../../router/AuthProvider";
 
 export default function LoginForm() {
     const [formData, setFormData] = useState({ email: "", password: "" });
-
+    const [showPassword, setShowPassword] = useState(false);
     const auth = useContext(AuthContext);
     const navigate = useNavigate();
     const [error, setError] = useState(null);
@@ -63,11 +67,24 @@ export default function LoginForm() {
                     <TextField
                         label="Password"
                         name="password"
-                        type="password"
+                        type={showPassword ? "text" : "password"} // 👈 đổi type
                         fullWidth
                         margin="normal"
                         value={formData.password}
                         onChange={handleChange}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        edge="end"
+                                        aria-label="toggle password visibility"
+                                    >
+                                        {showPassword ? <VisibilityOff /> : <Visibility />} {/* 👈 đổi icon */}
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
                     />
                     <Button
                         variant="contained"

@@ -11,14 +11,14 @@ class UsersTableSeeder extends Seeder
     {
         echo "Seeding users...\n";
 
-        \App\Models\User::factory()->create([
+        User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
             'password' => bcrypt('password'),
             'role' => \App\Enums\Role::ADMIN,
         ]);
 
-        \App\Models\User::factory(10)->create([
+        User::factory(10)->create([
             'role' => \App\Enums\Role::USER,
         ]);
     }
