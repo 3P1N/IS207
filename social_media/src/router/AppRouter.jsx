@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import SearchResultPage from "../pages/search/SearchResultPage";
 
 import MainLayout from "../layouts/MainLayout";
 import ExplorePage from "../pages/explore/ExplorePage";
@@ -26,7 +25,6 @@ import AuthProvider from "./AuthProvider";
 import ProtectedRoute from "./ProtectedRoute";
 import GuestRouter from "./GuestRouter";
 import RoleRoute from "./RoleRoute";
-import PhotoPage from "../pages/photo/PhotoPage";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
@@ -47,8 +45,7 @@ export default function AppRouter() {
                         <Route element={<MainLayout />}>
                             <Route index element={<HomePage />} />
                             <Route path="explore" element={<ExplorePage />} />
-                            <Route path="search" element={<SearchResultPage />} />
-
+                            
                             {/* Profile có tab */}
                             <Route path="profile/:id" element={<ProfileLayout />}>
                                 <Route index element={<ProfilePost />} />
@@ -60,12 +57,10 @@ export default function AppRouter() {
                             <Route path="setting" element={<ProfileSetting />} />
                             {/* Post detail */}
                             <Route path="post/:postId" element={<PostDetailPage />} />
-                            {/* Photo viewer */}
-                            <Route path="photo/:postId/:mediaId" element={<PhotoPage />} />
 
                             {/* Message và MessageThread (ô trò chuyện) */}
                             <Route path="message" element={<MessageLayout />}>
-                               
+                                {/* <Route index element={<ThreadList />} /> */}
                                 <Route path=":threadId" element={<ThreadPage />} />
                             </Route>
 
