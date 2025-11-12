@@ -41,6 +41,45 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
     // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
 });
+Route::post('/debug/broadcast-auth', function (Request $request) {
+    // Log để bạn xem server thực sự nhận gì
+    Log::debug('DEBUG broadcast auth headers', $request->headers->all());
+    Log::debug('DEBUG broadcast auth body', $request->all());
+    Log::debug('DEBUG broadcast auth user', ['user' => $request->user() ? $request->user()->only('id','email') : null]);
 
-Broadcast::routes(['middleware' => ['auth:sanctum']]);
+    // Gọi logic autent của Laravel — trả kết quả trực tiếp
+    // WARNING: Broadcast::auth() sẽ return Response|array etc.
+    $response = Broadcast::auth($request);
+
+    // Nếu trả về Response instance, convert sang JSON/raw để nhìn rõ
+    if ($response instanceof \Illuminate\Http\Response || $response instanceof \Symfony\Component\HttpFoundation\Response) {
+        $content = $response->getContent();
+        Log::debug('DEBUG broadcast auth response raw', ['content' => $content]);
+        return response($content, $response->getStatusCode())->withHeaders($response->headers->all());
+    }
+
+    // Nếu là array, return JSON
+    return response()->json($response);
+})->middleware('auth:sanctum');
+
+Route::post('/debug/broadcast-auth2', function (Request $request) {
+    Log::debug('DBG headers', $request->headers->all());
+    Log::debug('DBG body', $request->all());
+    Log::debug('DBG user', ['user' => $request->user()?->only('id','email')]);
+
+    $response = Broadcast::auth($request);
+
+    Log::debug('DBG Broadcast::auth return type', ['type' => gettype($response)]);
+    if ($response instanceof \Illuminate\Http\Response || $response instanceof \Symfony\Component\HttpFoundation\Response) {
+        Log::debug('DBG Broadcast::auth response content', ['content' => $response->getContent()]);
+        return response($response->getContent(), $response->getStatusCode())
+               ->withHeaders($response->headers->all());
+    }
+
+    // If array or string
+    Log::debug('DBG Broadcast::auth response raw', ['response' => $response]);
+    return response()->json($response);
+})->middleware('auth:sanctum');
+
+// Broadcast::routes(['middleware' => ['auth:sanctum']]);
 

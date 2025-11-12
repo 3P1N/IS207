@@ -7,7 +7,11 @@ window.Pusher = Pusher;
 /**
  * Hàm khởi tạo Echo có token
  */
+// src/lib/echo.js
 export function createEcho(token) {
+  const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, ''); // remove trailing slash
+  const authEndpoint = `${apiBase}/broadcasting/auth`; // -> http://localhost:8000/api/broadcasting/auth
+
   return new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -17,8 +21,7 @@ export function createEcho(token) {
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
 
-    // Dùng Bearer token thay vì cookie
-    authEndpoint: '/api/broadcasting/auth',
+    authEndpoint,
     auth: {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -26,3 +29,4 @@ export function createEcho(token) {
     },
   });
 }
+

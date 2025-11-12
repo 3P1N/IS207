@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Broadcast;
 use App\Models\User;
-
+use Illuminate\Http\Request;
 /*
 |--------------------------------------------------------------------------
 | Broadcast Channels
@@ -20,7 +20,11 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 
 
 
-Broadcast::channel('private-chat', function ($user) {
+Broadcast::channel('chat', function ($user) {
     // Kiểm tra xem người dùng có quyền truy cập kênh chat riêng tư không
-    return $user !== null; // Chỉ cho phép người dùng đã xác thực
+    return true; // Chỉ cho phép người dùng đã xác thực
 });
+
+Route::get('/test-auth', function (Request $request) {
+    return response()->json(['user' => $request->user()]);
+})->middleware('auth:sanctum');

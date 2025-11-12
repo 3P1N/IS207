@@ -4,6 +4,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Message;
 use App\Models\ConversationParticipant;
+use App\Events\MessageSent;
 class MessageController extends Controller
 {
     public function index(Request $request, $id)
@@ -48,7 +49,7 @@ class MessageController extends Controller
         ]);
         $message->load('sender');
 
-        event(new \App\Events\MessageSent($message->content));
+        event(new \App\Events\MessageSent($message));
         
         return response()->json($message, 201);
 

@@ -10,6 +10,8 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use App\Models\Message;
+use App\Models\User;
 
 class MessageSent implements ShouldBroadcastNow
 {
@@ -18,7 +20,7 @@ class MessageSent implements ShouldBroadcastNow
     /**
      * Create a new event instance.
      */
-    public function __construct(public string $message)
+    public function __construct(public Message $message)
     {
         //
     }
@@ -31,11 +33,16 @@ class MessageSent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('private-chat'),
+            //Channel sẽ tự thêm tiền tố "private-" vào tên kênh
+            new PrivateChannel('chat'),
         ];
     }
     public function broadcastAs(): string
     {
         return 'MessageSent';
+    }
+    public function broadcastWith(): array
+    {
+        return $this->message->toArray();
     }
 }

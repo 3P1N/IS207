@@ -7,6 +7,7 @@ import ChatInput from "./ChatInput";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
 import { createEcho } from "../../shared/echo";
+import Pusher from "pusher-js";
 
 export default function ThreadPage() {
   const { threadId } = useParams();
@@ -19,13 +20,35 @@ export default function ThreadPage() {
   useEffect(() => {
     // Lắng nghe sự kiện tin nhắn mới từ Echo
     const echo = createEcho(token);
-    echo.channel(`private-chat`)
-      .listen('MessageSent', (e) => {
-        console.log("hello");
-        console.log('Message received via Echo:', e);
-        // Cập nhật danh sách tin nhắn với tin nhắn mới nhận được
-        // setMessages((prev) => [...prev, {id: Date.now(), sender: {id: 2, name: 'Người khác'}, content: e.message}]);
-      });
+    const pusher = echo.connector?.pusher;
+
+    
+    const channelName = "chat"; // tên logical, nếu backend dùng PrivateChannel('chat')
+    
+
+    // 2) Subscribe & listen using Echo
+    const echoChannel = echo.private(channelName);
+
+    // Try both variants for event name
+    
+    echoChannel.listen(".MessageSent", (e) => {
+      console.log("payload (.MessageSent):", e);
+      setMessages((prev) => [...prev, e]);
+    });
+
+    // 3) Use underlying pusher channel to bind subscription lifecycle and global events
+
+    // Cleanup
+    return () => {
+      try {
+        if (echo.leavePrivate) echo.leavePrivate(channelName);
+        else echo.leave(`private-${channelName}`);
+      } catch (e) { }
+      try {
+        if (echo && echo.disconnect) echo.disconnect();
+      } catch (e) { }
+      console.log("🧹 Echo cleaned up");
+    };
 
   }, []);
 
@@ -120,7 +143,7 @@ export default function ThreadPage() {
           },
         }}
       >
-        {loadingMessage ? ( 
+        {loadingMessage ? (
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
             Đang tải tin nhắn...
           </Typography>
@@ -128,7 +151,7 @@ export default function ThreadPage() {
           normalizedMessages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
           ))
-          
+
         )}
         {loadingSendMessage && (
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
