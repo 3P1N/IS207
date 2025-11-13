@@ -13,7 +13,7 @@ class Post extends Model
         'user_id',
         'content',
         'is_visible',
-        'is_reported',
+        'report_count'
 
 
         // 'media_urls',

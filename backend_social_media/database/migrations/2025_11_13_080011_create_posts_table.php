@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->text('content');
             $table->boolean('is_visible')->default(true);
-            $table->boolean('is_reported')->default(false);
+            $table->unsignedInteger('report_count')->default(0);
             $table->softDeletes();
             $table->index('user_id');
 

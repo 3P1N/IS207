@@ -18,10 +18,11 @@ class UsersTableSeeder extends Seeder
             'role' => \App\Enums\Role::ADMIN,
             'avatarUrl' => 'storage/picture.png',
             'gender' => 'male',
+            
         ]);
 
         User::factory(10)->create([
             'role' => \App\Enums\Role::USER,
-        ]);
+        ]); 
     }
 }

@@ -28,6 +28,7 @@ class User extends Authenticatable
         'role',
         'avatarUrl',
         'gender',
+        'is_Violated',
 
     ];
 
@@ -131,6 +132,6 @@ class User extends Authenticatable
     {
         return $this->hasMany(Block::class, 'blocked_id');
     }
-    
+
 
 }
