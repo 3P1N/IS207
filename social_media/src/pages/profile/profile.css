@@ -1,3 +1,153 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.profile-tabs {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb; /* xám nhạt */
+  padding-bottom: 0.25rem;
+}
+
+.profile-tab-link {
+  position: relative;
+  padding-bottom: 0.75rem;
+  padding-inline: 0.25rem;
+  color: #6b7280; /* text-gray-500 */
+  text-decoration: none; /* bỏ gạch chân tím mặc định */
+  transition: color 0.2s ease;
+}
+
+.profile-tab-link:hover {
+  color: #111827; /* text-gray-900 */
+}
+
+.profile-tab-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background-color: #0ea5e9; /* sky-500 */
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+/* Khi active */
+.profile-tab-link.active {
+  color: #0284c7; /* sky-600 */
+}
+
+.profile-tab-link.active::after,
+.profile-tab-link:hover::after {
+  transform: scaleX(1);
+}
+.profile-layout {
+  /* min-h-screen */
+  min-height: 100vh;
+
+  /* bg-gray-100 */
+  background-color: #f3f4f6;
+
+  /* flex justify-center */
+  display: flex;
+  justify-content: center;
+
+  /* px-4 py-10 (px = 1rem, py = 2.5rem) */
+  padding: 2.5rem 1rem;
+
+  /* cho chắc chắn layout ổn */
+  box-sizing: border-box;
+}
+.profile-card {
+  /* w-full */
+  width: 100%;
+
+  /* max-w-4xl = 56rem ≈ 896px */
+  max-width: 56rem;
+
+  /* overflow-hidden */
+  overflow: hidden;
+
+  /* rounded-3xl ≈ 1.5rem */
+  border-radius: 1.5rem;
+
+  /* border border-gray-200 */
+  border: 1px solid #e5e7eb;
+
+  /* bg-white */
+  background-color: #ffffff;
+
+  /* shadow-2xl của Tailwind */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+/* Cover phía trên profile */
+.profile-cover {
+  position: relative;          /* relative */
+  height: 10rem;               /* h-40 = 10rem */
+  width: 100%;                 /* w-full */
+  background-image: linear-gradient(
+    to right,
+    #0ea5e9,   /* from-sky-500 */
+    #6366f1,   /* via-indigo-500 */
+    #d946ef    /* to-fuchsia-500 */
+  );
+  overflow: hidden;
+}
+
+/* lớp ánh sáng radial ở trên cùng */
+.profile-cover-glow {
+  pointer-events: none;        /* pointer-events-none */
+  position: absolute;          /* absolute inset-0 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image: radial-gradient(
+    circle at top,
+    rgba(255, 255, 255, 0.4),
+    transparent 55%
+  );
+}
+
+/* Khối avatar nằm giữa, trồi xuống dưới cover */
+.profile-avatar-container {
+  position: absolute;          /* absolute */
+  bottom: -3rem;               /* -bottom-12 (12 * 0.25rem = 3rem) */
+  left: 50%;                   /* left-1/2 */
+  transform: translateX(-50%); /* -translate-x-1/2 */
+}
+
+/* Bao ngoài avatar để đặt glow */
+.profile-avatar-wrapper {
+  position: relative;          /* relative */
+}
+
+/* Glow xanh dưới avatar */
+.profile-avatar-glow {
+  position: absolute;          /* absolute inset-0 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  transform: translateY(0.5rem); /* translate-y-2 = 0.5rem */
+  border-radius: 9999px;         /* rounded-full */
+
+  background-color: rgba(14, 165, 233, 0.5); /* bg-sky-500/50 */
+  filter: blur(20px);            /* blur-xl (xấp xỉ) */
+}
+
+/* Viền avatar trắng + shadow */
+.profile-avatar-frame {
+  position: relative;            /* relative */
+  border-radius: 9999px;         /* rounded-full */
+  border: 4px solid #ffffff;     /* border-4 border-white */
+  background-color: #ffffff;     /* bg-white */
+  padding: 0.25rem;              /* p-1 */
+
+  /* shadow-xl gần giống Tailwind */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
