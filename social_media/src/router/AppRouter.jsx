@@ -24,6 +24,7 @@ import AuthLayout from "../layouts/AuthLayout";
 import AuthProvider from "./AuthProvider";
 import ProtectedRoute from "./ProtectedRoute";
 import GuestRouter from "./GuestRouter";
+import SearchResultPage from "../pages/search/SearchResultPage";
 import RoleRoute from "./RoleRoute";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
@@ -45,7 +46,8 @@ export default function AppRouter() {
                         <Route element={<MainLayout />}>
                             <Route index element={<HomePage />} />
                             <Route path="explore" element={<ExplorePage />} />
-                            
+                             <Route path="search" element={<SearchResultPage />} />
+
                             {/* Profile có tab */}
                             <Route path="profile/:id" element={<ProfileLayout />}>
                                 <Route index element={<ProfilePost />} />
