@@ -13,11 +13,11 @@ export default function PostActionsBar({ likes, comments, shares, isLiked }) {
                     <div className="flex items-center">
                         {/* Biểu tượng Likes */}
                         <div className="flex items-center justify-center size-5 rounded-full bg-primary text-white border-2 border-card-light dark:border-card-dark -mr-1">
-                            <span className="material-symbols-outlined text-xs">thumb_up</span>
+                            {/* <span className="material-symbols-outlined text-xs">thumb_up</span> */}
                         </div>
                         {/* Biểu tượng Love (Ví dụ) */}
                         <div className="flex items-center justify-center size-5 rounded-full bg-red-500 text-white border-2 border-card-light dark:border-card-dark">
-                            <span className="material-symbols-outlined text-xs">favorite</span>
+                            {/* <span className="material-symbols-outlined text-xs">favorite</span> */}
                         </div>
                     </div>
                     <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm font-normal">{likes}</p>
@@ -34,15 +34,15 @@ export default function PostActionsBar({ likes, comments, shares, isLiked }) {
                     className={`flex items-center justify-center gap-2 h-10 rounded-lg ${likeButtonClass}`}
                     onClick={() => console.log('Toggle Like')}
                 >
-                    <span className="material-symbols-outlined">thumb_up</span>
+                    {/* <span className="material-symbols-outlined">thumb_up</span> */}
                     <span className="font-semibold text-sm">Like</span>
                 </button>
                 <button className="flex items-center justify-center gap-2 h-10 rounded-lg text-text-light-secondary dark:text-text-dark-secondary hover:bg-hover-light dark:hover:bg-hover-dark">
-                    <span className="material-symbols-outlined">chat_bubble_outline</span>
+                    {/* <span className="material-symbols-outlined">chat_bubble_outline</span> */}
                     <span className="font-semibold text-sm">Comment</span>
                 </button>
                 <button className="flex items-center justify-center gap-2 h-10 rounded-lg text-text-light-secondary dark:text-text-dark-secondary hover:bg-hover-light dark:hover:bg-hover-dark">
-                    <span className="material-symbols-outlined">retweet</span>
+                    {/* <span className="material-symbols-outlined">retweet</span> */}
                     <span className="font-semibold text-sm">Share</span>
                 </button>
             </div>

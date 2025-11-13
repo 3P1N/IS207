@@ -49,23 +49,28 @@ const mockComments = [
 
 const currentUserId = { profilePicture: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCsQyVvcUkG6UQQbp52w4SXG4CF1BaTetoc2-ffTzpmV7e1LwrBLAi1B5SA-PetE4WFhs_42U2eQ6nVuIvS2H287zbF2KITmmZD0CbwdjkYucG--S8h2PEW3rCgcPrrhreBITkDWngpZmRRBMDBDfZpRaLbYYFaTXh2i4j2Bh3fwnYlW9yZan0IE3uVEgZRFw3zLyt8v-OhRE5q-UWl8t_AnrBedtsiptOffEQD_xi_Lj1aVVMHo4ElDl5rBN7gF8A1UW__vQyjroM' }; // Giả định user hiện tại
 
+// src/pages/post/PostDetailPage.jsx
+// ... (các import và Mock Data giữ nguyên) ...
+
+// ===============================================
+// Đặt là TRUE, vì file này mô phỏng việc xem bài viết của mình
+// (hoặc trang chi tiết cá nhân)
+const IS_CURRENT_USER_POST = true; 
+// ===============================================
+
+// ... (các hàm handleEdit, handleReport giữ nguyên) ...
+
 export default function PostDetailPage() {
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
-            <main className="flex-grow w-full px-4 py-8">
-                <div className="max-w-2xl mx-auto flex flex-col gap-6">
-                    
-                    {/* Component Bài Đăng */}
-                    <PostCard post={mockPostData} />
-
-                    {/* Component Khu Vực Bình Luận */}
-                    <CommentsSection 
-                        comments={mockComments} 
-                        currentUserProfile={currentUserId.profilePicture}
-                    />
-
-                </div>
-            </main>
-        </div>
+        // ...
+        <PostCard 
+            post={mockPostData} 
+            isOwner={IS_CURRENT_USER_POST} // <-- Luôn là TRUE
+            onEdit={handleEdit}
+            onReport={handleReport} // Report vẫn được truyền nhưng sẽ không được dùng do isOwner=true
+            mockComments={mockComments} 
+            currentUserProfile={currentUserId.profilePicture}
+        />
+        // ...
     );
 }
