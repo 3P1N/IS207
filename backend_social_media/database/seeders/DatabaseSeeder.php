@@ -22,6 +22,12 @@ class DatabaseSeeder extends Seeder
             ConversationsTableSeeder::class,
             ConversationParticipantsTableSeeder::class,
             MessagesTableSeeder::class,
+            PostSeeder::class,
+            MediaSeeder::class,
+            CommentSeeder::class,
+            PostReactionSeeder::class,
+            BlockSeeder::class,
+            
         ]);
         echo "DatabaseSeeder completed.\n";
         

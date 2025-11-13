@@ -1,4 +1,5 @@
 import './profile.css'
+import { useState } from "react";
 const MOCK_FRIENDS = [
   {
     id: 1,
@@ -30,25 +31,25 @@ export default function ProfileFriend() {
   return (
     <div className="space-y-6">
       {/* Header + search */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="friends-header">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Bạn bè</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="friends-title">Bạn bè</h2>
+          <p className="friends-subtitle">
             Danh sách bạn bè và lời mời kết bạn
           </p>
         </div>
 
-        <div className="w-full max-w-xs">
+        <div className="friends-search-wrapper">
           <input
             type="text"
             placeholder="Tìm bạn bè..."
-            className="w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+            className="friends-search-input"
           />
         </div>
       </div>
 
       {/* Danh sách bạn bè */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="friends-grid">
         {MOCK_FRIENDS.map((friend) => (
           <FriendCard key={friend.id} friend={friend} />
         ))}
@@ -60,41 +61,71 @@ export default function ProfileFriend() {
 function FriendCard({ friend }) {
   const { name, username, avatar, isFriend, mutual } = friend;
 
+  // friends | pending | none
+  const [friendStatus, setFriendStatus] = useState(
+    isFriend ? "friends" : "none"
+  );
+
+  const handleAddFriend = () => {
+    // TODO: gọi API gửi lời mời kết bạn
+    setFriendStatus("pending");
+  };
+
+  const handleUnfriend = () => {
+    // TODO: gọi API hủy kết bạn
+    setFriendStatus("none");
+  };
+
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white/80 p-4 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
+    <div className="friend-card">
       {/* Avatar */}
-      <div className="relative">
+      <div className="friend-avatar-wrapper">
         <img
           src={avatar}
           alt={name}
-          className="h-12 w-12 rounded-full object-cover"
+          className="friend-avatar"
         />
-        {isFriend && (
-          <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-emerald-400" />
+        {/* chấm xanh chỉ hiện khi đã là bạn bè */}
+        {friendStatus === "friends" && (
+          <span className="friend-status-dot" />
         )}
       </div>
 
       {/* Info */}
-      <div className="flex-1">
-        <p className="text-sm font-semibold text-gray-900">{name}</p>
-        <p className="text-xs text-gray-500">{username}</p>
-        <p className="mt-1 text-xs text-gray-400">
+      <div className="friend-info">
+        <p className="friend-name">{name}</p>
+        <p className="friend-username">{username}</p>
+        <p className="friend-mutual">
           {mutual} bạn chung
         </p>
       </div>
 
-      {/* Nút Add / Unfriend */}
-      {isFriend ? (
+      {/* Nút Add / Pending / Unfriend */}
+      {friendStatus === "friends" && (
         <button
           type="button"
-          className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100 active:scale-95 transition"
+          className="btn-unfriend"
+          onClick={handleUnfriend}
         >
           Unfriend
         </button>
-      ) : (
+      )}
+
+      {friendStatus === "pending" && (
         <button
           type="button"
-          className="rounded-full bg-sky-500 px-3 py-1 text-xs font-medium text-white shadow hover:bg-sky-600 active:scale-95 transition"
+          className="btn-pending"
+          disabled
+        >
+          Chờ phản hồi
+        </button>
+      )}
+
+      {friendStatus === "none" && (
+        <button
+          type="button"
+          className="btn-add-friend"
+          onClick={handleAddFriend}
         >
           Add friend
         </button>
@@ -102,3 +133,4 @@ function FriendCard({ friend }) {
     </div>
   );
 }
+

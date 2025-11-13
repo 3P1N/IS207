@@ -7,7 +7,7 @@ export default function MessageLayout() {
     <Box
       sx={{
         display: "flex",
-        height: "100vh",
+        height: "91vh",
         bgcolor: "#f9f9f9",
       }}
     >

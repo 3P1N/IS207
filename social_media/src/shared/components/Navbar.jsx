@@ -56,9 +56,7 @@ export default function Navbar() {
                     <IconButton component={RouterLink} to="/" color="primary">
                         <Home />
                     </IconButton>
-                    <IconButton component={RouterLink} to="/explore" color="primary">
-                        <Explore />
-                    </IconButton>
+                 
                     <IconButton component={RouterLink} to="/message" color="primary">
                         <Message />
                     </IconButton>

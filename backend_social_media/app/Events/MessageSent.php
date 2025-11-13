@@ -12,6 +12,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use App\Models\Message;
 use App\Models\User;
+use App\Models\ConversationParticipant;
 
 class MessageSent implements ShouldBroadcastNow
 {
@@ -34,7 +35,7 @@ class MessageSent implements ShouldBroadcastNow
     {
         return [
             //Channel sẽ tự thêm tiền tố "private-" vào tên kênh
-            new PrivateChannel('chat'),
+            new PrivateChannel('chat.' . $this->message->conversation_id),
         ];
     }
     public function broadcastAs(): string
