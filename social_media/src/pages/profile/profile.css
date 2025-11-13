@@ -287,6 +287,22 @@
   cursor: pointer;
   transition: background-color 150ms ease, transform 100ms ease;
 }
+.btn-pending {
+  border-radius: 9999px;              /* rounded-full */
+  border: 1px solid #bfdbfe;          /* border-blue-200 */
+  background-color: #eff6ff;          /* bg-blue-50 */
+  padding: 0.25rem 0.75rem;           /* py-1 px-3 */
+  font-size: 0.75rem;                 /* text-xs */
+  line-height: 1rem;
+  font-weight: 500;                   /* font-medium */
+  color: #2563eb;                     /* text-blue-600 */
+  cursor: default;                    /* nhìn như không bấm được */
+  opacity: 0.85;                      /* hơi mờ nhẹ */
+}
+
+.btn-pending:disabled {
+  cursor: not-allowed;
+}
 
 .btn-unfriend:hover {
   background-color: #fee2e2; /* hover:bg-red-100 */

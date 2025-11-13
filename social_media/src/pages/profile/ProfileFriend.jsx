@@ -1,4 +1,5 @@
 import './profile.css'
+import { useState } from "react";
 const MOCK_FRIENDS = [
   {
     id: 1,
@@ -60,6 +61,21 @@ export default function ProfileFriend() {
 function FriendCard({ friend }) {
   const { name, username, avatar, isFriend, mutual } = friend;
 
+  // friends | pending | none
+  const [friendStatus, setFriendStatus] = useState(
+    isFriend ? "friends" : "none"
+  );
+
+  const handleAddFriend = () => {
+    // TODO: gọi API gửi lời mời kết bạn
+    setFriendStatus("pending");
+  };
+
+  const handleUnfriend = () => {
+    // TODO: gọi API hủy kết bạn
+    setFriendStatus("none");
+  };
+
   return (
     <div className="friend-card">
       {/* Avatar */}
@@ -69,7 +85,8 @@ function FriendCard({ friend }) {
           alt={name}
           className="friend-avatar"
         />
-        {isFriend && (
+        {/* chấm xanh chỉ hiện khi đã là bạn bè */}
+        {friendStatus === "friends" && (
           <span className="friend-status-dot" />
         )}
       </div>
@@ -83,18 +100,32 @@ function FriendCard({ friend }) {
         </p>
       </div>
 
-      {/* Nút Add / Unfriend */}
-      {isFriend ? (
+      {/* Nút Add / Pending / Unfriend */}
+      {friendStatus === "friends" && (
         <button
           type="button"
           className="btn-unfriend"
+          onClick={handleUnfriend}
         >
           Unfriend
         </button>
-      ) : (
+      )}
+
+      {friendStatus === "pending" && (
+        <button
+          type="button"
+          className="btn-pending"
+          disabled
+        >
+          Chờ phản hồi
+        </button>
+      )}
+
+      {friendStatus === "none" && (
         <button
           type="button"
           className="btn-add-friend"
+          onClick={handleAddFriend}
         >
           Add friend
         </button>
@@ -102,3 +133,4 @@ function FriendCard({ friend }) {
     </div>
   );
 }
+
