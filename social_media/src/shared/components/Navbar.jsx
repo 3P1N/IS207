@@ -26,7 +26,7 @@ export default function Navbar() {
                         fontWeight: "bold",
                     }}
                 >
-                    MySocial
+                    FITNESS247
                 </Typography>
 
                 {/* Ô tìm kiếm */}
