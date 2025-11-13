@@ -26,6 +26,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import GuestRouter from "./GuestRouter";
 import SearchResultPage from "../pages/search/SearchResultPage";
 import RoleRoute from "./RoleRoute";
+import CreatePost from "../pages/create-post/CreatePost";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
@@ -57,6 +58,8 @@ export default function AppRouter() {
                         </Route>
                         {/* Setting */}
                         <Route path="setting" element={<ProfileSetting />} />
+                        <Route path="create-post" element={<CreatePost />} />
+
                         {/* Post detail */}
                         <Route path="post/:postId" element={<PostDetailPage />} />
 

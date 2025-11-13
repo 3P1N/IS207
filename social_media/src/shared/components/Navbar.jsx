@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import { AppBar, Toolbar, Typography, Box, IconButton, Avatar, Button, InputBase } from "@mui/material";
-import { Home, Explore, Message, Logout, Login, Search, Settings } from "@mui/icons-material";
+import { Home, Explore, Message, Logout, Login, Search, Settings, AddCircle } from "@mui/icons-material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AvatarUser from "./AvatarUser";
 
@@ -8,7 +8,7 @@ export default function Navbar() {
     const [keyword, setKeyword] = useState("");
     const navigate = useNavigate();
     const handleKeyPress = (e) => {
-        if (e.key === "Enter" && keyword.trim() !== ""){
+        if (e.key === "Enter" && keyword.trim() !== "") {
             navigate(`/search?query=${encodeURIComponent(keyword.trim())}`);
         }
     };
@@ -44,8 +44,8 @@ export default function Navbar() {
                     <Search sx={{ color: "#888", mr: 1 }} />
                     <InputBase
                         placeholder="Tìm kiếm bạn bè hoặc bài viết..."
-                        value = {keyword}
-                        onChange = {(e) => setKeyword(e.target.value)}
+                        value={keyword}
+                        onChange={(e) => setKeyword(e.target.value)}
                         onKeyPress={handleKeyPress}
                         sx={{ flex: 1 }}
                     />
@@ -56,10 +56,14 @@ export default function Navbar() {
                     <IconButton component={RouterLink} to="/" color="primary">
                         <Home />
                     </IconButton>
-                 
+
                     <IconButton component={RouterLink} to="/message" color="primary">
                         <Message />
                     </IconButton>
+                    <IconButton component={RouterLink} to="/create-post" color="primary">
+                        <AddCircle />
+                    </IconButton>
+
                     <IconButton component={RouterLink} to="/setting" color="primary">
                         <Settings />
                     </IconButton>
@@ -67,7 +71,7 @@ export default function Navbar() {
 
 
                     {/* Nếu user đã login */}
-                    
+
                 </Box>
             </Toolbar>
         </AppBar>
