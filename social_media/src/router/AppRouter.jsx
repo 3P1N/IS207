@@ -42,40 +42,40 @@ export default function AppRouter() {
                         </Route>
                     </Route>
                     {/* <Route element={<ProtectedRoute />}> */}
-                        {/* Layout route */}
-                        <Route element={<MainLayout />}>
-                            <Route index element={<HomePage />} />
-                            <Route path="explore" element={<ExplorePage />} />
-                             <Route path="search" element={<SearchResultPage />} />
+                    {/* Layout route */}
+                    <Route element={<MainLayout />}>
+                        <Route index element={<HomePage />} />
+                        <Route path="explore" element={<ExplorePage />} />
+                        <Route path="search" element={<SearchResultPage />} />
 
-                            {/* Profile có tab */}
-                            <Route path="profile/:id" element={<ProfileLayout />}>
-                                <Route index element={<ProfilePost />} />
-                                <Route path="ProfileAbout" element={<ProfileAbout />} />
-                                <Route path="ProfileFriend" element={<ProfileFriend />} />
-
-                            </Route>
-                            {/* Setting */}
-                            <Route path="setting" element={<ProfileSetting />} />
-                            {/* Post detail */}
-                            <Route path="post/:postId" element={<PostDetailPage />} />
-
-                            {/* Message và MessageThread (ô trò chuyện) */}
-                            <Route path="message" element={<MessageLayout />}>
-                                {/* <Route index element={<ThreadList />} /> */}
-                                <Route path=":threadId" element={<ThreadPage />} />
-                            </Route>
-
-                            {/* Phần riêng quản lý của Admin */}
-                            {/* <Route element={<RoleRoute roles={['admin']} />}> */}
-                                <Route path="admin" element={<AdminLayout />}>
-                                    <Route index element={<Navigate to="users" replace />} />
-                                    <Route path="users" element={<UsersAdminPage />} />
-                                    <Route path="posts" element={<PostsAdminPage />} />
-                                </Route>
-                            {/* </Route> */}
+                        {/* Profile có tab */}
+                        <Route path="profile/:id" element={<ProfileLayout />}>
+                            <Route index element={<ProfilePost />} />
+                            <Route path="ProfileAbout" element={<ProfileAbout />} />
+                            <Route path="ProfileFriend" element={<ProfileFriend />} />
 
                         </Route>
+                        {/* Setting */}
+                        <Route path="setting" element={<ProfileSetting />} />
+                        {/* Post detail */}
+                        <Route path="post/:postId" element={<PostDetailPage />} />
+
+                        {/* Message và MessageThread (ô trò chuyện) */}
+                        <Route path="message" element={<MessageLayout />}>
+                            {/* <Route index element={<ThreadList />} /> */}
+                            <Route path=":threadId" element={<ThreadPage />} />
+                        </Route>
+
+                        {/* Phần riêng quản lý của Admin */}
+                        {/* <Route element={<RoleRoute roles={['admin']} />}> */}
+                        <Route path="admin" element={<AdminLayout />}>
+                            <Route index element={<Navigate to="users" replace />} />
+                            <Route path="users" element={<UsersAdminPage />} />
+                            <Route path="posts" element={<PostsAdminPage />} />
+                        </Route>
+                        {/* </Route> */}
+
+                    </Route>
                     {/* </Route> */}
                     {/* Redirect ví dụ */}
                     <Route path="/home" element={<Navigate to="/" replace />} />

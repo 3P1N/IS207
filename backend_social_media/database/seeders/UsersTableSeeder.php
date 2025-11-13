@@ -16,6 +16,8 @@ class UsersTableSeeder extends Seeder
             'email' => 'admin@example.com',
             'password' => bcrypt('password'),
             'role' => \App\Enums\Role::ADMIN,
+            'avatarUrl' => 'storage/picture.png',
+            'gender' => 'male',
         ]);
 
         User::factory(10)->create([

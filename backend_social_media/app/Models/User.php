@@ -26,6 +26,9 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'avatarUrl',
+        'gender',
+
     ];
 
     /**
@@ -108,5 +111,26 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Conversation::class, 'conversation_participants', 'user_id', 'conversation_id');
     }
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+    public function postReactions()
+    {
+        return $this->hasMany(PostReaction::class);
+    }
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+    public function blocks()
+    {
+        return $this->hasMany(Block::class, 'blocker_id');
+    }
+    public function blockedBy()
+    {
+        return $this->hasMany(Block::class, 'blocked_id');
+    }
+    
 
 }
