@@ -1,44 +1,24 @@
-import './profile.css'
-const MOCK_POSTS = [
-  {
-    id: 1,
-    authorName: "User Name",
-    username: "@username",
-    avatar: "https://i.pravatar.cc/100?img=10",
-    createdAt: "2 giờ trước",
-    content:
-      "Hôm nay thử nghiệm giao diện mới cho trang cá nhân. Mọi người thấy sao? ✨",
-    tag: "Cập nhật trạng thái",
-    likes: 24,
-    comments: 5,
-    shares: 2,
+// import './profile.css'
+import PostCard from '../post/PostCard';
+const MOCK_POSTS = [{
+  id: 1,
+  author: {
+    name: 'Jane Doe',
+    profilePicture: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCSWzWpYyimValDHrU0wCgqSZMKWDYU8ChH8pfdvew9nJNF0pqcAPDdvke8CjTVk6pilDEwELve5rBcHrGt4cy4YLovzVI3QQdCwtgmNyu3_QVPG5uwsnENHMw4-MWyp_3GXE_hVoBgpB1SHAlHhb-CIFJceglWPuuVM0cm7PbDPOJpahwmH28q811t0v6iFuSx4LVstl6SEcH2Tdkzh6OdoBtxPBonynWdZh_8bkXmfnr10ua2ZpsDw3ak2NsTg1OzTbs2nOzbLBA'
   },
-  {
-    id: 2,
-    authorName: "User Name",
-    username: "@username",
-    avatar: "https://i.pravatar.cc/100?img=11",
-    createdAt: "1 ngày trước",
-    content:
-      "Cuối tuần vừa rồi đi cà phê code đến khuya. Đang build social media app bằng React + Spring Boot 😎",
-    tag: "Lập trình",
-    likes: 48,
-    comments: 12,
-    shares: 7,
+  timeAgo: '2 hours ago',
+  content: 'Exploring the beautiful landscapes today! The weather was perfect for a hike and I managed to get some great shots. Feeling so refreshed and connected with nature. #hiking #nature #photography',
+  media: [
+    { url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBLdli4-_jQ_1C21zD0av25z86jWRAVTTBJUH5Y4I8PhcvpOCDfDkfVDXJl-ENXtLuJLTL5X58KOVFwaJxoNHaAt4o3YsL2zQdgiisBKiV0OxbEPS2P3yl5Icg6z9P8_oCYqjTlRwiW_1h4EGXicMxIFnbBa9mEyayCa1Ryw_Sufx9_dKmbrC7gkuXvFbTzSunNR6slT_bdd52FSsjzKAlNC__ocvt9jbcbHZim-ERyBULeQyS3vprxv7vVjz7RJqEeTd6NoB0U4lw', alt: 'A scenic mountain view with a winding trail' },
+    { url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCe5KzN7CsRmYkcNaAEqfbNoGvMnQ-3W5F5XkKSB9cE6Nc9XazCMNYkN2vg62F7yx-yc1Xm_w-TP2eDcqeFcBJnvWMveGxriGtVnyoVs1sPZ__DGejWMSxMve6cxMJNPsQ6sbVVH9I4LzZXXs4BsC0QelpXN4VCN5bEMDdLRs6GxhXYkAJWEHZCy4HT4YFJhWTs7Xhc5U9dtkZtA-pzzIh97prlPCKJLn8zYDs8UeIwxYVXHhw26GOtXiFT4TvWE5q7TYeveRI4-Kc', alt: 'A close-up of wildflowers on the hiking path' },
+  ],
+  stats: {
+    likes: '1.2K',
+    comments: 345,
+    shares: 128
   },
-  {
-    id: 3,
-    authorName: "User Name",
-    username: "@username",
-    avatar: "https://i.pravatar.cc/100?img=12",
-    createdAt: "3 ngày trước",
-    content:
-      "Nhớ phải backup database thường xuyên, đừng để đến lúc mất rồi mới ngồi hối hận 🧨",
-    tag: "Chia sẻ kinh nghiệm",
-    likes: 73,
-    comments: 21,
-    shares: 9,
-  },
+  isLiked: true,
+},
 ];
 
 export default function ProfilePost() {
@@ -69,82 +49,5 @@ export default function ProfilePost() {
         ))}
       </div>
     </div>
-  );
-}
-
-function PostCard({ post }) {
-  const {
-    authorName,
-    username,
-    avatar,
-    createdAt,
-    content,
-    tag,
-    likes,
-    comments,
-    shares,
-  } = post;
-
-  return (
-    <article className="rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5">
-      {/* Header post: avatar + tên */}
-      <header className="mb-3 flex items-start gap-3">
-        <img
-          src={avatar}
-          alt={authorName}
-          className="h-10 w-10 flex-shrink-0 rounded-full object-cover"
-        />
-        <div className="flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">
-                {authorName}
-              </p>
-              <p className="text-xs text-gray-500">
-                {username} · {createdAt}
-              </p>
-            </div>
-            {tag && (
-              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                {tag}
-              </span>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Nội dung bài viết */}
-      <div className="mb-3 text-sm text-gray-800 whitespace-pre-line">
-        {content}
-      </div>
-
-      {/* Stats */}
-      <div className="mb-2 flex items-center justify-between text-xs text-gray-500">
-        <span>{likes} lượt thích</span>
-        <span>
-          {comments} bình luận · {shares} lượt chia sẻ
-        </span>
-      </div>
-
-      <hr className="border-gray-200" />
-
-      {/* Action buttons */}
-      <div className="mt-1 flex items-center justify-between text-xs font-medium text-gray-500">
-        <PostAction label="Thích" />
-        <PostAction label="Bình luận" />
-        <PostAction label="Chia sẻ" />
-      </div>
-    </article>
-  );
-}
-
-function PostAction({ label }) {
-  return (
-    <button
-      type="button"
-      className="flex flex-1 items-center justify-center gap-1 rounded-xl py-2 hover:bg-gray-100 active:scale-[0.98] transition"
-    >
-      <span>{label}</span>
-    </button>
   );
 }

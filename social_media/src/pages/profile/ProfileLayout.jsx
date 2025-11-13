@@ -1,6 +1,6 @@
 // src/layouts/ProfileLayout.jsx
 import { Outlet, NavLink } from "react-router-dom";
-import './profile.css'
+
 import AvatarUser from "../../shared/components/AvatarUser";
 export default function ProfileLayout() {
   return (

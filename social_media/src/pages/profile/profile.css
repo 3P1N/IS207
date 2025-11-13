@@ -1,3 +1,4 @@
+@import "tailwindcss";
 .profile-tabs {
   display: flex;
   gap: 2rem;
@@ -44,44 +45,38 @@
   transform: scaleX(1);
 }
 .profile-layout {
-  /* min-h-screen */
+  /* full màn hình */
   min-height: 100vh;
+  width: 100vw;
 
-  /* bg-gray-100 */
-  background-color: #f3f4f6;
-
-  /* flex justify-center */
-  display: flex;
-  justify-content: center;
-
-  /* px-4 py-10 (px = 1rem, py = 2.5rem) */
-  padding: 2.5rem 1rem;
-
-  /* cho chắc chắn layout ổn */
-  box-sizing: border-box;
-}
-.profile-card {
-  /* w-full */
-  width: 100%;
-
-  /* max-w-4xl = 56rem ≈ 896px */
-  max-width: 56rem;
-
-  /* overflow-hidden */
-  overflow: hidden;
-
-  /* rounded-3xl ≈ 1.5rem */
-  border-radius: 1.5rem;
-
-  /* border border-gray-200 */
-  border: 1px solid #e5e7eb;
-
-  /* bg-white */
+  /* cho nền trắng luôn, hoặc giữ gray nếu bạn thích */
   background-color: #ffffff;
 
-  /* shadow-2xl của Tailwind */
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  /* cho nó là flex nhưng không cần căn giữa nữa */
+  display: block;
+
+  /* bỏ padding để card tràn sát mép */
+  padding: 0;
+  box-sizing: border-box;
 }
+
+.profile-card {
+  /* full chiều ngang */
+  width: 100%;
+  max-width: none;
+
+  /* tràn màn hình nên không cần bo góc, border, shadow */
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+
+  /* vẫn giữ overflow nếu cần */
+  overflow: hidden;
+
+  /* nền trắng */
+  background-color: #ffffff;
+}
+
 /* Cover phía trên profile */
 .profile-cover {
   position: relative;          /* relative */
@@ -113,11 +108,12 @@
 
 /* Khối avatar nằm giữa, trồi xuống dưới cover */
 .profile-avatar-container {
-  position: absolute;          /* absolute */
-  bottom: -3rem;               /* -bottom-12 (12 * 0.25rem = 3rem) */
-  left: 50%;                   /* left-1/2 */
-  transform: translateX(-50%); /* -translate-x-1/2 */
+  position: absolute;
+  top: 1rem;        /* cách trên 1rem */
+  left: 1rem;       /* cách trái 1rem */
+  transform: none;  /* bỏ translateX(-50%) */
 }
+
 
 /* Bao ngoài avatar để đặt glow */
 .profile-avatar-wrapper {
@@ -150,4 +146,173 @@
   /* shadow-xl gần giống Tailwind */
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
               0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+.friends-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* gap-3 */
+}
+
+/* sm: breakpoint ~640px */
+@media (min-width: 640px) {
+  .friends-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.friends-title {
+  font-size: 1.125rem; /* text-lg */
+  line-height: 1.75rem;
+  font-weight: 600; /* font-semibold */
+  color: #111827; /* text-gray-900 */
+}
+
+.friends-subtitle {
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.25rem;
+  color: #6b7280; /* text-gray-500 */
+}
+
+.friends-search-wrapper {
+  width: 100%;
+  max-width: 20rem; /* max-w-xs */
+}
+
+.friends-search-input {
+  width: 100%;
+  border-radius: 9999px; /* rounded-full */
+  border: 1px solid #d1d5db; /* border-gray-300 */
+  background-color: #ffffff;
+  padding: 0.5rem 1rem; /* py-2 px-4 */
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.25rem;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* focus:border-sky-500 + focus:ring-2 focus:ring-sky-200 */
+.friends-search-input:focus {
+  border-color: #0ea5e9; /* sky-500 */
+  box-shadow: 0 0 0 2px #bae6fd; /* sky-200 */
+}
+
+.friends-grid {
+  display: grid;
+  gap: 1rem; /* gap-4 */
+}
+
+/* sm:grid-cols-2 => từ 640px trở lên thì 2 cột */
+@media (min-width: 640px) {
+  .friends-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.friend-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* gap-4 */
+  border-radius: 1rem; /* rounded-2xl */
+  border: 1px solid #e5e7eb; /* border-gray-200 */
+  background-color: rgba(255, 255, 255, 0.8); /* bg-white/80 */
+  padding: 1rem; /* p-4 */
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06); /* shadow-sm */
+  transition: transform 150ms ease, box-shadow 150ms ease; /* transition */
+}
+
+.friend-card:hover {
+  transform: translateY(-2px); /* hover:-translate-y-0.5 */
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12); /* hover:shadow-md */
+}
+
+/* Avatar */
+.friend-avatar-wrapper {
+  position: relative;
+}
+
+.friend-avatar {
+  height: 3rem; /* h-12 */
+  width: 3rem; /* w-12 */
+  border-radius: 9999px; /* rounded-full */
+  object-fit: cover; /* object-cover */
+}
+
+.friend-status-dot {
+  position: absolute;
+  bottom: -0.25rem; /* -bottom-1 */
+  right: -0.25rem; /* -right-1 */
+  height: 0.75rem; /* h-3 */
+  width: 0.75rem; /* w-3 */
+  border-radius: 9999px;
+  border: 2px solid #ffffff; /* border-2 border-white */
+  background-color: #34d399; /* bg-emerald-400 */
+}
+
+/* Info */
+.friend-info {
+  flex: 1; /* flex-1 */
+}
+
+.friend-name {
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.25rem;
+  font-weight: 600; /* font-semibold */
+  color: #111827; /* text-gray-900 */
+}
+
+.friend-username {
+  font-size: 0.75rem; /* text-xs */
+  line-height: 1rem;
+  color: #6b7280; /* text-gray-500 */
+}
+
+.friend-mutual {
+  margin-top: 0.25rem; /* mt-1 */
+  font-size: 0.75rem; /* text-xs */
+  line-height: 1rem;
+  color: #9ca3af; /* text-gray-400 */
+}
+
+/* Buttons */
+.btn-unfriend {
+  border-radius: 9999px; /* rounded-full */
+  border: 1px solid #fecaca; /* border-red-200 */
+  background-color: #fef2f2; /* bg-red-50 */
+  padding: 0.25rem 0.75rem; /* py-1 px-3 */
+  font-size: 0.75rem; /* text-xs */
+  line-height: 1rem;
+  font-weight: 500; /* font-medium */
+  color: #dc2626; /* text-red-600 */
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 100ms ease;
+}
+
+.btn-unfriend:hover {
+  background-color: #fee2e2; /* hover:bg-red-100 */
+}
+
+.btn-unfriend:active {
+  transform: scale(0.95); /* active:scale-95 */
+}
+
+.btn-add-friend {
+  border-radius: 9999px; /* rounded-full */
+  background-color: #0ea5e9; /* bg-sky-500 */
+  padding: 0.25rem 0.75rem; /* py-1 px-3 */
+  font-size: 0.75rem; /* text-xs */
+  line-height: 1rem;
+  font-weight: 500; /* font-medium */
+  color: #ffffff; /* text-white */
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12); /* shadow */
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 100ms ease;
+}
+
+.btn-add-friend:hover {
+  background-color: #0284c7; /* hover:bg-sky-600 */
+}
+
+.btn-add-friend:active {
+  transform: scale(0.95); /* active:scale-95 */
 }
