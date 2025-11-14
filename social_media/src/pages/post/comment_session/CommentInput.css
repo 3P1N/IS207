@@ -1,0 +1,8 @@
+/* Make placeholder text more faded/muted */
+.form-textarea::placeholder {
+  opacity: 0.5;
+}
+
+.dark .form-textarea::placeholder {
+  opacity: 0.5;
+}

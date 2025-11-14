@@ -63,7 +63,7 @@ const IS_CURRENT_USER_POST = true;
 export default function PostDetailPage() {
     return (
         // ...
-        
+        <div>
         <PostCard
             post={mockPostData}
             isOwner={IS_CURRENT_USER_POST} // <-- Luôn là TRUE
@@ -73,6 +73,8 @@ export default function PostDetailPage() {
             currentUserProfile={currentUserId.profilePicture}
 
         />
+    <CommentsSection/>
+        </div>
            
         // ...
     );

@@ -1,9 +1,18 @@
 // src/components/Post/PostActionsBar.jsx
+import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
+import ThumbUpAltIcon from "@mui/icons-material/ThumbUpAlt";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import { useState } from "react";
 
 export default function PostActionsBar({ likes, comments, shares, isLiked }) {
-    const likeButtonClass = isLiked 
-        ? "text-primary bg-primary/20 hover:bg-primary/30" 
-        : "text-text-light-secondary dark:text-text-dark-secondary hover:bg-hover-light dark:hover:bg-hover-dark";
+
+
+    const [liked, setLiked] = useState(isLiked);
+
+    const handleLike = () => {
+        setLiked(!liked);
+    }
+
 
     return (
         <>
@@ -12,13 +21,7 @@ export default function PostActionsBar({ likes, comments, shares, isLiked }) {
                 <div className="flex items-center gap-2">
                     <div className="flex items-center">
                         {/* Biểu tượng Likes */}
-                        <div className="flex items-center justify-center size-5 rounded-full bg-primary text-white border-2 border-card-light dark:border-card-dark -mr-1">
-                            {/* <span className="material-symbols-outlined text-xs">thumb_up</span> */}
-                        </div>
-                        {/* Biểu tượng Love (Ví dụ) */}
-                        <div className="flex items-center justify-center size-5 rounded-full bg-red-500 text-white border-2 border-card-light dark:border-card-dark">
-                            {/* <span className="material-symbols-outlined text-xs">favorite</span> */}
-                        </div>
+                        <ThumbUpAltOutlinedIcon />
                     </div>
                     <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm font-normal">{likes}</p>
                 </div>
@@ -30,15 +33,37 @@ export default function PostActionsBar({ likes, comments, shares, isLiked }) {
 
             {/* Action Buttons */}
             <div className="grid grid-cols-3 gap-1 px-2 py-1">
-                <button 
-                    className={`flex items-center justify-center gap-2 h-10 rounded-lg ${likeButtonClass}`}
-                    onClick={() => console.log('Toggle Like')}
+                <button
+                    className={`
+                        flex items-center justify-center gap-2 h-10 rounded-lg cursor-pointer
+                        transition-all
+                        hover:bg-gray-100 dark:hover:bg-gray-700
+                    `}
+                    onClick={handleLike}
                 >
-                    {/* <span className="material-symbols-outlined">thumb_up</span> */}
+                    {liked ? (
+                        <ThumbUpAltIcon fontSize="small" className="text-primary transition-all" />
+                    ) : (
+                        <ThumbUpAltOutlinedIcon
+                            fontSize="small"
+                            className="text-gray-500 dark:text-gray-300 transition-all group-hover:text-primary"
+                        />
+                    )}
                     <span className="font-semibold text-sm">Like</span>
                 </button>
-                <button className="flex items-center justify-center gap-2 h-10 rounded-lg text-text-light-secondary dark:text-text-dark-secondary hover:bg-hover-light dark:hover:bg-hover-dark">
-                    {/* <span className="material-symbols-outlined">chat_bubble_outline</span> */}
+
+                <button
+                    className="
+                        flex items-center justify-center gap-2 h-10 rounded-lg
+                        cursor-pointer transition-all
+                        text-text-light-secondary dark:text-text-dark-secondary
+                        hover:bg-gray-100 dark:hover:bg-gray-700
+                    "
+                >
+                    <ChatBubbleOutlineIcon
+                        fontSize="small"
+                        className="transition-all text-inherit group-hover:text-primary"
+                    />
                     <span className="font-semibold text-sm">Comment</span>
                 </button>
                 <button className="flex items-center justify-center gap-2 h-10 rounded-lg text-text-light-secondary dark:text-text-dark-secondary hover:bg-hover-light dark:hover:bg-hover-dark">
