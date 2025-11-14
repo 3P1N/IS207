@@ -129,18 +129,10 @@ export default function PostCreate() {
                                     className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-green-500 cursor-pointer" 
                                     title="Add Photo/Video"
                                 >
-                                    <span className="material-symbols-outlined">photo_library</span>
+                                    <span className="material-symbols-outlined">thêm ảnh</span>
                                 </label>
 
-                                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-primary" title="Tag Friends">
-                                    <span className="material-symbols-outlined">person_add</span>
-                                </button>
-                                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-yellow-500" title="Feeling/Activity">
-                                    <span className="material-symbols-outlined">mood</span>
-                                </button>
-                                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500" title="Check In">
-                                    <span className="material-symbols-outlined">location_on</span>
-                                </button>
+                             
                             </div>
                         </div>
                         
@@ -171,8 +163,9 @@ export default function PostCreate() {
                             <button 
                                 className={`flex-1 w-full max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-white text-sm font-bold ${
                                     isPostButtonDisabled 
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-primary hover:bg-primary/90'
+                                        ? 'bg-primary hover:bg-primary/90'
+                                        : 'bg-gray-400 cursor-not-allowed'
+                                        
                                 }`}
                                 onClick={handlePost}
                                 disabled={isPostButtonDisabled}

@@ -10,6 +10,7 @@ export default function PostCard({ post }) {
             <PostHeader 
                 author={post.author.name}
                 timeAgo={post.timeAgo}
+                isOwner={false}
                 profileUrl={post.author.profilePicture}
             />
 

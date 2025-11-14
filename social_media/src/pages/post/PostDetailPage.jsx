@@ -1,7 +1,7 @@
 // src/components/Post/PostDetailPage.jsx
-import PostCard from "./PostCard.jsx"; 
+import PostCard from "./PostCard.jsx";
 import CommentsSection from "./comment_session/CommentsSection.jsx";
-
+// import {handleEdit} from "./PostCard.jsx"
 // Dữ liệu Mẫu (Mock Data)
 const mockPostData = {
     id: 1,
@@ -55,7 +55,7 @@ const currentUserId = { profilePicture: 'https://lh3.googleusercontent.com/aida-
 // ===============================================
 // Đặt là TRUE, vì file này mô phỏng việc xem bài viết của mình
 // (hoặc trang chi tiết cá nhân)
-const IS_CURRENT_USER_POST = true; 
+const IS_CURRENT_USER_POST = true;
 // ===============================================
 
 // ... (các hàm handleEdit, handleReport giữ nguyên) ...
@@ -63,14 +63,17 @@ const IS_CURRENT_USER_POST = true;
 export default function PostDetailPage() {
     return (
         // ...
-        <PostCard 
-            post={mockPostData} 
+        
+        <PostCard
+            post={mockPostData}
             isOwner={IS_CURRENT_USER_POST} // <-- Luôn là TRUE
-            onEdit={handleEdit}
-            onReport={handleReport} // Report vẫn được truyền nhưng sẽ không được dùng do isOwner=true
-            mockComments={mockComments} 
+            // onEdit={handleEdit}
+            // onReport={handleReport} // Report vẫn được truyền nhưng sẽ không được dùng do isOwner=true
+            mockComments={mockComments}
             currentUserProfile={currentUserId.profilePicture}
+
         />
+           
         // ...
     );
 }

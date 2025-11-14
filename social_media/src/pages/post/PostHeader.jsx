@@ -1,24 +1,36 @@
-// src/components/Post/PostHeader.jsx (ĐÃ CHỈNH SỬA)
+import { IconButton, } from "@mui/material";
 
-// Thêm các props mới: isOwner, onEdit, onReport
 export default function PostHeader({ author, timeAgo, profileUrl, isOwner, onEdit, onReport }) {
-    
-    // 1. Khởi tạo giá trị mặc định cho nút tùy chọn
-    let icon = "..."; 
+
+    let icon = (
+        <IconButton size="small">
+            <span className="material-symbols-outlined">report</span>
+        </IconButton>
+    );
+
     let action = () => console.log("Default Action: No specific handler provided");
     let label = "More options";
 
-    // 2. Logic điều kiện để hiển thị Edit hay Report
     if (isOwner) {
-        icon = "edit"; // Icon cho chỉnh sửa
+        icon = (
+            <IconButton size="small">
+                <span className="material-symbols-outlined">
+                    edit</span>
+                    {/* <IconButton></IconButton> */}
+            </IconButton>
+        );
         action = onEdit;
         label = "Edit post";
-    } else if (onReport) { // Chỉ hiện nút Report nếu không phải chủ sở hữu và có handler
-        icon = "flag"; // Icon cho báo cáo (report/flag)
+    } else if (onReport) {
+        icon = (
+            <IconButton size="small">
+                <span className="material-symbols-outlined">flag</span>
+            </IconButton>
+        );
         action = onReport;
         label = "Report post";
     }
-    
+
     return (
         <div className="flex items-center gap-3 bg-card-light dark:bg-card-dark px-4 pt-4 pb-2 justify-between">
             <div className="flex items-center gap-3">
@@ -36,16 +48,9 @@ export default function PostHeader({ author, timeAgo, profileUrl, isOwner, onEdi
                     </p>
                 </div>
             </div>
-            <div className="shrink-0">
-                {/* Nút Tùy Chọn */}
-                <button 
-                    className="text-text-light-secondary dark:text-text-dark-secondary flex size-8 items-center justify-center rounded-full hover:bg-hover-light dark:hover:bg-hover-dark"
-                    onClick={action} // Gắn action đã chọn (Edit hoặc Report)
-                    aria-label={label}
-                >
-                    {/* BỎ COMMENT để Material Icon hiển thị */}
-                    <span className="material-symbols-outlined">{icon}</span>
-                </button>
+
+            <div className="shrink-0" onClick={action} aria-label={label}>
+                {icon}
             </div>
         </div>
     );
