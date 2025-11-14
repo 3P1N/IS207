@@ -1,0 +1,7 @@
+.post-textarea::placeholder {
+  color: rgba(101,103,107,0.55);
+}
+
+.dark .post-textarea::placeholder {
+  color: rgba(168,170,173,0.38);
+}

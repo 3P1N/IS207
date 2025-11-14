@@ -1,4 +1,4 @@
-@import "tailwindcss";
+/* @import "tailwindcss"; */
 .profile-tabs {
   display: flex;
   gap: 2rem;
