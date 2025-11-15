@@ -1,6 +1,8 @@
 // src/components/Post/CommentsSection/CommentItem.jsx
 import CommentInput from './CommentInput'; // Sử dụng CommentInput cho phần Reply
 
+
+
 export default function CommentItem({ comment }) {
     // Giả định comment.replies là mảng các reply
     const hasReplies = comment.replies && comment.replies.length > 0;

@@ -36,6 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
     // Route::get('/posts', [App\Http\Controllers\Api\PostController::class, 'index']);
     Route::post('/posts', [App\Http\Controllers\Api\PostController::class, 'store']);
+    Route::post('/posts/{id}/media', [App\Http\Controllers\Api\MediaController::class, 'store']);
     // Route::get('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'show']);
     // Route::put('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'update']);
     // Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);

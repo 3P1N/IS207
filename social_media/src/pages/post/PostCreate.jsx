@@ -1,22 +1,65 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import './PostCreate.css';
 import { IconButton, Tooltip } from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import { AuthContext } from '../../router/AuthProvider';
+import { api } from '../../shared/api';
+
 
 export default function PostCreate() {
 
-    // 1. STATE MANAGEMENT
+    const { userData, token } = useContext(AuthContext);
     const [postContent, setPostContent] = useState('');
     // State lưu trữ các đối tượng file đã chọn (bao gồm cả URL tạm thời cho preview)
     const [mediaFiles, setMediaFiles] = useState([]);
+    const [loadingPost, setLoadingPost] = useState(false);
+    const [idPost, setIdPost] = useState();
 
-    // Dữ liệu mẫu cứng cho người dùng hiện tại
-    const currentUser = {
-        name: "Alex Miller",
-        profilePicture: "https://lh3.googleusercontent.com/aida-public/AB6AXuA0ZZ_as3C9WDHTLF7lkX0AFwM12P7yjtCFjDygFT_780bEAJfDN2TRPO1J_PNENKBPWv4rMMH1UEZCvwEM6sga-w8sz2vjmlv23tagyYScuGLfadO3vsB7X9M6HHxHKw_6vS4h8SC12WvHDyhq6lUIzTKXmUI44JUUtoaPBJFmNXHgR9lAZ8kUf9Z_HOxJ3BPWaij0pr-xEADXPRWRYw_aaa2Tvk2vYsfbemkwDWsMHaYcpJ9KJs4ZlM0qcIFZQ4gvhVwRlOVi5Ko"
+    const [urlMedia, setUrlMedia] = useState([]);
+
+
+    const uploadPost = async (urls) => {
+        try {
+            const response = await api.post(`/posts`,
+
+                {
+                    content: postContent,
+                    media_url: urls,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            console.log(response.data);
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    // 2. HANDLER FUNCTIONS
+
+    const uploadMultipleFilesParallel = async (files) => {
+        const uploadPromises = files.map(file => {
+            const formData = new FormData();
+            formData.append('file', file.file);
+            formData.append('upload_preset', '3P1N-PMIT');
+            formData.append('cloud_name', 'dezlofvj8');
+
+            return fetch(import.meta.env.VITE_CLOUDINARY_UPLOAD_URL, {
+                method: 'POST',
+                body: formData,
+            }).then(res => res.json());
+        });
+
+        const results = await Promise.all(uploadPromises);
+        const urls = results.map(r => r.secure_url);
+        setUrlMedia(urls);   // vẫn update state nếu muốn UI
+        // console.log(urls);
+        return urls;          // ✅ return để dùng ngay
+    };
+
+
 
     // Hàm xử lý việc chọn file media
     const handleMediaChange = (event) => {
@@ -31,7 +74,6 @@ export default function PostCreate() {
         }));
 
         setMediaFiles(prevFiles => [...prevFiles, ...newMedia]);
-
         // Xóa giá trị input để người dùng có thể chọn cùng một file lần nữa
         event.target.value = null;
     };
@@ -43,27 +85,33 @@ export default function PostCreate() {
 
         setMediaFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
     };
-
     // Hàm xử lý việc gửi bài viết (trong thực tế sẽ là API call)
-    const handlePost = () => {
-        console.log(isPostButtonDisabled);
+    const handlePost = async () => {
         if (!postContent.trim() && mediaFiles.length === 0) {
             alert("Vui lòng nhập nội dung hoặc thêm ảnh/video.");
             return;
         }
 
-        // *******************************************************************
-        // LOGIC GỬI LÊN BACKEND (LARAVEL):
-        // Bạn sẽ sử dụng 'mediaFiles.map(m => m.file)' để lấy các File objects
-        // và gửi chúng cùng với postContent qua API sử dụng FormData.
-        // *******************************************************************
+        setLoadingPost(true);
 
-        console.log("Đang gửi bài viết...");
-        // Reset form sau khi gửi
-        setPostContent('');
-        setMediaFiles([]);
-        alert("Bài viết đã được gửi thành công (Mock Post)!");
+        try {
+            // upload file, nhận array URL đầy đủ
+            const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
+
+            // gửi post cùng array URL
+            await uploadPost(uploadedUrls);
+
+            // reset form
+            setPostContent('');
+            setMediaFiles([]);
+            setUrlMedia([]);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingPost(false);
+        }
     };
+
 
     // 3. LOGIC BIẾN
 
@@ -90,10 +138,10 @@ export default function PostCreate() {
                             <div
                                 className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0"
                                 data-alt="User avatar"
-                                style={{ backgroundImage: `url("${currentUser.profilePicture}")` }}
+                                style={{ backgroundImage: `url("https://i.pravatar.cc/150?img=3")` }}
                             />
                             <div className="flex-grow">
-                                <p className="font-bold text-[#1C1E21] dark:text-white">{currentUser.name}</p>
+                                <p className="font-bold text-[#1C1E21] dark:text-white">{userData.name}</p>
 
                             </div>
                         </div>
@@ -102,7 +150,7 @@ export default function PostCreate() {
                         <div className="mt-4">
                             <textarea
                                 className="post-textarea w-full min-h-[120px] resize-none border-none outline-none focus:ring-0 bg-transparent p-0 text-base leading-relaxed caret-current cursor-text text-[#1C1E21] dark:text-white"
-                                placeholder={`What's on your mind, ${currentUser.name}?`}
+                                placeholder={`What's on your mind, ${userData.name}?`}
                                 value={postContent}
                                 onChange={(e) => setPostContent(e.target.value)}
                             />
