@@ -2,7 +2,12 @@
 import { Outlet, NavLink } from "react-router-dom";
 
 import AvatarUser from "../../shared/components/AvatarUser";
+import { useContext } from "react";
+import { AuthContext } from "../../router/AuthProvider";
 export default function ProfileLayout() {
+
+  const {userData} = useContext(AuthContext);
+
   return (
     <div className="profile-layout">
       <div className="profile-card">
@@ -18,7 +23,7 @@ export default function ProfileLayout() {
               <div className="profile-avatar-wrapper">
                 <div className="profile-avatar-glow" />
                 <div className="profile-avatar-frame">
-                  <AvatarUser id="2" name="User" />
+                  <AvatarUser userData={userData} />
                 </div>
               </div>
             </div>

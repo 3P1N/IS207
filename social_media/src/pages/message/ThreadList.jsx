@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState, useEffect, useContext, useMemo } from "react";
-import { List, ListItemButton, ListItemText, ListItemAvatar, Avatar } from "@mui/material";
+import { List, ListItemButton, ListItemText, ListItemAvatar, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import ChatIcon from "@mui/icons-material/Chat";
 import AvatarUser from "../../shared/components/AvatarUser";
@@ -10,6 +10,7 @@ import { api } from "../../shared/api";
 export default function ThreadList() {
   const { token, userData } = useContext(AuthContext);
   const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(false);
   const meId = userData ? userData.id : null;
   useEffect(() => {
     const fetchThreads = async () => {
@@ -22,6 +23,7 @@ export default function ThreadList() {
 
   const getThreads = async () => {
     // Gọi API để lấy danh sách cuộc trò chuyện
+    setLoading(true);
     try {
       const response = await api.get("/conversations", {
         headers: {
@@ -32,23 +34,12 @@ export default function ThreadList() {
     } catch (error) {
       console.error("Error fetching threads:", error);
       return [];
+    }finally{
+      setLoading(false);
     }
+    
   }
 
-  const mockThreads = [
-    { id: 1, name: "Nguyễn Văn A", avatar: "image.png" },
-    { id: 2, name: "Lê Thị B", avatar: "image.png" },
-    { id: 3, name: "Trần Văn C", avatar: "image.png" },
-    { id: 1, name: "Nguyễn Văn A", avatar: "image.png" },
-    { id: 2, name: "Lê Thị B", avatar: "image.png" },
-    { id: 3, name: "Trần Văn C", avatar: "image.png" },
-    { id: 1, name: "Nguyễn Văn A", avatar: "image.png" },
-    { id: 2, name: "Lê Thị B", avatar: "image.png" },
-    { id: 3, name: "Trần Văn C", avatar: "image.png" },
-    { id: 1, name: "Nguyễn Văn A", avatar: "image.png" },
-    { id: 2, name: "Lê Thị B", avatar: "image.png" },
-    { id: 3, name: "Trần Văn C", avatar: "image.png" },
-  ];
 
   // Chuẩn hoá: lấy tên người còn lại (đối phương) trong cuộc trò chuyện 1-1
   const normalizedThreads = useMemo(() => {
@@ -56,14 +47,14 @@ export default function ThreadList() {
       const participants = Array.isArray(t.participants) ? t.participants : [];
 
       const others = participants.filter((p) => p.user_id !== meId);
-      
+
       const other = others[0]; // 1-1 thì chỉ cần người đầu tiên khác mình
 
       const displayName =
         other?.user?.name
-        ?? ( "Cuộc trò chuyện");
+        ?? ("Cuộc trò chuyện");
 
-        const avatarUrl = other?.user?.avatar || "image.png";
+      const avatarUrl = other?.user?.avatar || "image.png";
 
       // Ưu tiên conversation_id để điều hướng
       const conversationId = t.conversation_id ?? t.id;
@@ -76,28 +67,33 @@ export default function ThreadList() {
     });
   }, [threads, meId]);
 
-  return (
+  return loading ? (
+    <Typography variant="body2" sx={{ color: "text.secondary" }}>
+      Đang tải danh sách tin nhắn...
+    </Typography>
+  ) : (
     <List sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}>
       {normalizedThreads.map((thread) => (
         <ListItemButton
           key={thread.conversationId}
           component={RouterLink}
-          to={`/message/${thread.conversationId}`} // ✅ điều hướng đến /message/:id
+          to={`/message/${thread.conversationId}`}
           sx={{
             borderRadius: 2,
             mb: 0.5,
-            "&.active": { backgroundColor: "#e3f2fd" }, // highlight khi đang mở
+            "&.active": { backgroundColor: "#e3f2fd" },
           }}
         >
           <ListItemAvatar>
-            <Avatar>
-              <AvatarUser img={thread.avatarUrl} />
-            </Avatar>
+            <AvatarUser userData={{ name: thread.displayName, avatarUrl: thread.avatarUrl, id: thread.conversationId }} />
           </ListItemAvatar>
-          <ListItemText primary={thread.displayName} secondary={`Tin nhắn gần nhất...`} />
-
+          <ListItemText
+            primary={thread.displayName}
+            secondary={`Tin nhắn gần nhất...`}
+          />
         </ListItemButton>
       ))}
     </List>
   );
+
 }

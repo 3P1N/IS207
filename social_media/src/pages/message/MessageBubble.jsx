@@ -1,10 +1,11 @@
 // src/shared/components/MessageBubble.jsx
 import React from "react";
 import { Box, Typography, Avatar } from "@mui/material";
+import AvatarUser from "../../shared/components/AvatarUser";
 
 export default function MessageBubble({ message }) {
   const { sender, content, mine } = message;
-
+  // console.log(message);
   return (
     <Box
       sx={{
@@ -15,13 +16,7 @@ export default function MessageBubble({ message }) {
       }}
     >
       {!mine && (
-          <Avatar
-            alt={sender.name}
-            src={sender.avatarUrl || "/static/images/avatar/1.jpg"}
-            sx={{ width: 30, height: 30 }}
-          >
-            {!sender.avatarUrl && sender.name[0].toUpperCase()}
-          </Avatar>
+          <AvatarUser userData={sender}/>
         
       )}
       

@@ -1,12 +1,14 @@
 import React, { useContext, useState } from "react";
 import { AppBar, Toolbar, Typography, Box, IconButton, Avatar, Button, InputBase } from "@mui/material";
-import { Home, Explore, Message, Logout, Login, Search, Settings, AddCircle } from "@mui/icons-material";
+import { Home, Explore, Message, Logout, Login, Search, Settings, AddCircle, AdminPanelSettings } from "@mui/icons-material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AvatarUser from "./AvatarUser";
+import { AuthContext } from "../../router/AuthProvider";
 
 export default function Navbar() {
     const [keyword, setKeyword] = useState("");
     const navigate = useNavigate();
+    const { userData } = useContext(AuthContext);
     const handleKeyPress = (e) => {
         if (e.key === "Enter" && keyword.trim() !== "") {
             navigate(`/search?query=${encodeURIComponent(keyword.trim())}`);
@@ -63,11 +65,16 @@ export default function Navbar() {
                     <IconButton component={RouterLink} to="/create-post" color="primary">
                         <AddCircle />
                     </IconButton>
+                    {userData.role === "admin" && (
+                        <IconButton component={RouterLink} to="/admin" color="primary">
+                            <AdminPanelSettings />
+                        </IconButton>
+                    )}
 
                     <IconButton component={RouterLink} to="/setting" color="primary">
                         <Settings />
                     </IconButton>
-                    <AvatarUser id="2" name="User" />
+                    <AvatarUser userData={userData} />
 
 
                     {/* Nếu user đã login */}

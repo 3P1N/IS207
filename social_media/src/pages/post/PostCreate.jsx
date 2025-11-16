@@ -1,19 +1,24 @@
 import React, { useContext, useState } from 'react';
 import './PostCreate.css';
-import { IconButton, Tooltip } from "@mui/material";
+import { IconButton, Tooltip, CircularProgress, Snackbar, Alert } from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { AuthContext } from '../../router/AuthProvider';
 import { api } from '../../shared/api';
-
+import { Navigate, useNavigate } from 'react-router-dom';
+import AvatarUser from '../../shared/components/AvatarUser';
 
 export default function PostCreate() {
 
     const { userData, token } = useContext(AuthContext);
     const [postContent, setPostContent] = useState('');
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+
     // State lưu trữ các đối tượng file đã chọn (bao gồm cả URL tạm thời cho preview)
     const [mediaFiles, setMediaFiles] = useState([]);
     const [loadingPost, setLoadingPost] = useState(false);
     const [idPost, setIdPost] = useState();
+    const navigate = useNavigate();
 
     const [urlMedia, setUrlMedia] = useState([]);
 
@@ -105,12 +110,25 @@ export default function PostCreate() {
             setPostContent('');
             setMediaFiles([]);
             setUrlMedia([]);
+
+            // hiện thông báo thành công
+            setSnackbarMessage("Đăng bài thành công!");
+            setOpenSnackbar(true);
+
+            // chờ 1.5s rồi điều hướng về home
+            setTimeout(() => {
+                navigate("/home");
+            }, 1500);
+
         } catch (err) {
             console.error(err);
+            setSnackbarMessage("Đăng bài thất bại. Vui lòng thử lại.");
+            setOpenSnackbar(true);
         } finally {
             setLoadingPost(false);
         }
     };
+
 
 
     // 3. LOGIC BIẾN
@@ -120,6 +138,26 @@ export default function PostCreate() {
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+            {loadingPost && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30">
+                    <CircularProgress color="primary" />
+                </div>
+            )}
+            <Snackbar
+                open={openSnackbar}
+                autoHideDuration={2000}
+                onClose={() => setOpenSnackbar(false)}
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            >
+                <Alert
+                    onClose={() => setOpenSnackbar(false)}
+                    severity="success"
+                    sx={{ width: "100%" }}
+                >
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
+
             <main className="flex-grow w-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
                 <div className="w-full max-w-lg">
                     {/* Hộp Modal/Card tạo bài viết */}
@@ -135,14 +173,9 @@ export default function PostCreate() {
 
                         {/* User Info & Visibility (Giữ nguyên) */}
                         <div className="flex items-start gap-4 pt-4">
-                            <div
-                                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0"
-                                data-alt="User avatar"
-                                style={{ backgroundImage: `url("https://i.pravatar.cc/150?img=3")` }}
-                            />
-                            <div className="flex-grow">
-                                <p className="font-bold text-[#1C1E21] dark:text-white">{userData.name}</p>
-
+                            <div>
+                                <AvatarUser userData={userData} />
+                                 <p className="font-bold text-[#1C1E21] dark:text-white">{userData.name}</p>
                             </div>
                         </div>
 

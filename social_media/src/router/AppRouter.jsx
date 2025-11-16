@@ -3,8 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import ExplorePage from "../pages/explore/ExplorePage";
 import HomePage from "../pages/home/HomePage";
-import MessagePage from "../pages/message/MessagePage";
-import ProfilePage from "../pages/profile/ProfilePage";
+
 import LoginForm from "../pages/auth/login-form";
 import SignupForm from "../pages/auth/signup-form";
 import ProfileLayout from "../pages/profile/ProfileLayout";
@@ -14,7 +13,6 @@ import ProfileFriend from "../pages/profile/ProfileFriend";
 import PostDetailPage from "../pages/post/PostDetailPage";
 import ProfileSetting from "../pages/profile/ProfileSetting";
 import MessageLayout from "../pages/message/MessageLayout";
-import ThreadList from "../pages/message/ThreadList";
 import ThreadPage from "../pages/message/ThreadPage";
 import AdminLayout from "../pages/admin/AdminLayout";
 import UsersAdminPage from "../pages/admin/UsersAdminPage";
