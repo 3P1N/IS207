@@ -3,16 +3,16 @@ import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
 import ThumbUpAltIcon from "@mui/icons-material/ThumbUpAlt";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function PostActionsBar({ likes, comments, shares, isLiked }) {
 
-
+export default function PostActionsBar({ likes, comments, shares, isLiked, postId }) {
+    const navigate = useNavigate();
     const [liked, setLiked] = useState(isLiked);
 
     const handleLike = () => {
         setLiked(!liked);
     }
-
 
     return (
         <>
@@ -59,6 +59,7 @@ export default function PostActionsBar({ likes, comments, shares, isLiked }) {
                         text-text-light-secondary dark:text-text-dark-secondary
                         hover:bg-gray-100 dark:hover:bg-gray-700
                     "
+                      onClick={() => navigate(`/post/${postId}`)}
                 >
                     <ChatBubbleOutlineIcon
                         fontSize="small"

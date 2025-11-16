@@ -12,15 +12,15 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import FlagIcon from "@mui/icons-material/Flag";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 
-export default function PostHeader({
-  author,
-  timeAgo,
-  profileUrl,
-  isOwner,
-  onEdit,
-  onDelete,
-  onReport
-}) {
+// author,
+//   timeAgo,
+//   profileUrl,
+//   isOwner,
+//   onEdit,
+//   onDelete,
+//   onReport
+
+export default function PostHeader({ headerData }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -56,14 +56,14 @@ export default function PostHeader({
       <div className="flex items-center gap-3">
         <div
           className="bg-center bg-no-repeat bg-cover rounded-full h-12 w-12"
-          style={{ backgroundImage: `url(${profileUrl})` }}
+          style={{ backgroundImage: `url(${headerData?.profileUrl})` }}
         />
         <div className="flex flex-col justify-center">
           <p className="text-text-light-primary dark:text-text-dark-primary text-base font-semibold">
-            {author}
+            {headerData?.author}
           </p>
           <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm">
-            {timeAgo}
+            {headerData?.timeAgo}
           </p>
         </div>
       </div>
@@ -81,35 +81,31 @@ export default function PostHeader({
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        {/* Owner menu */}
-        {isOwner && (
-          <>
-            <MenuItem onClick={handleEdit}>
+        {headerData?.isOwner
+          ? [
+            <MenuItem key="edit" onClick={handleEdit}>
               <ListItemIcon>
                 <EditIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText>Edit Post</ListItemText>
-            </MenuItem>
-
-            <MenuItem onClick={handleDelete}>
+            </MenuItem>,
+            <MenuItem key="delete" onClick={handleDelete}>
               <ListItemIcon>
                 <DeleteIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText>Delete Post</ListItemText>
             </MenuItem>
-          </>
-        )}
-
-        {/* Non-owner menu */}
-        {!isOwner && (
-          <MenuItem onClick={handleReport}>
-            <ListItemIcon>
-              <FlagIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Report Post</ListItemText>
-          </MenuItem>
-        )}
+          ]
+          : (
+            <MenuItem onClick={handleReport}>
+              <ListItemIcon>
+                <FlagIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Report Post</ListItemText>
+            </MenuItem>
+          )}
       </Menu>
+
     </div>
   );
 }

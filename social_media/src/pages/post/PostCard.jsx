@@ -1,44 +1,55 @@
 // src/components/Post/PostCard.jsx
+import { useContext, useEffect, useState } from 'react';
 import PostHeader from './PostHeader';
 import PostActionsBar from './PostActionsBar';
+import { AuthContext } from '../../router/AuthProvider';
 
-export default function PostCard({ post }) {
+export default function PostCard({ postData }) {
+
+    if (!postData) return null;
+
+    const [headerData, setHeaderData] = useState(null);
+    const {userData} = useContext(AuthContext);
+
+
+    useEffect(() => {
+        if (!postData.user) return;
+        setHeaderData({
+            author: postData.user.name,
+            timeAgo: "2 giờ trước", // tạm placeholder
+            isOwner: userData.id === postData.user.id,
+            profileUrl: "https://icons.veryicon.com/png/o/miscellaneous/user-avatar/user-avatar-male-5.png"
+        })
+    }, [postData]);
+
     return (
         <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm overflow-hidden">
-            
-            {/* 1. Header (Author, Time, More) */}
-            <PostHeader 
-                author={post.author.name}
-                timeAgo={post.timeAgo}
-                isOwner={true}
-                profileUrl={post.author.profilePicture}
-            />
 
-            {/* 2. Content (Text) */}
-            <p className="text-text-light-primary dark:text-text-dark-primary text-base font-normal leading-relaxed pb-3 pt-1 px-4">
-                {post.content}
+            {/* Header */}
+            <PostHeader headerData={headerData} />
+
+            {/* Content */}
+            <p className="text-base px-4 py-2">
+                {postData.content}
             </p>
 
-            {/* 3. Media (Images) */}
-            <div className="flex w-full grow bg-card-light dark:bg-card-dark">
-                <div className="w-full gap-1 overflow-hidden bg-card-light dark:bg-card-dark grid grid-cols-2">
-                    {post.media.map((item, index) => (
-                        <div
-                            key={index}
-                            className="w-full bg-center bg-no-repeat bg-cover aspect-square rounded-none"
-                            data-alt={item.alt}
-                            style={{ backgroundImage: `url(${item.url})` }}
-                        />
-                    ))}
-                </div>
+            {/* Media */}
+            <div className="grid grid-cols-2 gap-1 px-2">
+                {postData.media?.map((item, index) => (
+                    <div
+                        key={index}
+                        className="aspect-square bg-cover bg-center"
+                        style={{ backgroundImage: `url(${item.media_url})` }}
+                    />
+                ))}
             </div>
 
-            {/* 4. Action Bar (Stats & Buttons) */}
-            <PostActionsBar 
-                likes={post.stats.likes}
-                comments={post.stats.comments}
-                shares={post.stats.shares}
-                isLiked={post.isLiked}
+            {/* Action Bar */}
+            <PostActionsBar
+                likes={postData.reactions_count}
+                comments={postData.comments_count}
+                isLiked={postData.is_liked}
+                postId = {postData.id}
             />
 
         </div>
