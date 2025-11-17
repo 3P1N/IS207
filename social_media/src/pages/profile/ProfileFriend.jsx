@@ -1,5 +1,6 @@
 import './profile.css'
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../../shared/api";
 const MOCK_FRIENDS = [
   {
     id: 1,
@@ -28,6 +29,17 @@ const MOCK_FRIENDS = [
 ];
 
 export default function ProfileFriend() {
+  const [friends,setFriends]= useState([]);
+  const [loading,setLoanding]= useState(false);
+  const getFriends = async()=>{
+    setLoanding(true);
+    try {
+      const response= await api.get("/friend") 
+    } catch (error) {
+      
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header + search */}
