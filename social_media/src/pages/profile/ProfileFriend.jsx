@@ -1,6 +1,8 @@
 import './profile.css'
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { api } from "../../shared/api";
+import { AuthContext } from "../../router/AuthProvider";
+import AvatarUser from '../../shared/components/AvatarUser';
 const MOCK_FRIENDS = [
   {
     id: 1,
@@ -31,14 +33,23 @@ const MOCK_FRIENDS = [
 export default function ProfileFriend() {
   const [friends,setFriends]= useState([]);
   const [loading,setLoanding]= useState(false);
+  const { token, userData } = useContext(AuthContext);
   const getFriends = async()=>{
     setLoanding(true);
     try {
-      const response= await api.get("/friend") 
+      const response= await api.get("/friends",{
+        headers: {
+          Authorization: `Bearer ${token}`, // 👈 thêm token tại đây
+        },}) ;
+        console.log(response);
+        setFriends(response.data.friends);
     } catch (error) {
-      
+      console.log(error);
     }
   }
+  useEffect (()=>{
+    getFriends();
+  },[]);
 
   return (
     <div className="space-y-6">
@@ -62,7 +73,7 @@ export default function ProfileFriend() {
 
       {/* Danh sách bạn bè */}
       <div className="friends-grid">
-        {MOCK_FRIENDS.map((friend) => (
+        {friends.map((friend) => (
           <FriendCard key={friend.id} friend={friend} />
         ))}
       </div>
@@ -71,11 +82,11 @@ export default function ProfileFriend() {
 }
 
 function FriendCard({ friend }) {
-  const { name, username, avatar, isFriend, mutual } = friend;
+  const { name, gender, avatarUrl, email} = friend;
 
   // friends | pending | none
   const [friendStatus, setFriendStatus] = useState(
-    isFriend ? "friends" : "none"
+    "friends" 
   );
 
   const handleAddFriend = () => {
@@ -92,11 +103,7 @@ function FriendCard({ friend }) {
     <div className="friend-card">
       {/* Avatar */}
       <div className="friend-avatar-wrapper">
-        <img
-          src={avatar}
-          alt={name}
-          className="friend-avatar"
-        />
+        <AvatarUser userData={friend}/>
         {/* chấm xanh chỉ hiện khi đã là bạn bè */}
         {friendStatus === "friends" && (
           <span className="friend-status-dot" />
@@ -106,9 +113,9 @@ function FriendCard({ friend }) {
       {/* Info */}
       <div className="friend-info">
         <p className="friend-name">{name}</p>
-        <p className="friend-username">{username}</p>
+        <p className="friend-username">{name}</p>
         <p className="friend-mutual">
-          {mutual} bạn chung
+          {name} bạn chung
         </p>
       </div>
 
