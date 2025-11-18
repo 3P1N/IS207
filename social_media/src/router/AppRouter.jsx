@@ -25,6 +25,7 @@ import GuestRouter from "./GuestRouter";
 import SearchResultPage from "../pages/search/SearchResultPage";
 import RoleRoute from "./RoleRoute";
 import PostCreate from "../pages/post/PostCreate";
+import ProfileSuggest from "../pages/profile/ProfileSuggest";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
@@ -52,7 +53,7 @@ export default function AppRouter() {
                             <Route index element={<ProfilePost />} />
                             <Route path="ProfileAbout" element={<ProfileAbout />} />
                             <Route path="ProfileFriend" element={<ProfileFriend />} />
-
+                            <Route path="ProfileSuggest" element={<ProfileSuggest/>}/>
                         </Route>
                         {/* Setting */}
                         <Route path="setting" element={<ProfileSetting />} />

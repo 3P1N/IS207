@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::put('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'update']);
     // Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
     // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+    Route::get('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'show']);
 });
 
 
