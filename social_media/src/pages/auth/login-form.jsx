@@ -25,7 +25,7 @@ export default function LoginForm() {
             setLoading(true);
             await auth.login({ email: formData.email, password: formData.password });
 
-            navigate("/home", { replace: true });
+            navigate("/", { replace: true });
         } catch (error) {
             if (error.response) {
                 console.error("Login failed:", error.response.data);
