@@ -4,6 +4,7 @@ import { Home, Explore, Message, Logout, Login, Search, Settings, AddCircle, Adm
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AvatarUser from "./AvatarUser";
 import { AuthContext } from "../../router/AuthProvider";
+import SettingDropdown from "./SettingDropDown";
 
 export default function Navbar() {
     const [keyword, setKeyword] = useState("");
@@ -71,9 +72,9 @@ export default function Navbar() {
                         </IconButton>
                     )}
 
-                    <IconButton component={RouterLink} to="/setting" color="primary">
-                        <Settings />
-                    </IconButton>
+
+                    <SettingDropdown />
+
                     <AvatarUser userData={userData} />
 
 

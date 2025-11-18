@@ -16,6 +16,7 @@ export default function PostCard({ postData }) {
         if (!postData.user) return;
         setHeaderData({
             author: postData.user.name,
+            id:postData.user.id,
             timeAgo: "2 giờ trước", // tạm placeholder
             isOwner: userData.id === postData.user.id,
             profileUrl: "https://icons.veryicon.com/png/o/miscellaneous/user-avatar/user-avatar-male-5.png"

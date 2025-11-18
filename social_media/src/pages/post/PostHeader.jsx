@@ -11,6 +11,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FlagIcon from "@mui/icons-material/Flag";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import AvatarUser from "../../shared/components/AvatarUser";
 
 // author,
 //   timeAgo,
@@ -54,10 +55,9 @@ export default function PostHeader({ headerData }) {
     <div className="flex items-center gap-3 bg-card-light dark:bg-card-dark px-4 pt-4 pb-2 justify-between">
       {/* Left: Avatar + Info */}
       <div className="flex items-center gap-3">
-        <div
-          className="bg-center bg-no-repeat bg-cover rounded-full h-12 w-12"
-          style={{ backgroundImage: `url(${headerData?.profileUrl})` }}
-        />
+        <>
+          <AvatarUser userData={{name: headerData?.author, avatarUrl: headerData?.avatarUrl, id: headerData?.id}}/>
+        </>
         <div className="flex flex-col justify-center">
           <p className="text-text-light-primary dark:text-text-dark-primary text-base font-semibold">
             {headerData?.author}
