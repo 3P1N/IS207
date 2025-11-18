@@ -23,9 +23,17 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::prefix('auth')->group(function () {
-    // Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
+    Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::middleware('throttle:10,1')->post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
     // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+});
+
+Route::get('/email/verify/{id}/{hash}', [App\Http\Controllers\Api\VerificationController::class, 'verifyStateless'])
+ ->name('verification.verify.stateless');
+
+
+Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
+    return 'Chỉ user đã xác thực email mới vào được';
 });
 
 Route::middleware('auth:sanctum')->group(function () {

@@ -39,4 +39,24 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
         ]);
     }
+    public function register(Request $request){
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+        ]);
+
+        // Gửi email xác thực
+        $user->sendEmailVerificationNotification();
+
+        return response()->json([
+            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực.',
+        ]);
+    }
 }

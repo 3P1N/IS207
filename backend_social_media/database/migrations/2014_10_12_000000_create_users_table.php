@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('name');
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->timestamp('email_verified_at')->nullable()->after('email');
             $table->string('password');
             $table->boolean('is_Violated')->default(false);
             $table->string('avatarUrl', 2048)->default('storage/image.png');
