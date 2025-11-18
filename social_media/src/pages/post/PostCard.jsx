@@ -19,7 +19,7 @@ export default function PostCard({ postData }) {
             id:postData.user.id,
             timeAgo: "2 giờ trước", // tạm placeholder
             isOwner: userData.id === postData.user.id,
-            profileUrl: "https://icons.veryicon.com/png/o/miscellaneous/user-avatar/user-avatar-male-5.png"
+            avatarUrl: postData.user.avatarUrl
         })
     }, [postData]);
 
@@ -27,7 +27,7 @@ export default function PostCard({ postData }) {
         <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm overflow-hidden">
 
             {/* Header */}
-            <PostHeader headerData={headerData} />
+            <PostHeader headerData={headerData} postData={postData} />
 
             {/* Content */}
             <p className="text-base px-4 py-2">

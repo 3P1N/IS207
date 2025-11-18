@@ -26,7 +26,6 @@ export default function PostCreate() {
     const uploadPost = async (urls) => {
         try {
             const response = await api.post(`/posts`,
-
                 {
                     content: postContent,
                     media_url: urls,

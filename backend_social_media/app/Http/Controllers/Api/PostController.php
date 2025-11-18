@@ -71,10 +71,57 @@ class PostController extends Controller
             ->find($index);
         if(!$post){
             return response()->json(['message' => 'Post not found'], 404);
-
         }
         return response()->json($post, 201);
 
+    }
+
+    public function update(Request $request, $index){
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $post = Post::with(['user', 'media', 'comments', 'reactions'])
+            ->find($index);
+        if (!$post) {
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+
+        // Check quyền chỉnh sửa
+        if ($post->user->id !== $user->id) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        // Cập nhật nội dung nếu có
+        if ($request->has('content')) {
+            $post->content = $request->input('content');
+        }
+
+        $post->save();
+
+        // Xử lý media mới (nếu gửi media mới)
+       if ($request->has('media_url') && !empty($request->input('media_url'))) {
+        // Xóa media cũ
+            foreach ($post->media as $media) {
+                $media->delete();
+            }
+
+            // Thêm media mới
+            (new MediaController)->store($request, $post->id);
+        }
+
+        // Load lại quan hệ để trả về
+        $post->load(['media', 'comments', 'reactions', 'user']);
+
+        return response()->json([
+            'message' => 'Post updated successfully',
+            'post' => $post
+        ], 200);
     }
 
 }

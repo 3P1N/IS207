@@ -7,11 +7,11 @@ import {
   ListItemText
 } from "@mui/material";
 
-import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FlagIcon from "@mui/icons-material/Flag";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import AvatarUser from "../../shared/components/AvatarUser";
+import EditPostModal from "./EditPostModal";
 
 // author,
 //   timeAgo,
@@ -21,7 +21,7 @@ import AvatarUser from "../../shared/components/AvatarUser";
 //   onDelete,
 //   onReport
 
-export default function PostHeader({ headerData }) {
+export default function PostHeader({ headerData, postData }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -36,10 +36,6 @@ export default function PostHeader({ headerData }) {
   };
 
   // handlers
-  const handleEdit = () => {
-    handleMenuClose();
-    onEdit && onEdit();
-  };
 
   const handleDelete = () => {
     handleMenuClose();
@@ -56,7 +52,7 @@ export default function PostHeader({ headerData }) {
       {/* Left: Avatar + Info */}
       <div className="flex items-center gap-3">
         <>
-          <AvatarUser userData={{name: headerData?.author, avatarUrl: headerData?.avatarUrl, id: headerData?.id}}/>
+          <AvatarUser userData={{ name: headerData?.author, avatarUrl: headerData?.avatarUrl, id: headerData?.id }} />
         </>
         <div className="flex flex-col justify-center">
           <p className="text-text-light-primary dark:text-text-dark-primary text-base font-semibold">
@@ -83,11 +79,10 @@ export default function PostHeader({ headerData }) {
       >
         {headerData?.isOwner
           ? [
-            <MenuItem key="edit" onClick={handleEdit}>
+            <MenuItem key="edit">
               <ListItemIcon>
-                <EditIcon fontSize="small" />
+                <EditPostModal postData={postData} />
               </ListItemIcon>
-              <ListItemText>Edit Post</ListItemText>
             </MenuItem>,
             <MenuItem key="delete" onClick={handleDelete}>
               <ListItemIcon>
