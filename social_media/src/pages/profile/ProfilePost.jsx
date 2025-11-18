@@ -1,4 +1,7 @@
 // import './profile.css'
+import { useContext, useEffect, useState } from "react";
+import { api } from "../../shared/api";
+import { AuthContext } from "../../router/AuthProvider";
 import PostCard from '../post/PostCard';
 const MOCK_POSTS = [{
   id: 1,
@@ -22,6 +25,71 @@ const MOCK_POSTS = [{
 ];
 
 export default function ProfilePost() {
+    const [posts, setPosts] = useState([]);
+    
+    const [nextPageUrl, setNextPageUrl] = useState(null);
+    
+    const [loading, setLoading] = useState(false);
+    
+    const { token } = useContext(AuthContext);
+
+    const getPostData = async (url = "/posts") => {
+        if (loading) return;
+
+        setLoading(true);
+
+        try {
+            const response = await api.get(url, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            console.log(response.data);
+
+            // response.data = paginate object
+    
+            // response.data.data = array posts
+            setPosts((prev) => {
+                const newPosts = response.data.data.filter(
+                    (p) => !prev.some((old) => old.id === p.id)
+                );
+                return [...prev, ...newPosts];
+            });
+
+
+            // update next_page_url
+            setNextPageUrl(response.data.next_page_url);
+
+        } catch (err) {
+            console.log("lỗi khi tải bài viết: ", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // load trang đầu tiên
+    useEffect(() => {
+        getPostData();
+    }, []); // 👈 thêm dependency rỗng để tránh gọi vô hạn
+
+
+    // scroll listener để auto load
+    useEffect(() => {
+        const handleScroll = () => {
+            if (
+                window.innerHeight + document.documentElement.scrollTop + 50 >=
+                document.documentElement.scrollHeight
+            ) {
+                if (nextPageUrl && !loading) {
+                    getPostData(nextPageUrl);
+                }
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, [nextPageUrl, loading]);
   return (
     <div className="space-y-6">
       {/* Header + filter */}
@@ -44,7 +112,7 @@ export default function ProfilePost() {
 
       {/* Danh sách bài viết */}
       <div className="space-y-4">
-        {MOCK_POSTS.map((post) => (
+        {posts.map((post) => (
           <PostCard key={post.id} post={post} />
         ))}
       </div>

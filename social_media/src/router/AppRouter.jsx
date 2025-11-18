@@ -32,7 +32,7 @@ export default function AppRouter() {
         <BrowserRouter>
             <AuthProvider>
                 <Routes>
-
+                    <Route path="/" element={<Navigate to="/login" replace />} />
                     <Route element={<GuestRouter />}>
                         {/* Đăng nhập, Đăng ký */}
                         <Route element={<AuthLayout />} >
@@ -43,7 +43,7 @@ export default function AppRouter() {
                     {/* <Route element={<ProtectedRoute />}> */}
                     {/* Layout route */}
                     <Route element={<MainLayout />}>
-                        <Route index element={<HomePage />} />
+                        <Route path="home" element={<HomePage />} />
                         <Route path="explore" element={<ExplorePage />} />
                         <Route path="search" element={<SearchResultPage />} />
 
@@ -79,7 +79,7 @@ export default function AppRouter() {
                     </Route>
                     {/* </Route> */}
                     {/* Redirect ví dụ */}
-                    <Route path="/home" element={<Navigate to="/" replace />} />
+                    {/* <Route path="/home" element={<Navigate to="/" replace />} /> */}
 
                     {/* 404 */}
                     <Route path="*" element={<NotFoundPage />} />
