@@ -65,7 +65,7 @@ export default function Navbar() {
                     <IconButton component={RouterLink} to="/create-post" color="primary">
                         <AddCircle />
                     </IconButton>
-                    {userData.role === "admin" && (
+                    {userData?.role === "admin" && (
                         <IconButton component={RouterLink} to="/admin" color="primary">
                             <AdminPanelSettings />
                         </IconButton>
