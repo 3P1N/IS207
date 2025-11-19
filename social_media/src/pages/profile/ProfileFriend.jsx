@@ -1,59 +1,43 @@
-import './profile.css'
+import "./profile.css";
 import { useEffect, useState, useContext } from "react";
 import { api } from "../../shared/api";
 import { AuthContext } from "../../router/AuthProvider";
-import AvatarUser from '../../shared/components/AvatarUser';
-const MOCK_FRIENDS = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    username: "@nguyenvana",
-    avatar: "https://i.pravatar.cc/100?img=1",
-    isFriend: true,
-    mutual: 12,
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    username: "@tranb",
-    avatar: "https://i.pravatar.cc/100?img=2",
-    isFriend: false,
-    mutual: 3,
-  },
-  {
-    id: 3,
-    name: "Lê Văn C",
-    username: "@levanc",
-    avatar: "https://i.pravatar.cc/100?img=3",
-    isFriend: true,
-    mutual: 5,
-  },
-];
+import FriendCard from "./FriendCard";
 
 export default function ProfileFriend() {
-  const [friends,setFriends]= useState([]);
-  const [loading,setLoanding]= useState(false);
-  const { token, userData } = useContext(AuthContext);
-  const getFriends = async()=>{
-    setLoanding(true);
+  const [friends, setFriends] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("friends"); // "friends" | "requests"
+  const { token } = useContext(AuthContext);
+
+  const getFriends = async () => {
+    setLoading(true);
     try {
-      const response= await api.get("/friends",{
+      const response = await api.get("/friends", {
         headers: {
-          Authorization: `Bearer ${token}`, // 👈 thêm token tại đây
-        },}) ;
-        console.log(response);
-        setFriends(response.data.friends);
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response);
+      setFriends(response.data.friends || []);
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
     }
-  }
-  useEffect (()=>{
+  };
+
+  useEffect(() => {
     getFriends();
-  },[]);
+  }, []);
+
+  // Tách 2 list: bạn bè & lời mời (tạm thời lấy những người chưa là bạn)
+  const friendList = friends.filter((f) => f.isFriend);      // bạn bè
+  const requestList = friends.filter((f) => !f.isFriend);    // lời mời / chưa là bạn
 
   return (
     <div className="space-y-6">
-      {/* Header + search */}
+      {/* Header + search + switch tab */}
       <div className="friends-header">
         <div>
           <h2 className="friends-title">Bạn bè</h2>
@@ -62,94 +46,90 @@ export default function ProfileFriend() {
           </p>
         </div>
 
-        <div className="friends-search-wrapper">
-          <input
-            type="text"
-            placeholder="Tìm bạn bè..."
-            className="friends-search-input"
-          />
+        <div className="flex items-center gap-3">
+          {/* Nút switch tab */}
+          <div className="inline-flex rounded-full bg-gray-100 p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab("friends")}
+              className={`px-3 py-1 rounded-full ${
+                activeTab === "friends"
+                  ? "bg-white shadow text-gray-900 font-semibold"
+                  : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              Bạn bè
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("requests")}
+              className={`px-3 py-1 rounded-full ${
+                activeTab === "requests"
+                  ? "bg-white shadow text-gray-900 font-semibold"
+                  : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              Lời mời kết bạn
+            </button>
+          </div>
+        </div>
+        <div>
+          
         </div>
       </div>
+      <div>
+        <div className="friends-search-wrapper">
+            <input
+              type="text"
+              placeholder="Tìm bạn bè..."
+              className="friends-search-input"
+            />
+          </div>
+      </div>                
+      {loading && (
+        <p className="text-sm text-gray-500">Đang tải danh sách bạn bè...</p>
+      )}
 
-      {/* Danh sách bạn bè */}
+      {/* Nội dung theo tab */}
       <div className="friends-grid">
-        {friends.map((friend) => (
-          <FriendCard key={friend.id} friend={friend} />
-        ))}
-      </div>
-    </div>
-  );
-}
+        {/* Tab: Bạn bè */}
+        {activeTab === "friends" && (
+          <>
+            {friendList.length === 0 && !loading && (
+              <p className="text-xs text-gray-500">
+                Bạn chưa có người bạn nào.
+              </p>
+            )}
 
-function FriendCard({ friend }) {
-  const { name, gender, avatarUrl, email} = friend;
+            {friendList.map((friend) => (
+              <FriendCard
+                key={friend.id}
+                friend={friend}
+                defaultStatus="friends"
+              />
+            ))}
+          </>
+        )}
 
-  // friends | pending | none
-  const [friendStatus, setFriendStatus] = useState(
-    "friends" 
-  );
+        {/* Tab: Lời mời kết bạn */}
+        {activeTab === "requests" && (
+          <>
+            {requestList.length === 0 && !loading && (
+              <p className="text-xs text-gray-500">
+                Hiện không có lời mời kết bạn nào.
+              </p>
+            )}
 
-  const handleAddFriend = () => {
-    // TODO: gọi API gửi lời mời kết bạn
-    setFriendStatus("pending");
-  };
-
-  const handleUnfriend = () => {
-    // TODO: gọi API hủy kết bạn
-    setFriendStatus("none");
-  };
-
-  return (
-    <div className="friend-card">
-      {/* Avatar */}
-      <div className="friend-avatar-wrapper">
-        <AvatarUser userData={friend}/>
-        {/* chấm xanh chỉ hiện khi đã là bạn bè */}
-        {friendStatus === "friends" && (
-          <span className="friend-status-dot" />
+            {requestList.map((friend) => (
+              <FriendCard
+                key={friend.id}
+                friend={friend}
+                defaultStatus="none" // để hiện nút "Accept / Add" bên trong FriendCard nếu bạn muốn
+              />
+            ))}
+          </>
         )}
       </div>
-
-      {/* Info */}
-      <div className="friend-info">
-        <p className="friend-name">{name}</p>
-        <p className="friend-username">{name}</p>
-        <p className="friend-mutual">
-          {name} bạn chung
-        </p>
-      </div>
-
-      {/* Nút Add / Pending / Unfriend */}
-      {friendStatus === "friends" && (
-        <button
-          type="button"
-          className="btn-unfriend"
-          onClick={handleUnfriend}
-        >
-          Unfriend
-        </button>
-      )}
-
-      {friendStatus === "pending" && (
-        <button
-          type="button"
-          className="btn-pending"
-          disabled
-        >
-          Chờ phản hồi
-        </button>
-      )}
-
-      {friendStatus === "none" && (
-        <button
-          type="button"
-          className="btn-add-friend"
-          onClick={handleAddFriend}
-        >
-          Add friend
-        </button>
-      )}
     </div>
   );
 }
-

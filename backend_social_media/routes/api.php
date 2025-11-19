@@ -50,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/posts/{id}/report', [App\Http\Controllers\Api\PostController::class, 'report']);
     // Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
     // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+    Route::get('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'show']);
 });
 
 

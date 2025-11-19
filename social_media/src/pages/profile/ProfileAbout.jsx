@@ -1,20 +1,20 @@
 // src/pages/profile/ProfileAbout.jsx
-import { useState, useContext } from "react";
-import { AuthContext } from "../../router/AuthProvider";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useOutletContext } from "react-router-dom";
+
 export default function ProfileAbout() {
-  const { userData } = useContext(AuthContext);
-  const navigate = useNavigate();
-  // tab hiện tại: "view" hoặc "edit"
+  const { profileUser, isOwnProfile } = useOutletContext();
+
+  // tab hiện tại: "view" hoặc "edit" (chỉ dùng khi là trang của mình)
   const [activeTab, setActiveTab] = useState("view");
 
-  // dữ liệu form (tạm thời lấy từ userData hoặc giá trị default)
+  // dữ liệu form (tạm thời lấy từ profileUser hoặc giá trị default)
   const [formData, setFormData] = useState({
-    displayName: userData?.name || "User Name",
-    username: userData?.username || "@username",
-    email: userData?.email || "user@example.com",
-    gender: userData?.gender || "",
-    joinDate: userData?.joinDate || "01/01/2024",
+    displayName: profileUser?.name || "User Name",
+    username: profileUser?.username || "@username",
+    email: profileUser?.email || "user@example.com",
+    gender: profileUser?.gender || "",
+    joinDate: profileUser?.joinDate || "01/01/2024",
   });
 
   const handleChange = (e) => {
@@ -33,52 +33,54 @@ export default function ProfileAbout() {
 
   return (
     <div className="space-y-6">
-      {/* Tiêu đề + nút mở tab chỉnh sửa */}
+      {/* Tiêu đề */}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Giới thiệu</h2>
           <p className="text-sm text-gray-500">
-            Thông tin cơ bản về tài khoản của bạn
+            Thông tin cơ bản về tài khoản
           </p>
         </div>
       </div>
 
       {/* Card thông tin cá nhân */}
       <div className="rounded-2xl border border-gray-200 bg-white/80 p-4 shadow-sm sm:p-6">
-        {/* Mini-tab: Xem / Chỉnh sửa */}
+        {/* Header + mini-tab (chỉ có khi là trang của mình) */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
             Thông tin cá nhân
           </h3>
 
-          <div className="flex gap-1 rounded-full bg-gray-100 p-1 text-xs">
-            <button
-              type="button"
-              onClick={() => setActiveTab("view")}
-              className={`px-3 py-1 rounded-full ${
-                activeTab === "view"
-                  ? "bg-white shadow text-gray-900 font-semibold"
-                  : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              Xem
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("edit")}
-              className={`px-3 py-1 rounded-full ${
-                activeTab === "edit"
-                  ? "bg-white shadow text-gray-900 font-semibold"
-                  : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              Chỉnh sửa
-            </button>
-          </div>
+          {isOwnProfile && (
+            <div className="flex gap-1 rounded-full bg-gray-100 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("view")}
+                className={`px-3 py-1 rounded-full ${
+                  activeTab === "view"
+                    ? "bg-white shadow text-gray-900 font-semibold"
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                Xem
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("edit")}
+                className={`px-3 py-1 rounded-full ${
+                  activeTab === "edit"
+                    ? "bg-white shadow text-gray-900 font-semibold"
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                Chỉnh sửa
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Tab XEM thông tin */}
-        {activeTab === "view" && (
+        {/* Tab XEM thông tin (luôn dùng cho người khác, hoặc khi mình ở tab view) */}
+        {(!isOwnProfile || activeTab === "view") && (
           <dl className="space-y-3 text-sm text-gray-700">
             <InfoRow label="Tên hiển thị" value={formData.displayName} />
             <InfoRow label="Username" value={formData.username} />
@@ -91,8 +93,8 @@ export default function ProfileAbout() {
           </dl>
         )}
 
-        {/* Tab CHỈNH SỬA */}
-        {activeTab === "edit" && (
+        {/* Tab CHỈNH SỬA (chỉ trang của mình mới có) */}
+        {isOwnProfile && activeTab === "edit" && (
           <form onSubmit={handleSubmit} className="space-y-4 text-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -174,36 +176,41 @@ export default function ProfileAbout() {
         )}
       </div>
 
-      {/* Button + card quyền riêng tư giữ nguyên */}
-
-      <div className="rounded-2xl border border-gray-200 bg-white/80 p-4 shadow-sm sm:p-6">
+      {/* Card quyền riêng tư */}
+      {isOwnProfile && (<div className="rounded-2xl border border-gray-200 bg-white/80 p-4 shadow-sm sm:p-6">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
           Quyền riêng tư
         </h3>
 
         <ul className="space-y-3 text-sm text-gray-700">
-          <PrivacyRow label="Hiển thị thông tin cá nhân" value="Chỉ bạn bè" />
+          <PrivacyRow
+            label="Hiển thị thông tin cá nhân"
+            options={["Mọi người", "Chỉ bạn bè", "Chỉ mình tôi"]}
+            defaultValue="Chỉ bạn bè"
+            editable={isOwnProfile}
+          />
+
           <PrivacyRow
             label="Cho phép người lạ xem danh sách bạn bè"
-            value="Không"
+            options={["Có", "Không"]}
+            defaultValue="Không"
+            editable={isOwnProfile}
           />
-          <PrivacyRow label="Cho phép tìm kiếm bằng email" value="Có" />
+
+          <PrivacyRow
+            label="Cho phép tìm kiếm bằng email"
+            options={["Có", "Không"]}
+            defaultValue="Có"
+            editable={isOwnProfile}
+          />
         </ul>
 
         <p className="mt-4 text-xs text-gray-500">
-          Bạn có thể thay đổi chi tiết hiển thị trong phần cài đặt quyền riêng tư.
+          {isOwnProfile
+            ? "Bạn có thể thay đổi chi tiết hiển thị trong phần cài đặt quyền riêng tư."
+            : "Thiết lập quyền riêng tư được người dùng này cấu hình."}
         </p>
-      </div>
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => navigate("/setting")}
-          className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-800 active:scale-[0.98] transition"
-        >
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          Chỉnh sửa quyền riêng tư
-        </button>
-      </div>
+      </div>)}
     </div>
   );
 }
@@ -218,13 +225,53 @@ function InfoRow({ label, value }) {
   );
 }
 
-function PrivacyRow({ label, value }) {
+function PrivacyRow({ label, options, defaultValue, editable }) {
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState(defaultValue || options[0]);
+
+  const handleSelect = (opt) => {
+    if (!editable) return; // không cho chọn nếu không phải trang mình
+    setCurrent(opt);
+    setOpen(false);
+    // TODO: onChange API ở đây nếu cần
+  };
+
   return (
-    <li className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+    <li className="relative flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-gray-600">{label}</span>
-      <span className="inline-flex items-center rounded-full bg-gray-900 px-3 py-1 text-xs font-semibold text-white">
-        {value}
-      </span>
+
+      <div className="relative">
+        {/* Nút pill */}
+        <button
+          type="button"
+          onClick={() => editable && setOpen((prev) => !prev)}
+          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow ${
+            editable
+              ? "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] transition"
+              : "bg-gray-200 text-gray-700 cursor-default"
+          }`}
+        >
+          <span>{current}</span>
+        </button>
+
+        {/* Menu lựa chọn – chỉ hiện nếu được phép edit */}
+        {editable && open && (
+          <div className="absolute right-0 z-10 mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 text-xs shadow-lg">
+            {options.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleSelect(opt)}
+                className={`block w-full px-3 py-1.5 text-left hover:bg-gray-100 ${
+                  opt === current ? "font-semibold text-gray-900" : "text-gray-700"
+                }`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </li>
   );
 }
