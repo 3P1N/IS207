@@ -11,17 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('reports', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('reporter_id')->constrained('users');
+            $table->foreignId('post_id')->constrained('posts')->onDelete('cascade');
+            $table->string('reason')->nullable();
+            $table->unique(['reporter_id', 'post_id'], 'unique_report_per_user_post'); 
             $table->timestamps();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->text('content');
-            $table->boolean('is_visible')->default(true);
-            $table->softDeletes();
-            $table->index('user_id');
-
         });
-
     }
 
     /**
@@ -29,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('posts');
+        Schema::dropIfExists('reports');
     }
 };

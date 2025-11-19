@@ -27,6 +27,8 @@ class DatabaseSeeder extends Seeder
             CommentSeeder::class,
             PostReactionSeeder::class,
             BlockSeeder::class,
+            PrivacySettingsTableSeeder::class,
+            ReportsTableSeeder::class,
             
         ]);
         echo "DatabaseSeeder completed.\n";

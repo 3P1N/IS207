@@ -124,4 +124,22 @@ class PostController extends Controller
         ], 200);
     }
 
+    public function report(Request $request,Post $post){
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+        if (!$post) {
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+        $post->increment('report_count');
+        $post->refresh();
+        return response()->json([
+            'message' => 'Post reported successfully',
+            'report_count' => $post->report_count
+        ]);
+    }
+
 }

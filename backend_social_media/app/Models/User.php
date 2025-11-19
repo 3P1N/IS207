@@ -133,6 +133,14 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Block::class, 'blocked_id');
     }
+    public function privacy()
+    {
+        return $this->hasOne(PrivacySetting::class);
+    }
+    public function reportsMade()
+    {
+        return $this->hasMany(\App\Models\Report::class, 'reporter_id');
+    }
 
 
 }

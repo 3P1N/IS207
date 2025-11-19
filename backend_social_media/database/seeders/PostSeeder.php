@@ -30,9 +30,6 @@ class PostSeeder extends Seeder
                     'user_id'    => $user->id,
                     'content'    => fake()->paragraph(rand(2, 5)),
                     'is_visible' => fake()->boolean(90), // 90% là visible
-                    'report_count' => fake()->boolean(5) ? rand(1, 5) : 0,
-                    // 5% là reported    
-                   
                     'created_at' => now()->subDays(rand(1, 30))->subMinutes(rand(0, 1440)),
                     'updated_at' => now(),
                 ]);

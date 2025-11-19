@@ -101,10 +101,7 @@ function FilterSidebar({ keyword }) {
           <ListItemIcon><Person /></ListItemIcon>
           <ListItemText primary="Mọi người" />
         </ListItemButton>
-        <ListItemButton onClick={() => go("groups")}>
-          <ListItemIcon><Groups /></ListItemIcon>
-          <ListItemText primary="Nhóm" />
-        </ListItemButton>
+        
       </List>
     </Box>
   );
@@ -127,6 +124,8 @@ function PeopleSection({ keyword }) {
       </Typography>
       <Stack spacing={1.5}>
         {items.map((u) => (
+          <>
+          <FriendCard/>
           <Box
             key={u.id}
             sx={{
@@ -150,6 +149,7 @@ function PeopleSection({ keyword }) {
               <Button size="small" variant="outlined">Nhắn tin</Button>
             </Stack>
           </Box>
+          </>
         ))}
       </Stack>
     </Box>

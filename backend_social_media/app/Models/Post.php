@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 class Post extends Model
 {
     //
@@ -13,9 +14,6 @@ class Post extends Model
         'user_id',
         'content',
         'is_visible',
-        'report_count'
-
-
         // 'media_urls',
     ];
     public function user()
@@ -34,5 +32,8 @@ class Post extends Model
     {
         return $this->hasMany(Media::class);
     }
-
+    public function reports()
+    {
+        return $this->hasMany(Report::class, 'post_id');
+    }
 }
