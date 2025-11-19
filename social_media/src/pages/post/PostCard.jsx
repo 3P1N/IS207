@@ -4,8 +4,10 @@ import PostHeader from './PostHeader';
 import PostActionsBar from './PostActionsBar';
 import { AuthContext } from '../../router/AuthProvider';
 
-export default function PostCard({ postData }) {
-
+export default function PostCard({postData, index }) {
+    
+    const {postsData, setPostsData} = useContext(AuthContext);
+    console.log("index: ", index, postData);
     if (!postData) return null;
 
     const [headerData, setHeaderData] = useState(null);
@@ -27,7 +29,7 @@ export default function PostCard({ postData }) {
         <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm overflow-hidden">
 
             {/* Header */}
-            <PostHeader headerData={headerData} postData={postData} />
+            <PostHeader headerData={headerData} postData={postData} index={index}/>
 
             {/* Content */}
             <p className="text-base px-4 py-2">
@@ -51,6 +53,7 @@ export default function PostCard({ postData }) {
                 comments={postData.comments_count}
                 isLiked={postData.is_liked}
                 postId = {postData.id}
+                index = {index}
             />
 
         </div>

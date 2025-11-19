@@ -9,7 +9,7 @@ import AvatarUser from '../../shared/components/AvatarUser';
 
 export default function PostCreate() {
 
-    const { userData, token } = useContext(AuthContext);
+    const { userData, token, postsData, setPostsData } = useContext(AuthContext);
     const [postContent, setPostContent] = useState('');
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -36,9 +36,10 @@ export default function PostCreate() {
                     },
                 }
             );
-            console.log(response.data);
+            return response.data;
         } catch (e) {
             console.error(e);
+            return e;
         }
     };
 
@@ -103,8 +104,8 @@ export default function PostCreate() {
             const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
 
             // gửi post cùng array URL
-            await uploadPost(uploadedUrls);
-
+            const newPost = await uploadPost(uploadedUrls);
+            setPostsData(prev => [newPost,...postsData]);
             // reset form
             setPostContent('');
             setMediaFiles([]);

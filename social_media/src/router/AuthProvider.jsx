@@ -8,7 +8,7 @@ export default function AuthProvider({ children }) {
 
     const [userData, setUserData] = useState(null);
     // const login = (userData) => setUserData(userData);
-    
+    const [postsData, setPostsData] = useState([]);
     const [token, setToken] = useState(null);
     const [echoInstance, setEchoInstance] = useState(null);
     const register = async (userData) => {
@@ -38,7 +38,7 @@ export default function AuthProvider({ children }) {
     }
 
     return (
-        <AuthContext.Provider value={{userData, token, login, logout, echoInstance, register }}>
+        <AuthContext.Provider value={{userData, token, login, logout, echoInstance, register, postsData, setPostsData }}>
             {children}
         </AuthContext.Provider>
     )

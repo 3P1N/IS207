@@ -18,10 +18,10 @@ import EditPostModal from "./EditPostModal";
 import { api } from "../../shared/api";
 import { AuthContext } from "../../router/AuthProvider";
 
-export default function PostHeader({ headerData, postData }) {
+export default function PostHeader({ headerData, postData, index }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-  const { token } = useContext(AuthContext);
+  const { token, postsData, setPostsData } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -55,6 +55,9 @@ export default function PostHeader({ headerData, postData }) {
       setSnackbarMessage(message?.message || "Delete successfully submitted");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
+      console.log(index);
+      setPostsData(prev => prev.filter((_, i) => i !== index));
+
     } catch (err) {
       console.log("Lỗi khi delete", err);
       setSnackbarMessage("Failed to delete post");
@@ -84,6 +87,7 @@ export default function PostHeader({ headerData, postData }) {
       setSnackbarMessage(message?.message || "Report successfully submitted");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
+      setPostsData(prev => prev.filter((_, i) => i !== index));
     } catch (err) {
       console.log("Lỗi khi report", err);
       setSnackbarMessage("Failed to report post");
@@ -127,7 +131,7 @@ export default function PostHeader({ headerData, postData }) {
           ? [
             <MenuItem key="edit">
               <ListItemIcon>
-                <EditPostModal postData={postData} />
+                <EditPostModal postData={postData} postIndex={index} />
               </ListItemIcon>
             </MenuItem>,
             <MenuItem key="delete" onClick={handleDelete}>

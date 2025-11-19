@@ -5,10 +5,11 @@ import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { AuthContext } from '../../router/AuthProvider';
 import { api } from '../../shared/api';
 import AvatarUser from '../../shared/components/AvatarUser';
+import { EditTwoTone } from '@mui/icons-material';
 
-export default function EditPostModal({ postData }) {
-    const { userData, token } = useContext(AuthContext);
-
+export default function EditPostModal({ postData, postIndex }) {
+    console.log("postIndex:", postIndex);
+    const { userData, token, postsData, setPostsData } = useContext(AuthContext);
     const [open, setOpen] = useState(false);
     const [postContent, setPostContent] = useState(postData.content || '');
     const [mediaFiles, setMediaFiles] = useState(postData.media?.map(url => ({ file: null, url, type: 'image' })) || []);
@@ -73,15 +74,23 @@ export default function EditPostModal({ postData }) {
         setLoading(true);
 
         try {
-            
-            
+
+
             const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
-            console.log(uploadedUrls);
-            await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls }, {
+            // console.log(uploadedUrls);
+            const response = await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-
+            const editPost = response.data.post;
+            console.log("editing");
+            console.log("edit: ", postIndex);
             setSnackbarMessage("Cập nhật bài viết thành công!");
+            setPostsData(prev => {
+                const newArr = [...prev];          // copy
+                newArr.splice(postIndex, 1);       // xóa phần tử tại vị trí index
+                return [editPost, ...newArr];      // đưa editPost lên đầu
+            });
+
             setSnackbarOpen(true);
             setOpen(false);
         } catch (err) {

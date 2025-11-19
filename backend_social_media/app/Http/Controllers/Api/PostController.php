@@ -57,9 +57,10 @@ class PostController extends Controller
             
         ]);
 
-        (new MediaController)->store($request, $post->id);
-
-        $post->load('media');
+        if ($request->has('media_url') && !empty($request->input('media_url'))){
+            (new MediaController)->store($request, $post->id);
+        }
+        $post->load('media','user');
 
         return response()->json($post, 201);
     }
