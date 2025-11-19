@@ -3,13 +3,13 @@ import { useEffect, useState, useContext } from "react";
 import { api } from "../../shared/api";
 import { AuthContext } from "../../router/AuthProvider";
 import FriendCard from "./FriendCard";
-
+import { useOutletContext } from "react-router-dom";
 export default function ProfileFriend() {
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("friends"); // "friends" | "requests"
   const { token } = useContext(AuthContext);
-
+  const { profileUser, isOwnProfile } = useOutletContext();
   const getFriends = async () => {
     setLoading(true);
     try {
@@ -46,7 +46,7 @@ export default function ProfileFriend() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {isOwnProfile && (<div className="flex items-center gap-3">
           {/* Nút switch tab */}
           <div className="inline-flex rounded-full bg-gray-100 p-1 text-xs">
             <button
@@ -72,7 +72,7 @@ export default function ProfileFriend() {
               Lời mời kết bạn
             </button>
           </div>
-        </div>
+        </div>)}
         <div>
           
         </div>
@@ -95,13 +95,13 @@ export default function ProfileFriend() {
         {/* Tab: Bạn bè */}
         {activeTab === "friends" && (
           <>
-            {friendList.length === 0 && !loading && (
+            {requestList.length === 0 && !loading && (
               <p className="text-xs text-gray-500">
                 Bạn chưa có người bạn nào.
               </p>
             )}
 
-            {friendList.map((friend) => (
+            {requestList.map((friend) => (
               <FriendCard
                 key={friend.id}
                 friend={friend}
@@ -112,7 +112,7 @@ export default function ProfileFriend() {
         )}
 
         {/* Tab: Lời mời kết bạn */}
-        {activeTab === "requests" && (
+        { activeTab === "requests" && (
           <>
             {requestList.length === 0 && !loading && (
               <p className="text-xs text-gray-500">
