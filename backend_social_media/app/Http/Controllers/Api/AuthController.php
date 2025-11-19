@@ -27,6 +27,9 @@ class AuthController extends Controller
 
         // 3️⃣ Lấy user hiện tại
         $user = Auth::user();   
+        if (! $user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email not verified'], 403);
+        }
 
         // 4️⃣ Tạo token cá nhân (Personal Access Token)
         $token = $user->createToken('api_token')->plainTextToken;

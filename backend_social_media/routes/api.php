@@ -29,14 +29,14 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/email/verify/{id}/{hash}', [App\Http\Controllers\Api\VerificationController::class, 'verifyStateless'])
- ->name('verification.verify.stateless');
+ ->name('verification.verify');
 
 
-Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
+Route::middleware(['auth:sanctum', 'verified.api'])->get('/dashboard', function () {
     return 'Chỉ user đã xác thực email mới vào được';
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum', 'verified.api')->group(function () {
     Route::get('/friends', [App\Http\Controllers\Api\FriendController::class, 'index']);
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
     Route::get('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
@@ -49,7 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'update']);
     Route::patch('/posts/{id}/report', [App\Http\Controllers\Api\PostController::class, 'report']);
     // Route::delete('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
-    // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+    // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);  
     Route::get('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'show']);
 });
 

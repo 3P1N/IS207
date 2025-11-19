@@ -12,7 +12,7 @@ export default function AuthProvider({ children }) {
     const [token, setToken] = useState(null);
     const [echoInstance, setEchoInstance] = useState(null);
     const register = async (userData) => {
-
+        console.log(userData);
         const response = await api.post("/auth/register", userData);
         console.log("Registration successful:", response.data);
         return response;
@@ -38,7 +38,7 @@ export default function AuthProvider({ children }) {
     }
 
     return (
-        <AuthContext.Provider value={{userData, token, login, logout, echoInstance }}>
+        <AuthContext.Provider value={{userData, token, login, logout, echoInstance, register }}>
             {children}
         </AuthContext.Provider>
     )
