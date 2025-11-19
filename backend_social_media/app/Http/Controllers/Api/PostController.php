@@ -26,6 +26,7 @@ class PostController extends Controller
         $userId = $user->id;
 
         $posts = Post::where('is_visible', true)
+                ->whereNull('deleted_at') 
                 ->whereDoesntHave('reports', function($query) use ($userId) {
                 $query->where('reporter_id', $userId);
             })
@@ -72,6 +73,7 @@ class PostController extends Controller
             ], 401);
         }
         $post = Post::with(['user', 'media', 'comments', 'reactions'])
+            ->whereNull('deleted_at') 
             ->whereDoesntHave('reports', function($query) use ($userId) {
                 $query->where('reporter_id', $userId);
             })
@@ -131,5 +133,26 @@ class PostController extends Controller
         ], 200);
     }
 
+    public function destroy(Request $request, Post $post){
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+        if(!$post){
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+        if ($post->user->id !== $user->id) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+        $post->delete();
+
+        return response()->json([
+            'message' => 'Post deleted successfully'
+        ], 200);
+    }
 
 }

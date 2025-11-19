@@ -37,10 +37,33 @@ export default function PostHeader({ headerData, postData }) {
     setAnchorEl(null);
   };
 
-  // handlers
-  const handleDelete = () => {
-    handleMenuClose();
-    onDelete && onDelete();
+  const deletePost = async (postId) => {
+    const response = await api.delete(
+      `/posts/${postId}`,
+
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  };
+
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      const message = await deletePost(postData.id);
+      setSnackbarMessage(message?.message || "Delete successfully submitted");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (err) {
+      console.log("Lỗi khi delete", err);
+      setSnackbarMessage("Failed to delete post");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+      handleMenuClose();
+    }
   };
 
   const report = async (postId) => {
@@ -109,7 +132,7 @@ export default function PostHeader({ headerData, postData }) {
             </MenuItem>,
             <MenuItem key="delete" onClick={handleDelete}>
               <ListItemIcon>
-                <DeleteIcon fontSize="small" />
+                {loading ? <CircularProgress size={18} /> : <DeleteIcon fontSize="small" />}
               </ListItemIcon>
               <ListItemText>Delete Post</ListItemText>
             </MenuItem>
