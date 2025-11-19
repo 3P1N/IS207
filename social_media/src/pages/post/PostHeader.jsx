@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {
   IconButton,
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Snackbar,
+  Alert,
+  CircularProgress
 } from "@mui/material";
 
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -12,18 +15,17 @@ import FlagIcon from "@mui/icons-material/Flag";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import AvatarUser from "../../shared/components/AvatarUser";
 import EditPostModal from "./EditPostModal";
-
-// author,
-//   timeAgo,
-//   profileUrl,
-//   isOwner,
-//   onEdit,
-//   onDelete,
-//   onReport
+import { api } from "../../shared/api";
+import { AuthContext } from "../../router/AuthProvider";
 
 export default function PostHeader({ headerData, postData }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+  const { token } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // success | error
 
   // open menu
   const handleMenuOpen = (event) => {
@@ -36,24 +38,45 @@ export default function PostHeader({ headerData, postData }) {
   };
 
   // handlers
-
   const handleDelete = () => {
     handleMenuClose();
     onDelete && onDelete();
   };
 
-  const handleReport = () => {
-    handleMenuClose();
-    onReport && onReport();
+  const report = async (postId) => {
+    const response = await api.post(
+      `/posts/${postId}/report`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  };
+
+  const handleReport = async () => {
+    setLoading(true);
+    try {
+      const message = await report(postData.id);
+      setSnackbarMessage(message?.message || "Report successfully submitted");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (err) {
+      console.log("Lỗi khi report", err);
+      setSnackbarMessage("Failed to report post");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+      handleMenuClose();
+    }
   };
 
   return (
     <div className="flex items-center gap-3 bg-card-light dark:bg-card-dark px-4 pt-4 pb-2 justify-between">
       {/* Left: Avatar + Info */}
       <div className="flex items-center gap-3">
-        <>
-          <AvatarUser userData={{ name: headerData?.author, avatarUrl: headerData?.avatarUrl, id: headerData?.id }} />
-        </>
+        <AvatarUser userData={{ name: headerData?.author, avatarUrl: headerData?.avatarUrl, id: headerData?.id }} />
         <div className="flex flex-col justify-center">
           <p className="text-text-light-primary dark:text-text-dark-primary text-base font-semibold">
             {headerData?.author}
@@ -65,8 +88,8 @@ export default function PostHeader({ headerData, postData }) {
       </div>
 
       {/* Right: Options (menu) */}
-      <IconButton onClick={handleMenuOpen} size="small">
-        <MoreVertIcon />
+      <IconButton onClick={handleMenuOpen} size="small" disabled={loading}>
+        {loading ? <CircularProgress size={20} /> : <MoreVertIcon />}
       </IconButton>
 
       {/* Dropdown menu */}
@@ -92,15 +115,30 @@ export default function PostHeader({ headerData, postData }) {
             </MenuItem>
           ]
           : (
-            <MenuItem onClick={handleReport}>
+            <MenuItem onClick={handleReport} disabled={loading}>
               <ListItemIcon>
-                <FlagIcon fontSize="small" />
+                {loading ? <CircularProgress size={18} /> : <FlagIcon fontSize="small" />}
               </ListItemIcon>
               <ListItemText>Report Post</ListItemText>
             </MenuItem>
           )}
       </Menu>
 
+      {/* Snackbar thông báo */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

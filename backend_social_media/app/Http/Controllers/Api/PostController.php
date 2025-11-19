@@ -26,6 +26,9 @@ class PostController extends Controller
         $userId = $user->id;
 
         $posts = Post::where('is_visible', true)
+                ->whereDoesntHave('reports', function($query) use ($userId) {
+                $query->where('reporter_id', $userId);
+            })
             ->withCount(['reactions', 'comments'])
             ->with(['user', 'media'])
             ->withExists([
@@ -62,12 +65,16 @@ class PostController extends Controller
 
     public function show(Request $request, $index){
         $user = $request->user();
+        $userId = $user->id;
         if (!$user) {
             return response()->json([
                 'message' => 'Unauthorized',
             ], 401);
         }
         $post = Post::with(['user', 'media', 'comments', 'reactions'])
+            ->whereDoesntHave('reports', function($query) use ($userId) {
+                $query->where('reporter_id', $userId);
+            })
             ->find($index);
         if(!$post){
             return response()->json(['message' => 'Post not found'], 404);
@@ -124,22 +131,5 @@ class PostController extends Controller
         ], 200);
     }
 
-    public function report(Request $request,Post $post){
-        $user = $request->user();
-        if (!$user) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
-        }
-        if (!$post) {
-            return response()->json(['message' => 'Post not found'], 404);
-        }
-        $post->increment('report_count');
-        $post->refresh();
-        return response()->json([
-            'message' => 'Post reported successfully',
-            'report_count' => $post->report_count
-        ]);
-    }
 
 }
