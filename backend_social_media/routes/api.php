@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 Route::middleware('auth:sanctum')->get('/me', fn (Illuminate\Http\Request $r) => $r->user());
-Route::middleware('auth:sanctum')->get('/user', fn (Illuminate\Http\Request $r) => $r->user());
 
 //test role middleware
 Route::middleware('auth:sanctum')->group(function () {
@@ -49,8 +48,14 @@ Route::middleware('auth:sanctum', 'verified.api')->group(function () {
     Route::put('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'update']);
     Route::post('/posts/{post}/report', [App\Http\Controllers\Api\ReportController::class, 'store']);
     Route::delete('/posts/{post}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
+
     // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);  
     Route::get('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'show']);
+    Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
+    Route::post('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'store']);
+    Route::get('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'index']);
+
+
 });
 
 

@@ -16,6 +16,7 @@ class FriendController extends Controller
                 'message' => 'Unauthorized',
             ], 401);
         }
+        
         // Lấy danh sách bạn bè của user hiện tại
         $friends = $user->allFriends();
 

@@ -6,14 +6,19 @@ import InsertEmoticonIcon from "@mui/icons-material/InsertEmoticon";
 import ImageIcon from "@mui/icons-material/Image";
 import SendIcon from "@mui/icons-material/Send";
 import './CommentInput.css';
+import { api } from "../../../shared/api";
+import { useParams } from "react-router-dom";
 
 export default function CommentInput({
     currentUserProfile,
+    postId,
+    comments,
+    setComments,
     placeholder = "Write a comment..."
 }) {
     const [value, setValue] = useState("");
     const textareaRef = useRef(null);
-
+    const [loading, setLoading] = useState(false);
     // auto-resize textarea
     const resize = () => {
         const ta = textareaRef.current;
@@ -31,12 +36,25 @@ export default function CommentInput({
         setValue(e.target.value);
     };
 
+    const sendComment = async () => {
+        
+        const response = await api.post(`/posts/${postId}/comments`);
+        return response.data;
+    }
     // Submit handler (mock)
     const handlePost = () => {
         if (!value.trim()) return;
-        // TODO: call API to post comment
-        console.log("Posting comment:", value);
-        setValue("");
+        setLoading(true);
+        try {
+            const response = sendComment();
+            console.log(response);
+        } catch (err) {
+            console.log("lỗi khi gửi comment: ", err);
+        } finally {
+            setLoading(true);
+            setValue("");
+
+        }
     };
 
     // Allow Ctrl/Cmd + Enter to post

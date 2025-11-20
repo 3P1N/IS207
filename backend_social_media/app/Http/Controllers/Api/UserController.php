@@ -73,4 +73,17 @@ class UserController extends Controller{
             ],
         ]);
     }
+    public function index(Request $request){
+        $user = $request->user();
+        if(!$user){
+            return response()->json(['message' => "Unauthorize"], 401);
+        }
+        $keyword = trim($request->query('search', ''));
+        $users = User::when(!empty($keyword), function($q) use($keyword){
+                $q->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%");
+            })
+            ->where('is_Violated', false)
+            ->get();
+        return response()->json($users, 201); 
+    }
 }

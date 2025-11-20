@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+import React, { useContext, useState, useEffect, useMemo } from "react";
+
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -19,13 +20,18 @@ import {
   Stack,
 } from "@mui/material";
 import { Feed, Person, Groups, Tune } from "@mui/icons-material";
-
+import { api } from "../../shared/api";
+import { AuthContext } from "../../router/AuthProvider";
+import PostCard from "../post/PostCard";
+import FriendCard from "../profile/FriendCard";
 /* -------------------- helpers -------------------- */
 function useQuery() {
   const location = useLocation();
-  console.log("location.search:", location.search);
+  // console.log("location.search:", location.search);
   return new URLSearchParams(location.search);
 }
+
+
 const highlight = (text, kw) => {
   if (!kw) return text;
   const parts = text.split(new RegExp(`(${kw})`, "ig"));
@@ -37,6 +43,7 @@ const highlight = (text, kw) => {
     )
   );
 };
+
 
 /* -------------------- mock data -------------------- */
 const MOCK_PEOPLE = [
@@ -74,7 +81,9 @@ const MOCK_GROUPS = [
 function FilterSidebar({ keyword }) {
   const navigate = useNavigate();
   const go = (type) => navigate(`/search?query=${encodeURIComponent(keyword)}&type=${type}`);
+  const query = useQuery();
 
+  const type = query.get("type") || "all";
   return (
     <Box
       sx={{
@@ -89,66 +98,82 @@ function FilterSidebar({ keyword }) {
         Bộ lọc
       </Typography>
       <List dense sx={{ width: 260, maxWidth: "100%" }}>
-        <ListItemButton selected onClick={() => go("all")}>
+        <ListItemButton selected={type === "all"} onClick={() => go("all")}>
           <ListItemIcon><Tune /></ListItemIcon>
           <ListItemText primary="Tất cả" />
         </ListItemButton>
-        <ListItemButton onClick={() => go("posts")}>
+        <ListItemButton selected={type === "posts"} onClick={() => go("posts")}>
           <ListItemIcon><Feed /></ListItemIcon>
           <ListItemText primary="Bài viết" />
         </ListItemButton>
-        <ListItemButton onClick={() => go("people")}>
+        <ListItemButton selected={type === "people"} onClick={() => go("people")}>
           <ListItemIcon><Person /></ListItemIcon>
           <ListItemText primary="Mọi người" />
         </ListItemButton>
-        
+
       </List>
     </Box>
   );
 }
 
 function PeopleSection({ keyword }) {
-  const items = useMemo(() => {
-    if (!keyword) return MOCK_PEOPLE;
-    return MOCK_PEOPLE.filter((u) =>
-      (u.name + " " + u.bio).toLowerCase().includes(keyword.toLowerCase())
-    );
+  const [users, setUsersData] = useState([]);
+  const { token } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
+  const getUsersData = async () => {
+    setLoading(true);
+    try {
+      console.log("đang lấy dữ liệu");
+      const response = await api.get(`/users?search=${keyword}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+      );
+      console.log(response.data);
+      setUsersData(response.data);
+    } catch (err) {
+      console.log("lỗi khi lấy user: ", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    getUsersData();
   }, [keyword]);
 
-  if (!items.length) return null;
+  if (loading) {
+    return <div>Loading People...</div>; // hiển thị khi đang load
+  }
+
+  if (!users.length) {
+    return <div>No matching people</div>; // khi load xong mà không có người
+  }
 
   return (
+
     <Box sx={{ mb: 3 }}>
       <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
         Mọi người
       </Typography>
       <Stack spacing={1.5}>
-        {items.map((u) => (
+        {users.map((u) => (
           <>
-          <FriendCard/>
-          <Box
-            key={u.id}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              p: 1,
-              borderRadius: 2,
-              "&:hover": { backgroundColor: "#f7f7f7" },
-            }}
-          >
-            <Avatar src={u.avatar}>{u.name[0]}</Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography fontWeight={600}>{highlight(u.name, keyword)}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {highlight(u.bio, keyword)}
-              </Typography>
+
+            <Box
+              key={u.id}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                p: 1,
+                borderRadius: 2,
+                "&:hover": { backgroundColor: "#f7f7f7" },
+              }}
+            >
+              <FriendCard friend={u} defaultStatus="friends" />
             </Box>
-            <Stack direction="row" spacing={1}>
-              <Button size="small" variant="contained">Kết bạn</Button>
-              <Button size="small" variant="outlined">Nhắn tin</Button>
-            </Stack>
-          </Box>
           </>
         ))}
       </Stack>
@@ -156,17 +181,40 @@ function PeopleSection({ keyword }) {
   );
 }
 
+
 function PostsSection({ keyword }) {
-  const posts = useMemo(() => {
-    if (!keyword) return MOCK_POSTS;
-    return MOCK_POSTS.filter((p) =>
-      (p.content + " " + p.author.name)
-        .toLowerCase()
-        .includes(keyword.toLowerCase())
-    );
+  const [loading, setLoading] = useState(false);
+  const [postData, setPostData] = useState([]);
+  const { token } = useContext(AuthContext);
+  const getPostsData = async () => {
+    setLoading(true);
+    try {
+      console.log("đang lấy dữ liệu");
+      const response = await api.get(`/posts?search=${keyword}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+      );
+      setPostData(response.data.data);
+    } catch (err) {
+      console.log("Lỗi khi load posts: ", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    getPostsData();
   }, [keyword]);
 
-  if (!posts.length) return null;
+  if (loading) {
+    return <div>Loading Posts...</div>; // hiển thị khi đang load
+  }
+
+  if (!postData.length) {
+    return <div>No matching posts</div>; // khi load xong mà không có người
+  }
 
   return (
     <Box sx={{ mb: 3 }}>
@@ -174,31 +222,9 @@ function PostsSection({ keyword }) {
         Bài viết
       </Typography>
       <Stack spacing={2}>
-        {posts.map((p) => (
+        {postData.map((p) => (
           <Card key={p.id} variant="outlined">
-            <CardHeader
-              avatar={<Avatar>{p.author.name[0]}</Avatar>}
-              title={<Typography fontWeight={600}>{highlight(p.author.name, keyword)}</Typography>}
-              subheader={p.time}
-            />
-            <CardContent>
-              <Typography variant="body1">{highlight(p.content, keyword)}</Typography>
-              {p.image && (
-                <Box sx={{ mt: 1, borderRadius: 2, overflow: "hidden" }}>
-                  <img src={p.image} alt="" style={{ width: "100%", display: "block" }} />
-                </Box>
-              )}
-              {!!p.tags?.length && (
-                <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
-                  {p.tags.map((t) => <Chip key={t} label={t} size="small" />)}
-                </Stack>
-              )}
-            </CardContent>
-            <CardActions sx={{ pt: 0 }}>
-              <Button size="small">Thích</Button>
-              <Button size="small">Bình luận</Button>
-              <Button size="small">Chia sẻ</Button>
-            </CardActions>
+            <PostCard postData={p} />
           </Card>
         ))}
       </Stack>
@@ -206,43 +232,12 @@ function PostsSection({ keyword }) {
   );
 }
 
-function GroupsSection({ keyword }) {
-  const groups = useMemo(() => {
-    if (!keyword) return MOCK_GROUPS;
-    return MOCK_GROUPS.filter((g) =>
-      g.name.toLowerCase().includes(keyword.toLowerCase())
-    );
-  }, [keyword]);
-
-  if (!groups.length) return null;
-
-  return (
-    <Box sx={{ mb: 3 }}>
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-        Nhóm
-      </Typography>
-      <Stack spacing={1.5}>
-        {groups.map((g) => (
-          <Box key={g.id} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Avatar variant="rounded">G</Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography fontWeight={600}>{highlight(g.name, keyword)}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {g.members.toLocaleString()} thành viên
-              </Typography>
-            </Box>
-            <Button variant="contained" size="small">Tham gia</Button>
-          </Box>
-        ))}
-      </Stack>
-    </Box>
-  );
-}
 
 /* -------------------- page -------------------- */
 export default function SearchResultPage() {
   const query = useQuery();
   const keyword = query.get("query") || "";
+  const type = query.get("type") || "all";
 
   return (
     <Box sx={{ p: { xs: 1.5, md: 3 } }}>
@@ -258,11 +253,11 @@ export default function SearchResultPage() {
 
         {/* Kết quả */}
         <Grid item xs={12} md={9} lg={7}>
-          <PeopleSection keyword={keyword} />
+          {type === "all" || type === "people" ? <PeopleSection keyword={keyword} /> : null}
           <Divider sx={{ my: 2 }} />
-          <PostsSection keyword={keyword} />
+          {type === "all" || type === "posts" ? <PostsSection keyword={keyword} /> : null}
           <Divider sx={{ my: 2 }} />
-          <GroupsSection keyword={keyword} />
+
         </Grid>
 
         {/* Cột phải (tuỳ chọn: gợi ý, trending…) */}

@@ -24,21 +24,25 @@ class PostController extends Controller
         }
 
         $userId = $user->id;
-
+        $keyword = trim($request->query('search', ''));
+        
         $posts = Post::where('is_visible', true)
                 ->whereNull('deleted_at') 
                 ->whereDoesntHave('reports', function($query) use ($userId) {
-                $query->where('reporter_id', $userId);
-            })
-            ->withCount(['reactions', 'comments'])
-            ->with(['user', 'media'])
-            ->withExists([
-                'reactions as is_liked' => function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                }
-            ])
-            ->orderBy('created_at', 'desc')
-            ->simplePaginate(10);
+                    $query->where('reporter_id', $userId);
+                })
+                ->when(!empty($keyword), function($q) use ($keyword) {
+                    $q->where('content', 'like', "%{$keyword}%");
+                })
+                ->withCount(['reactions', 'comments'])
+                ->with(['user', 'media'])
+                ->withExists([
+                    'reactions as is_liked' => function ($q) use ($userId) {
+                        $q->where('user_id', $userId);
+                    }
+                ])
+                ->orderBy('created_at', 'desc')
+                ->simplePaginate(10);
 
         return response()->json($posts, 200);
     }
