@@ -2,17 +2,39 @@
 import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
 import ThumbUpAltIcon from "@mui/icons-material/ThumbUpAlt";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../../router/AuthProvider";
+import { api } from "../../shared/api";
 
 
 export default function PostActionsBar({ likes, comments, shares, isLiked, postId }) {
     const navigate = useNavigate();
     const [liked, setLiked] = useState(isLiked);
+    const { token } = useContext(AuthContext);
+    const sendReaction = async () => {
+        console.log("postId: ", postId);
 
-    const handleLike = () => {
-        setLiked(!liked);
+        const response = await api.post(`/posts/${postId}/reaction`, {}, {
+            headers:
+                { Authorization: `Bearer ${token}` }
+
+        });
+        return response;
     }
+    const handleLike = async () => {
+        const prevLiked = liked;  // lưu trạng thái trước
+        setLiked(!liked);         // optimistic UI
+
+        try {
+            const response = await sendReaction();
+            console.log(response.data);
+        } catch (err) {
+            console.log("lỗi khi gửi post reaction: ", err);
+            setLiked(prevLiked);   // rollback về trạng thái trước
+        }
+    }
+
 
     return (
         <>
@@ -59,7 +81,7 @@ export default function PostActionsBar({ likes, comments, shares, isLiked, postI
                         text-text-light-secondary dark:text-text-dark-secondary
                         hover:bg-gray-100 dark:hover:bg-gray-700
                     "
-                      onClick={() => navigate(`/post/${postId}`)}
+                    onClick={() => navigate(`/post/${postId}`)}
                 >
                     <ChatBubbleOutlineIcon
                         fontSize="small"

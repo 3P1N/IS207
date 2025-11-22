@@ -86,7 +86,7 @@ class PostController extends Controller
         if(!$post){
             return response()->json(['message' => 'Post not found'], 404);
         }
-        return response()->json($post, 201);
+        return response()->json($post, 200);
 
     }
 

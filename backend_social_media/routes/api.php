@@ -54,7 +54,10 @@ Route::middleware('auth:sanctum', 'verified.api')->group(function () {
     Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
     Route::post('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'store']);
     Route::get('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'index']);
+    Route::delete('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'destroy']);
+    Route::patch('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'update']);
 
+    Route::post('/posts/{post}/reaction',  [App\Http\Controllers\Api\PostReactionController::class, 'toggle']);
 
 });
 

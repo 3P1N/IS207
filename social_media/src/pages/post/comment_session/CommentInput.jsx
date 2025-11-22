@@ -1,13 +1,17 @@
 // src/components/Post/CommentsSection/CommentInput.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import InsertEmoticonIcon from "@mui/icons-material/InsertEmoticon";
 import ImageIcon from "@mui/icons-material/Image";
 import SendIcon from "@mui/icons-material/Send";
+import CircularProgress from "@mui/material/CircularProgress";
 import './CommentInput.css';
 import { api } from "../../../shared/api";
 import { useParams } from "react-router-dom";
+import { AuthContext } from "../../../router/AuthProvider";
+import AvatarUser from "../../../shared/components/AvatarUser";
+
 
 export default function CommentInput({
     currentUserProfile,
@@ -16,44 +20,60 @@ export default function CommentInput({
     setComments,
     placeholder = "Write a comment..."
 }) {
-    const [value, setValue] = useState("");
+    const [content, setContent] = useState("");
     const textareaRef = useRef(null);
     const [loading, setLoading] = useState(false);
+    const { token } = useContext(AuthContext);
+
     // auto-resize textarea
     const resize = () => {
         const ta = textareaRef.current;
         if (!ta) return;
         ta.style.height = "auto";
-        // add a small extra to prevent scrollbar flicker
         ta.style.height = `${ta.scrollHeight + 2}px`;
     };
 
     useEffect(() => {
         resize();
-    }, [value]);
+    }, [content]);
 
     const handleChange = (e) => {
-        setValue(e.target.value);
+        setContent(e.target.value);
     };
 
     const sendComment = async () => {
-        
-        const response = await api.post(`/posts/${postId}/comments`);
-        return response.data;
-    }
-    // Submit handler (mock)
-    const handlePost = () => {
-        if (!value.trim()) return;
+        // trả về response.data (giả sử API trả về comment vừa tạo)
+        const response = await api.post(
+            `/posts/${postId}/comments`,
+            { content },
+            {
+                headers: { Authorization: `Bearer ${token}` }
+            }
+        );
+        return response.data.comment;
+    };
+
+    // Submit handler
+    const handlePost = async () => {
+        if (!content.trim()) return;
+        if (loading) return; // tránh double submit
         setLoading(true);
         try {
-            const response = sendComment();
-            console.log(response);
+            const newComment = await sendComment();
+            console.log("gửi comment: ", newComment);
+
+            // nếu API trả về comment mới, thêm vào danh sách (đưa lên đầu)
+            if (newComment) {
+                setComments(prev => [newComment, ...(prev || [])]);
+            }
+
+            // clear input
+            setContent("");
         } catch (err) {
             console.log("lỗi khi gửi comment: ", err);
+            // bạn có thể show toast / snackbar lỗi ở đây
         } finally {
-            setLoading(true);
-            setValue("");
-
+            setLoading(false);
         }
     };
 
@@ -65,19 +85,12 @@ export default function CommentInput({
         }
     };
 
-    const isEmpty = value.trim().length === 0;
+    const isEmpty = content.trim().length === 0;
 
     return (
         <div className="flex items-start gap-3">
-            {/* Avatar */}
-            <div
-                className="bg-center bg-no-repeat bg-cover rounded-full size-10 mt-1 shrink-0"
-                data-alt="Current user's profile picture"
-                style={{
-                    backgroundImage: `url("${currentUserProfile?.profilePicture || ''}")`
-                }}
-            />
-
+            
+            <AvatarUser userData={currentUserProfile} />
             {/* Input area */}
             <div className="flex-1">
                 <div className="bg-background-light dark:bg-background-dark rounded-xl p-2 md:p-3">
@@ -92,7 +105,7 @@ export default function CommentInput({
                         "
                         placeholder={placeholder}
                         rows={1}
-                        value={value}
+                        value={content}             // <-- dùng value thay vì content
                         onChange={handleChange}
                         onKeyDown={handleKeyDown}
                         style={{ lineHeight: "1.4rem" }}
@@ -102,27 +115,41 @@ export default function CommentInput({
 
                 <div className="flex items-center justify-between mt-2">
                     {/* Left: icons */}
-
+                    <div className="flex items-center gap-2">
+                        <Tooltip title="Add emoji">
+                            <IconButton size="small">
+                                <InsertEmoticonIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Add image">
+                            <IconButton size="small">
+                                <ImageIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </div>
 
                     {/* Right: Post button */}
                     <div className="flex items-center gap-2">
-                        {/* Optional character count, shows only when hover or has text */}
                         <div className="text-xs text-text-light-secondary dark:text-text-dark-secondary mr-2 hidden sm:block">
-                            {value.length > 0 ? `${value.length} chars` : ""}
+                            {content.length > 0 ? `${content.length} chars` : ""}
                         </div>
 
                         <button
                             onClick={handlePost}
-                            disabled={isEmpty}
+                            disabled={isEmpty || loading}
                             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all
-                ${isEmpty
+                                ${isEmpty || loading
                                     ? "bg-gray-300 text-gray-600 cursor-not-allowed opacity-80"
                                     : "bg-blue-600 hover:bg-blue-700 cursor-pointer text-white"}
-              `}
+                            `}
                             title={isEmpty ? "Type a comment to enable" : "Post comment (Ctrl/Cmd + Enter)"}
                         >
-                            <SendIcon fontSize="small" />
-                            <span className="hidden sm:inline">Post</span>
+                            {loading ? (
+                                <CircularProgress size={18} />      // spinner khi loading
+                            ) : (
+                                <SendIcon fontSize="small" />
+                            )}
+                            <span className="hidden sm:inline">{loading ? "Posting..." : "Post"}</span>
                         </button>
                     </div>
                 </div>

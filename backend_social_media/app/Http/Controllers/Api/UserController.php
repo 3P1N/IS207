@@ -84,6 +84,6 @@ class UserController extends Controller{
             })
             ->where('is_Violated', false)
             ->get();
-        return response()->json($users, 201); 
+        return response()->json($users, 200); 
     }
 }
