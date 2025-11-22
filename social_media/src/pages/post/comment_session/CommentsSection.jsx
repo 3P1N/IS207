@@ -54,7 +54,10 @@ export default function CommentsSection() {
 
                     <div className="flex flex-col gap-4">
                         {comments.map((comment, index) => (
-                            <CommentItem key={index} comment={comment} />
+                            <CommentItem key={index} comment={comment}
+                                setComments={setComments}
+                                comments = {comments}
+                            />
                         ))}
                     </div>
                 )
