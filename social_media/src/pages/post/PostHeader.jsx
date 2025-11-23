@@ -39,11 +39,7 @@ export default function PostHeader({ headerData, postData, index }) {
 
   const deletePost = async (postId) => {
     const response = await api.delete(
-      `/posts/${postId}`,
-
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
+      `/posts/${postId}`
     );
     return response.data;
   };
@@ -70,13 +66,7 @@ export default function PostHeader({ headerData, postData, index }) {
   };
 
   const report = async (postId) => {
-    const response = await api.post(
-      `/posts/${postId}/report`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const response = await api.post(`/posts/${postId}/report`);
     return response.data;
   };
 

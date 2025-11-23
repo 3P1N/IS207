@@ -13,11 +13,7 @@ export default function ProfileSuggest() {
   const getSuggestions = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/friends", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get("/friends");
       console.log(response);
 
       const all = response.data.friends || [];

@@ -15,11 +15,7 @@ export default function PostActionsBar({ likes, comments, shares, isLiked, postI
     const sendReaction = async () => {
         console.log("postId: ", postId);
 
-        const response = await api.post(`/posts/${postId}/reaction`, {}, {
-            headers:
-                { Authorization: `Bearer ${token}` }
-
-        });
+        const response = await api.post(`/posts/${postId}/reaction`);
         return response;
     }
     const handleLike = async () => {

@@ -13,11 +13,7 @@ export default function ProfileFriend() {
   const getFriends = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/friends", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get("/friends");
       console.log(response);
       setFriends(response.data.friends || []);
     } catch (error) {

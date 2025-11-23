@@ -45,10 +45,7 @@ export default function CommentInput({
         // trả về response.data (giả sử API trả về comment vừa tạo)
         const response = await api.post(
             `/posts/${postId}/comments`,
-            { content },
-            {
-                headers: { Authorization: `Bearer ${token}` }
-            }
+            { content }
         );
         return response.data.comment;
     };

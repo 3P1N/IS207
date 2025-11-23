@@ -29,11 +29,6 @@ export default function PostCreate() {
                 {
                     content: postContent,
                     media_url: urls,
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
                 }
             );
             return response.data;

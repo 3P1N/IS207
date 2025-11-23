@@ -17,11 +17,7 @@ export default function HomePage() {
         setLoading(true);
 
         try {
-            const response = await api.get(url, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await api.get(url);
 
             console.log(response.data);
 

@@ -17,12 +17,7 @@ export default function CommentsSection() {
     const getComments = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/posts/${postId}/comments`,
-                {
-                    headers:
-                        { Authorization: `Bearer ${token}` }
-                }
-            );
+            const response = await api.get(`/posts/${postId}/comments`);
             console.log(response.data);
             setComments(response.data);
         } catch (err) {

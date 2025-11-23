@@ -23,11 +23,7 @@ export default function PostDetailPage() {
     const getPostData = async (postId) => {
         setLoading(true);
         try {
-            const response = await api.get(`/posts/${postId}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await api.get(`/posts/${postId}`);
             setPostData(response.data);
             console.log(response.data);
         } catch (err) {

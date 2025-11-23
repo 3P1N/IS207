@@ -25,11 +25,7 @@ export default function ThreadList() {
     // Gọi API để lấy danh sách cuộc trò chuyện
     setLoading(true);
     try {
-      const response = await api.get("/conversations", {
-        headers: {
-          Authorization: `Bearer ${token}`, // 👈 thêm token tại đây
-        },
-      });
+      const response = await api.get("/conversations");
       return response.data; // Giả sử API trả về mảng cuộc trò chuyện trong thuộc tính 'conversations'
     } catch (error) {
       console.error("Error fetching threads:", error);

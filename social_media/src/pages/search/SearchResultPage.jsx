@@ -124,12 +124,7 @@ function PeopleSection({ keyword }) {
     setLoading(true);
     try {
       console.log("đang lấy dữ liệu");
-      const response = await api.get(`/users?search=${keyword}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-      );
+      const response = await api.get(`/users?search=${keyword}`);
       console.log(response.data);
       setUsersData(response.data);
     } catch (err) {
@@ -190,12 +185,7 @@ function PostsSection({ keyword }) {
     setLoading(true);
     try {
       console.log("đang lấy dữ liệu");
-      const response = await api.get(`/posts?search=${keyword}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-      );
+      const response = await api.get(`/posts?search=${keyword}` );
       setPostData(response.data.data);
     } catch (err) {
       console.log("Lỗi khi load posts: ", err);

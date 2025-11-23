@@ -33,9 +33,7 @@ export default function CommentItem({ comment, comments, setComments }) {
     const deleteComment = async () => {
         setLoading(true);
         try {
-            await api.delete(`posts/${comment.post_id}/comments/${comment.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`posts/${comment.post_id}/comments/${comment.id}`);
             setComments(prev => prev.filter(c => c.id !== comment.id));
             setSnackbar({ open: true, message: 'Delete comment successfully', severity: 'success' });
 
@@ -61,7 +59,6 @@ export default function CommentItem({ comment, comments, setComments }) {
             const response = await api.patch(
                 `posts/${comment.post_id}/comments/${comment.id}`,
                 { content: editContent },
-                { headers: { Authorization: `Bearer ${token}` } }
             );
 
             // Cập nhật state comments

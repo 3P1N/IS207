@@ -1,7 +1,8 @@
 import { ChildCare } from "@mui/icons-material";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../shared/api";
 import { createEcho } from "../shared/echo";
+import LoadingPage from "../pages/loading/LoadingPage";
 export const AuthContext = createContext(null);
 
 export default function AuthProvider({ children }) {
@@ -9,6 +10,7 @@ export default function AuthProvider({ children }) {
     const [userData, setUserData] = useState(null);
     // const login = (userData) => setUserData(userData);
     const [postsData, setPostsData] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [token, setToken] = useState(null);
     const [echoInstance, setEchoInstance] = useState(null);
     const register = async (userData) => {
@@ -17,28 +19,49 @@ export default function AuthProvider({ children }) {
         console.log("Registration successful:", response.data);
         return response;
     }
-    
+
+    const getUserData = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get("/me");
+            setUserData(response.data);
+            // console.log(response);
+            console.log("dữ liệu người dùng: ", userData);
+        } catch (err) {
+            console.log("lỗi khi lấy thông tin người dùng: ", err);
+        } finally {
+            setLoading(false);
+        }
+    }
+    useEffect(() => {
+        getUserData();
+    }, []);
+
     const login = async (userData) => {
 
         const response = await api.post("/auth/login", userData);
-        
+
         setUserData(response.data.user);
         setToken(response.data.access_token);
-        setEchoInstance(createEcho(response.data.access_token)); // reset echo instance to force re-create with new token
+        setTimeout(() => {
+            setEchoInstance(createEcho());
+        }, 50);
+        // await setEchoInstance(createEcho()); // reset echo instance to force re-create with new token
         console.log("Login successful:", response.data);
         return response;
 
     };
 
-    
 
-    const logout = () => {
-        
-        setToken(null);
+
+    const logout = async () => {
+        const response = await api.post("/auth/logout");
+        // setToken(null);
     }
 
+    if (loading) return <LoadingPage />
     return (
-        <AuthContext.Provider value={{userData, token, login, logout, echoInstance, register, postsData, setPostsData }}>
+        <AuthContext.Provider value={{ userData, token, login, logout, echoInstance, register, postsData, setPostsData }}>
             {children}
         </AuthContext.Provider>
     )

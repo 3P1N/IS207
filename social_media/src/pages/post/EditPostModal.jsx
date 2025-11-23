@@ -78,9 +78,7 @@ export default function EditPostModal({ postData, postIndex }) {
 
             const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
             // console.log(uploadedUrls);
-            const response = await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls });
             const editPost = response.data.post;
             console.log("editing");
             console.log("edit: ", postIndex);

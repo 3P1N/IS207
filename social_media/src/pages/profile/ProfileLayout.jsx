@@ -30,11 +30,7 @@ export default function ProfileLayout() {
       // CASE 2: trang cá nhân người khác -> gọi API theo id trên URL
       try {
         setLoading(true);
-        const res = await api.get(`/users/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await api.get(`/users/${id}`);
         setProfileUser(res.data.user || res.data);
         console.log("Fetched user from backend:", res.data);
       } catch (err) {

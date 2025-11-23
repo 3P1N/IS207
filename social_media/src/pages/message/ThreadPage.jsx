@@ -20,6 +20,7 @@ export default function ThreadPage() {
   const bottomRef = useRef(null);
 
   useEffect(() => {
+    console.log(userData);
     if (!echoInstance) return; // đợi echo sẵn sàng
     console.log("🔌 subscribe effect mount", threadId);
 
@@ -44,6 +45,7 @@ export default function ThreadPage() {
     try { channel.listen("MessageSent", handler); } catch (e) { /* ignore */ }
 
     return () => {
+      
       try {
         console.log("🧹 unsubscribing", channelName);
 
@@ -94,11 +96,7 @@ export default function ThreadPage() {
     // Gọi API để lấy tin nhắn
     setLoadingMessage(true);
     try {
-      const response = await api.get(`/conversations/${conversationId}/messages`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // 👈 thêm token tại đây
-        },
-      });
+      const response = await api.get(`/conversations/${conversationId}/messages`);
       console.log("Fetched messages:", response.data);
       setMessages(response.data);
     } catch (error) {
@@ -114,10 +112,6 @@ export default function ThreadPage() {
       // Gọi API để gửi tin nhắn
       const response = await api.post(`/conversations/${threadId}/messages`, {
         content: newMessage,
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`, // 👈 thêm token tại đây
-        },
       });
       // console.log("Message sent:", response.data);
       // Cập nhật danh sách tin nhắn với tin nhắn mới

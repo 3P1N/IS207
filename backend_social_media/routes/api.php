@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-Route::middleware('auth:sanctum')->get('/me', fn (Illuminate\Http\Request $r) => $r->user());
+Route::middleware('auth.cookie')->get('/me', fn (Illuminate\Http\Request $r) => $r->user());
 
 //test role middleware
 Route::middleware('auth:sanctum')->group(function () {
@@ -24,7 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::prefix('auth')->group(function () {
     Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::middleware('throttle:10,1')->post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
-    // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+    Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
 });
 
 Route::get('/email/verify/{id}/{hash}', [App\Http\Controllers\Api\VerificationController::class, 'verifyStateless'])
@@ -35,7 +35,7 @@ Route::middleware(['auth:sanctum', 'verified.api'])->get('/dashboard', function 
     return 'Chỉ user đã xác thực email mới vào được';
 });
 
-Route::middleware('auth:sanctum', 'verified.api')->group(function () {
+Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::get('/friends', [App\Http\Controllers\Api\FriendController::class, 'index']);
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
     Route::get('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum', 'verified.api')->group(function () {
 
 });
 
+Broadcast::routes(['middleware' => ['auth.cookie']]);
 
 // Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
