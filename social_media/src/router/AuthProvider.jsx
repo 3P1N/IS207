@@ -11,6 +11,7 @@ export default function AuthProvider({ children }) {
     // const login = (userData) => setUserData(userData);
     const [postsData, setPostsData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [authReady, setAuthReady] = useState(false);
     const [token, setToken] = useState(null);
     const [echoInstance, setEchoInstance] = useState(null);
     const register = async (userData) => {
@@ -31,10 +32,13 @@ export default function AuthProvider({ children }) {
             console.log("lỗi khi lấy thông tin người dùng: ", err);
         } finally {
             setLoading(false);
+            setAuthReady(true);
         }
     }
     useEffect(() => {
-        getUserData();
+        setLoading(true);
+        if (!userData) { getUserData(); }
+        if (!echoInstance) { setEchoInstance(createEcho()); }
     }, []);
 
     const login = async (userData) => {
@@ -60,8 +64,8 @@ export default function AuthProvider({ children }) {
     }
 
     if (loading) return <LoadingPage />
-    return (
-        <AuthContext.Provider value={{ userData, token, login, logout, echoInstance, register, postsData, setPostsData }}>
+    return ( 
+        <AuthContext.Provider value={{ userData, token, login, logout, echoInstance, register, postsData, setPostsData, authReady }}>
             {children}
         </AuthContext.Provider>
     )
