@@ -1,55 +1,51 @@
 import * as React from "react";
-import { useState, useEffect, useContext, useMemo } from "react";
-import { List, ListItemButton, ListItemText, ListItemAvatar, Typography } from "@mui/material";
+import { useContext, useMemo } from "react";
+import {
+  List,
+  ListItemButton,
+  ListItemText,
+  ListItemAvatar,
+  Typography,
+} from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import ChatIcon from "@mui/icons-material/Chat";
+// 1. Import hook
+import { useQuery } from "@tanstack/react-query";
 import AvatarUser from "../../shared/components/AvatarUser";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
 
 export default function ThreadList() {
-  const { token, userData } = useContext(AuthContext);
-  const [threads, setThreads] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { userData } = useContext(AuthContext);
   const meId = userData ? userData.id : null;
-  useEffect(() => {
-    const fetchThreads = async () => {
-      const threadsList = await getThreads();
-      setThreads(threadsList);
-    };
 
-    fetchThreads();
-  }, []);
+  // --- 1. HÀM FETCH DATA ---
+  const fetchThreads = async () => {
+    const response = await api.get("/conversations");
+    return response.data; // Chỉ return data, không set state
+  };
 
-  const getThreads = async () => {
-    // Gọi API để lấy danh sách cuộc trò chuyện
-    setLoading(true);
-    try {
-      const response = await api.get("/conversations");
-      return response.data; // Giả sử API trả về mảng cuộc trò chuyện trong thuộc tính 'conversations'
-    } catch (error) {
-      console.error("Error fetching threads:", error);
-      return [];
-    }finally{
-      setLoading(false);
-    }
-    
-  }
+  // --- 2. SỬ DỤNG USEQUERY ---
+  const { data: threads = [], isLoading } = useQuery({
+    queryKey: ["conversations"], // Key định danh cho list chat
+    queryFn: fetchThreads,
+    staleTime: 30 * 1000, // Cache dữ liệu trong 30s
+    enabled: !!meId, // Chỉ fetch khi đã có thông tin user (đã đăng nhập)
+    refetchOnWindowFocus: false,
+  });
 
-
-  // Chuẩn hoá: lấy tên người còn lại (đối phương) trong cuộc trò chuyện 1-1
+  // --- 3. CHUẨN HÓA DỮ LIỆU (Logic giữ nguyên) ---
   const normalizedThreads = useMemo(() => {
-    return (threads || []).map((t) => {
+    // Đảm bảo threads là mảng trước khi map
+    if (!Array.isArray(threads)) return [];
+
+    return threads.map((t) => {
       const participants = Array.isArray(t.participants) ? t.participants : [];
 
+      // Lọc ra người kia (không phải mình)
       const others = participants.filter((p) => p.user_id !== meId);
+      const other = others[0]; 
 
-      const other = others[0]; // 1-1 thì chỉ cần người đầu tiên khác mình
-
-      const displayName =
-        other?.user?.name
-        ?? ("Cuộc trò chuyện");
-
+      const displayName = other?.user?.name ?? "Cuộc trò chuyện";
       const avatarUrl = other?.user?.avatar || "image.png";
 
       // Ưu tiên conversation_id để điều hướng
@@ -63,33 +59,57 @@ export default function ThreadList() {
     });
   }, [threads, meId]);
 
-  return loading ? (
-    <Typography variant="body2" sx={{ color: "text.secondary" }}>
-      Đang tải danh sách tin nhắn...
-    </Typography>
-  ) : (
+  // --- 4. RENDER ---
+  if (isLoading) {
+    return (
+      <Typography variant="body2" sx={{ color: "text.secondary", p: 2 }}>
+        Đang tải danh sách tin nhắn...
+      </Typography>
+    );
+  }
+
+  return (
     <List sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}>
-      {normalizedThreads.map((thread) => (
-        <ListItemButton
-          key={thread.conversationId}
-          component={RouterLink}
-          to={`/message/${thread.conversationId}`}
-          sx={{
-            borderRadius: 2,
-            mb: 0.5,
-            "&.active": { backgroundColor: "#e3f2fd" },
-          }}
-        >
-          <ListItemAvatar>
-            <AvatarUser userData={{ name: thread.displayName, avatarUrl: thread.avatarUrl, id: thread.conversationId }} />
-          </ListItemAvatar>
-          <ListItemText
-            primary={thread.displayName}
-            secondary={`Tin nhắn gần nhất...`}
-          />
-        </ListItemButton>
-      ))}
+      {normalizedThreads.length === 0 ? (
+        <Typography variant="body2" sx={{ p: 2, textAlign: "center" }}>
+          Chưa có cuộc trò chuyện nào.
+        </Typography>
+      ) : (
+        normalizedThreads.map((thread) => (
+          <ListItemButton
+            key={thread.conversationId}
+            component={RouterLink}
+            to={`/message/${thread.conversationId}`}
+            sx={{
+              borderRadius: 2,
+              mb: 0.5,
+              "&.active": { backgroundColor: "#e3f2fd" },
+            }}
+          >
+            <ListItemAvatar>
+              {/* Tạo object user giả lập để truyền vào AvatarUser */}
+              <AvatarUser
+                userData={{
+                  name: thread.displayName,
+                  avatarUrl: thread.avatarUrl,
+                  id: thread.conversationId,
+                }}
+              />
+            </ListItemAvatar>
+            <ListItemText
+              primary={thread.displayName}
+              secondary={`Tin nhắn gần nhất...`}
+              primaryTypographyProps={{
+                fontWeight: 500,
+                noWrap: true,
+              }}
+              secondaryTypographyProps={{
+                noWrap: true,
+              }}
+            />
+          </ListItemButton>
+        ))
+      )}
     </List>
   );
-
 }

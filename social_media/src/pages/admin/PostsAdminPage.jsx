@@ -1,5 +1,4 @@
-// src/pages/admin/PostsAdminPage.jsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -11,55 +10,55 @@ import {
   Button,
   Chip,
   Paper,
-  Avatar,
+  CircularProgress,
 } from "@mui/material";
-import CircularProgress from '@mui/material/CircularProgress';
+// 1. Import React Query hooks
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AvatarUser from "../../shared/components/AvatarUser";
 import { Link } from "react-router-dom";
 import { api } from "../../shared/api";
 
-
 export default function PostsAdminPage() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  // Vẫn giữ state này để quản lý loading riêng cho từng nút bấm (UX tốt hơn)
   const [loadingToggles, setLoadingToggles] = useState({});
 
+  // --- 1. HÀM FETCH DATA ---
+  const fetchPostsViolation = async () => {
+    const response = await api.get("admin/posts/violation");
+    // React Query cần hàm này return dữ liệu, không phải set state
+    return response.data;
+  };
+
+  // --- 2. SỬ DỤNG USEQUERY ---
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ["violation-posts"], // Key định danh riêng cho list bài viết vi phạm
+    queryFn: fetchPostsViolation,
+    staleTime: 300 * 1000, // Cache dữ liệu trong 5p
+    refetchOnWindowFocus: false,
+  });
+
+  // --- 3. HÀM XỬ LÝ ẨN/HIỆN BÀI VIẾT ---
   const toggleVisibility = async (postId) => {
-    setLoadingToggles(prev => ({ ...prev, [postId]: true }));
+    // Bật loading cho nút bấm cụ thể
+    setLoadingToggles((prev) => ({ ...prev, [postId]: true }));
 
     try {
-      const response = await api.patch(`/admin/posts/${postId}/is_visible`);
-      setPosts(prev =>
-        prev.map(p =>
-          p.id === postId ? { ...p, is_visible: !p.is_visible } : p
-        )
-      );
-
+      await api.patch(`/admin/posts/${postId}/is_visible`);
+      
+      // Thành công -> Báo cho React Query biết dữ liệu đã cũ
+      // Nó sẽ tự động gọi lại API fetchPostsViolation để lấy list mới nhất
+      await queryClient.invalidateQueries({ queryKey: ["violation-posts"] });
+      
     } catch (err) {
-      console.log("Lỗi khi chỉnh violated user: ", err);
+      console.log("Lỗi khi chỉnh trạng thái bài viết: ", err);
     } finally {
-      setLoadingToggles(prev => ({ ...prev, [postId]: false }));
+      // Tắt loading nút bấm
+      setLoadingToggles((prev) => ({ ...prev, [postId]: false }));
     }
-  }
-  const getPostsViolation = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get("admin/posts/violation");
-      console.log(response.data);
-      setPosts(response.data);
-    } catch (err) {
-      console.log("Lỗi khi lấy bài viết vi phạm: ", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  };
 
-  useEffect(() => {
-    getPostsViolation();
-  }, []);
-
-
-  // Sort theo số report giảm dần
+  // --- 4. SẮP XẾP (Logic giữ nguyên) ---
   const sortedPosts = useMemo(
     () => [...posts].sort((a, b) => b.reports_count - a.reports_count),
     [posts]
@@ -93,19 +92,22 @@ export default function PostsAdminPage() {
               <TableCell align="right">Hành động</TableCell>
             </TableRow>
           </TableHead>
-          {loading ?
-            (<TableBody>
+
+          {/* Dùng biến isLoading của React Query */}
+          {isLoading ? (
+            <TableBody>
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                  Loading posts...
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <CircularProgress /> <br /> Đang tải dữ liệu...
                 </TableCell>
               </TableRow>
             </TableBody>
-            ) :
-            (<TableBody>
+          ) : (
+            <TableBody>
               {sortedPosts.map((post) => {
-                const isHidden = post.is_visible;
+                const isHidden = !post.is_visible; // Lưu ý logic ở đây tùy thuộc vào API trả về (is_visible true là hiện, false là ẩn)
                 const isLoadingThis = !!loadingToggles[post.id];
+
                 return (
                   <TableRow key={post.id} hover>
                     {/* ID bài viết – clickable */}
@@ -127,10 +129,8 @@ export default function PostsAdminPage() {
                     {/* Avatar + tên – click avatar vào profile */}
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <AvatarUser
-                          userData={post.user}
-                        />
-                        <Typography variant="body2">{post.user.name}</Typography>
+                        <AvatarUser userData={post.user} />
+                        <Typography variant="body2">{post.user?.name}</Typography>
                       </Box>
                     </TableCell>
 
@@ -159,8 +159,8 @@ export default function PostsAdminPage() {
 
                     <TableCell>
                       <Chip
-                        label={isHidden ? "Đã ẩn" : "Đang hiển thị"}
-                        color={isHidden ? "default" : "success"}
+                        label={!post.is_visible ? "Đã ẩn" : "Đang hiển thị"}
+                        color={!post.is_visible ? "default" : "success"}
                         size="small"
                       />
                     </TableCell>
@@ -169,12 +169,14 @@ export default function PostsAdminPage() {
                       <Button
                         variant="contained"
                         size="small"
+                        color={!post.is_visible ? "success" : "error"} // Nếu đang ẩn thì nút màu xanh (để hiện), ngược lại màu đỏ
                         onClick={() => toggleVisibility(post.id)}
+                        disabled={isLoadingThis}
                       >
                         {isLoadingThis ? (
-                          <CircularProgress size={16} sx={{ color: '#fff' }} />
+                          <CircularProgress size={16} color="inherit" />
                         ) : (
-                          isHidden ? "Hiện lại" : "Ẩn bài"
+                            !post.is_visible ? "Hiện lại" : "Ẩn bài"
                         )}
                       </Button>
                     </TableCell>
@@ -182,8 +184,7 @@ export default function PostsAdminPage() {
                 );
               })}
             </TableBody>
-            )}
-
+          )}
         </Table>
       </Paper>
     </Box>

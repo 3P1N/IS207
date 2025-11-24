@@ -1,37 +1,45 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
-  Box,
-  Typography,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Button,
-  Chip,
-  Paper,
+  Box, Typography, Table, TableHead, TableRow, TableCell, TableBody,
+  Button, Chip, Paper, CircularProgress
 } from "@mui/material";
-import CircularProgress from '@mui/material/CircularProgress';
+import { useQuery, useQueryClient } from '@tanstack/react-query'; // Thêm useQueryClient
 import { Link } from "react-router-dom";
 import { api } from "../../shared/api";
 import AvatarUser from "../../shared/components/AvatarUser";
 
 export default function UsersAdminPage() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient(); // Dùng để làm mới data sau khi update
   const [loadingToggles, setLoadingToggles] = useState({});
 
+  // --- 1. FETCH DATA VỚI REACT QUERY ---
+  const fetchUsers = async () => {
+    const response = await api.get("/admin/users");
+    // Chuẩn hóa dữ liệu và RETURN nó
+    return (response.data || []).map((u) => ({
+      ...u,
+      is_Violated: !!u.is_Violated,
+    }));
+  };
+
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: fetchUsers,
+    staleTime: 300 * 1000, // Trong 60s, vào lại trang sẽ KHÔNG loading lại
+    refetchOnWindowFocus: false, // Tùy chọn: ko fetch lại khi tab web được focus
+  });
+
+  // --- 2. HANDLE ACTION (Chặn/Mở chặn) ---
   const toggleUserViolated = async (userId) => {
     setLoadingToggles(prev => ({ ...prev, [userId]: true }));
 
     try {
-      const response = await api.patch(`/admin/users/${userId}/violated`);
-      setUsers(prev =>
-        prev.map(u =>
-          u.id === userId ? { ...u, is_Violated: !u.is_Violated } : u
-        )
-      );
-
+      await api.patch(`/admin/users/${userId}/violated`);
+      
+      // QUAN TRỌNG: Sau khi update xong, báo cho React Query biết key ['users'] đã cũ
+      // Nó sẽ tự động fetch lại danh sách mới nhất ở background
+      await queryClient.invalidateQueries({ queryKey: ['users'] });
+      
     } catch (err) {
       console.log("Lỗi khi chỉnh violated user: ", err);
     } finally {
@@ -39,35 +47,12 @@ export default function UsersAdminPage() {
     }
   };
 
-  const getUsers = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get("/admin/users");
-      // chuẩn hóa dữ liệu (ép boolean cho is_Violated)
-      const normalized = (response.data || []).map((u) => ({
-        ...u,
-        is_Violated: !!u.is_Violated,
-      }));
-      setUsers(normalized);
-    } catch (err) {
-      console.log("Lỗi khi lấy danh sách người dùng: ", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    getUsers();
-  }, []);
-
-  // ưu tiên hiển thị user bị chặn trước
+  // --- 3. SẮP XẾP (Logic giữ nguyên) ---
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => {
       const aBlocked = !!a.is_Violated;
       const bBlocked = !!b.is_Violated;
-      // nếu cả 2 cùng trạng thái => giữ order
       if (aBlocked === bBlocked) return 0;
-      // đặt user bị chặn (true) lên trước
       return aBlocked ? -1 : 1;
     });
   }, [users]);
@@ -81,14 +66,7 @@ export default function UsersAdminPage() {
         Xem danh sách người dùng, trạng thái tài khoản và thao tác chặn / mở chặn.
       </Typography>
 
-      <Paper
-        elevation={3}
-        sx={{
-          mt: 2,
-          borderRadius: 3,
-          overflow: "hidden",
-        }}
-      >
+      <Paper elevation={3} sx={{ mt: 2, borderRadius: 3, overflow: "hidden" }}>
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: "#f0f2f5" }}>
@@ -100,33 +78,24 @@ export default function UsersAdminPage() {
             </TableRow>
           </TableHead>
 
-          {loading ? (
+          {/* Dùng biến isLoading của React Query */}
+          {isLoading ? (
             <TableBody>
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                  Loading users...
+                  <CircularProgress /> <br/> Đang tải dữ liệu...
                 </TableCell>
               </TableRow>
             </TableBody>
           ) : (
             <TableBody>
               {sortedUsers.map((user) => {
-                const isBlocked = !!user.is_Violated;
                 const isLoadingThis = !!loadingToggles[user.id];
-
                 return (
                   <TableRow key={user.id} hover>
                     <TableCell>
-                      <Typography
-                        component={Link}
-                        to={`/profile/${user.id}`}
-                        sx={{
-                          textDecoration: "none",
-                          color: "primary.main",
-                          fontWeight: 600,
-                          "&:hover": { textDecoration: "underline" },
-                        }}
-                      >
+                      <Typography component={Link} to={`/profile/${user.id}`} 
+                        sx={{ textDecoration: "none", color: "primary.main", fontWeight: 600 }}>
                         #{user.id}
                       </Typography>
                     </TableCell>
@@ -156,11 +125,7 @@ export default function UsersAdminPage() {
                         onClick={() => toggleUserViolated(user.id)}
                         disabled={isLoadingThis}
                       >
-                        {isLoadingThis ? (
-                          <CircularProgress size={16} />
-                        ) : (
-                          user.is_Violated ? "Mở chặn" : "Chặn"
-                        )}
+                        {isLoadingThis ? <CircularProgress size={16} color="inherit"/> : (user.is_Violated ? "Mở chặn" : "Chặn")}
                       </Button>
                     </TableCell>
                   </TableRow>
