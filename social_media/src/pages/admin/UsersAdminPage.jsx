@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -10,55 +10,67 @@ import {
   Button,
   Chip,
   Paper,
-  Avatar,
 } from "@mui/material";
+import CircularProgress from '@mui/material/CircularProgress';
 import { Link } from "react-router-dom";
-
-const initialUsers = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    email: "a@example.com",
-    status: "active",
-    avatar: "https://i.pravatar.cc/150?img=1",
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    email: "b@example.com",
-    status: "blocked",
-    avatar: "https://i.pravatar.cc/150?img=2",
-  },
-  {
-    id: 3,
-    name: "Lê Văn C",
-    email: "c@example.com",
-    status: "active",
-    avatar: "https://i.pravatar.cc/150?img=3",
-  },
-];
+import { api } from "../../shared/api";
+import AvatarUser from "../../shared/components/AvatarUser";
 
 export default function UsersAdminPage() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingToggles, setLoadingToggles] = useState({});
 
-  const toggleBlock = (id) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id
-          ? { ...u, status: u.status === "active" ? "blocked" : "active" }
-          : u
-      )
-    );
+  const toggleUserViolated = async (userId) => {
+    setLoadingToggles(prev => ({ ...prev, [userId]: true }));
+
+    try {
+      const response = await api.patch(`/admin/users/${userId}/violated`);
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === userId ? { ...u, is_Violated: !u.is_Violated } : u
+        )
+      );
+
+    } catch (err) {
+      console.log("Lỗi khi chỉnh violated user: ", err);
+    } finally {
+      setLoadingToggles(prev => ({ ...prev, [userId]: false }));
+    }
   };
 
-  // (Ví dụ) ưu tiên hiển thị user bị chặn trước
-  const sortedUsers = useMemo(
-    () =>
-      [...users].sort((a, b) =>
-        a.status === b.status ? 0 : a.status === "blocked" ? -1 : 1
-      ),
-    [users]
-  );
+  const getUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/admin/users");
+      // chuẩn hóa dữ liệu (ép boolean cho is_Violated)
+      const normalized = (response.data || []).map((u) => ({
+        ...u,
+        is_Violated: !!u.is_Violated,
+      }));
+      setUsers(normalized);
+    } catch (err) {
+      console.log("Lỗi khi lấy danh sách người dùng: ", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getUsers();
+  }, []);
+
+  // ưu tiên hiển thị user bị chặn trước
+  const sortedUsers = useMemo(() => {
+    return [...users].sort((a, b) => {
+      const aBlocked = !!a.is_Violated;
+      const bBlocked = !!b.is_Violated;
+      // nếu cả 2 cùng trạng thái => giữ order
+      if (aBlocked === bBlocked) return 0;
+      // đặt user bị chặn (true) lên trước
+      return aBlocked ? -1 : 1;
+    });
+  }, [users]);
 
   return (
     <Box>
@@ -87,64 +99,75 @@ export default function UsersAdminPage() {
               <TableCell align="right">Hành động</TableCell>
             </TableRow>
           </TableHead>
-          <TableBody>
-            {sortedUsers.map((user) => {
-              const isBlocked = user.status === "blocked";
-              return (
-                <TableRow key={user.id} hover>
-                  <TableCell>
-                    {/* Click ID cũng có thể dẫn tới trang cá nhân nếu bạn muốn */}
-                    <Typography
-                      component={Link}
-                      to={`/profile/${user.id}`}
-                      sx={{
-                        textDecoration: "none",
-                        color: "primary.main",
-                        fontWeight: 600,
-                        "&:hover": { textDecoration: "underline" },
-                      }}
-                    >
-                      #{user.id}
-                    </Typography>
-                  </TableCell>
 
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                      <Avatar
+          {loading ? (
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  Loading users...
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          ) : (
+            <TableBody>
+              {sortedUsers.map((user) => {
+                const isBlocked = !!user.is_Violated;
+                const isLoadingThis = !!loadingToggles[user.id];
+
+                return (
+                  <TableRow key={user.id} hover>
+                    <TableCell>
+                      <Typography
                         component={Link}
                         to={`/profile/${user.id}`}
-                        src={user.avatar}
-                        alt={user.name}
-                        sx={{ width: 36, height: 36, cursor: "pointer" }}
+                        sx={{
+                          textDecoration: "none",
+                          color: "primary.main",
+                          fontWeight: 600,
+                          "&:hover": { textDecoration: "underline" },
+                        }}
+                      >
+                        #{user.id}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <AvatarUser userData={user} />
+                        <Typography variant="body2">{user.name}</Typography>
+                      </Box>
+                    </TableCell>
+
+                    <TableCell>{user.email}</TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={user.is_Violated ? "Đã chặn" : "Đang hoạt động"}
+                        color={user.is_Violated ? "error" : "success"}
+                        size="small"
                       />
-                      <Typography variant="body2">{user.name}</Typography>
-                    </Box>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell>{user.email}</TableCell>
-
-                  <TableCell>
-                    <Chip
-                      label={isBlocked ? "Đã chặn" : "Đang hoạt động"}
-                      color={isBlocked ? "error" : "success"}
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell align="right">
-                    <Button
-                      variant="contained"
-                      size="small"
-                      color={isBlocked ? "success" : "error"}
-                      onClick={() => toggleBlock(user.id)}
-                    >
-                      {isBlocked ? "Mở chặn" : "Chặn"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
+                    <TableCell align="right">
+                      <Button
+                        variant="contained"
+                        size="small"
+                        color={user.is_Violated ? "success" : "error"}
+                        onClick={() => toggleUserViolated(user.id)}
+                        disabled={isLoadingThis}
+                      >
+                        {isLoadingThis ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          user.is_Violated ? "Mở chặn" : "Chặn"
+                        )}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          )}
         </Table>
       </Paper>
     </Box>

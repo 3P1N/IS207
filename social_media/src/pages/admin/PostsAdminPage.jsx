@@ -1,5 +1,5 @@
 // src/pages/admin/PostsAdminPage.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -13,54 +13,55 @@ import {
   Paper,
   Avatar,
 } from "@mui/material";
+import CircularProgress from '@mui/material/CircularProgress';
+import AvatarUser from "../../shared/components/AvatarUser";
 import { Link } from "react-router-dom";
+import { api } from "../../shared/api";
 
-const initialPosts = [
-  {
-    id: 101,
-    authorId: 1,
-    authorName: "Nguyễn Văn A",
-    avatar: "https://i.pravatar.cc/150?img=1",
-    content: "Hôm nay trời đẹp quá!",
-    status: "visible",
-    reports: 15,
-  },
-  {
-    id: 102,
-    authorId: 2,
-    authorName: "Trần Thị B",
-    avatar: "https://i.pravatar.cc/150?img=2",
-    content: "Code React mệt ghê :))",
-    status: "hidden",
-    reports: 9,
-  },
-  {
-    id: 103,
-    authorId: 3,
-    authorName: "Lê Văn C",
-    avatar: "https://i.pravatar.cc/150?img=3",
-    content: "Ai đi uống trà sữa không?",
-    status: "visible",
-    reports: 3,
-  },
-];
 
 export default function PostsAdminPage() {
-  const [posts, setPosts] = useState(initialPosts);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingToggles, setLoadingToggles] = useState({});
 
-  const toggleVisibility = (id) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, status: p.status === "visible" ? "hidden" : "visible" }
-          : p
-      )
-    );
-  };
+  const toggleVisibility = async (postId) => {
+    setLoadingToggles(prev => ({ ...prev, [postId]: true }));
+
+    try {
+      const response = await api.patch(`/admin/posts/${postId}/is_visible`);
+      setPosts(prev =>
+        prev.map(p =>
+          p.id === postId ? { ...p, is_visible: !p.is_visible } : p
+        )
+      );
+
+    } catch (err) {
+      console.log("Lỗi khi chỉnh violated user: ", err);
+    } finally {
+      setLoadingToggles(prev => ({ ...prev, [postId]: false }));
+    }
+  }
+  const getPostsViolation = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("admin/posts/violation");
+      console.log(response.data);
+      setPosts(response.data);
+    } catch (err) {
+      console.log("Lỗi khi lấy bài viết vi phạm: ", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    getPostsViolation();
+  }, []);
+
 
   // Sort theo số report giảm dần
   const sortedPosts = useMemo(
-    () => [...posts].sort((a, b) => b.reports - a.reports),
+    () => [...posts].sort((a, b) => b.reports_count - a.reports_count),
     [posts]
   );
 
@@ -92,89 +93,97 @@ export default function PostsAdminPage() {
               <TableCell align="right">Hành động</TableCell>
             </TableRow>
           </TableHead>
-          <TableBody>
-            {sortedPosts.map((post) => {
-              const isHidden = post.status === "hidden";
-              return (
-                <TableRow key={post.id} hover>
-                  {/* ID bài viết – clickable */}
-                  <TableCell>
-                    <Typography
-                      component={Link}
-                      to={`/post/${post.id}`}
-                      sx={{
-                        textDecoration: "none",
-                        color: "primary.main",
-                        fontWeight: 600,
-                        "&:hover": { textDecoration: "underline" },
-                      }}
-                    >
-                      #{post.id}
-                    </Typography>
-                  </TableCell>
-
-                  {/* Avatar + tên – click avatar vào profile */}
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                      <Avatar
+          {loading ?
+            (<TableBody>
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  Loading posts...
+                </TableCell>
+              </TableRow>
+            </TableBody>
+            ) :
+            (<TableBody>
+              {sortedPosts.map((post) => {
+                const isHidden = post.is_visible;
+                const isLoadingThis = !!loadingToggles[post.id];
+                return (
+                  <TableRow key={post.id} hover>
+                    {/* ID bài viết – clickable */}
+                    <TableCell>
+                      <Typography
                         component={Link}
-                        to={`/profile/${post.authorId}`}
-                        src={post.avatar}
-                        alt={post.authorName}
+                        to={`/post/${post.id}`}
                         sx={{
-                          width: 36,
-                          height: 36,
-                          cursor: "pointer",
+                          textDecoration: "none",
+                          color: "primary.main",
+                          fontWeight: 600,
+                          "&:hover": { textDecoration: "underline" },
                         }}
+                      >
+                        #{post.id}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Avatar + tên – click avatar vào profile */}
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <AvatarUser
+                          userData={post.user}
+                        />
+                        <Typography variant="body2">{post.user.name}</Typography>
+                      </Box>
+                    </TableCell>
+
+                    <TableCell sx={{ maxWidth: 300 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                        }}
+                      >
+                        {post.content}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={`${post.reports_count} report`}
+                        color={post.reports_count >= 10 ? "error" : "warning"}
+                        size="small"
                       />
-                      <Typography variant="body2">{post.authorName}</Typography>
-                    </Box>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell sx={{ maxWidth: 300 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }}
-                    >
-                      {post.content}
-                    </Typography>
-                  </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={isHidden ? "Đã ẩn" : "Đang hiển thị"}
+                        color={isHidden ? "default" : "success"}
+                        size="small"
+                      />
+                    </TableCell>
 
-                  <TableCell>
-                    <Chip
-                      label={`${post.reports} report`}
-                      color={post.reports >= 10 ? "error" : "warning"}
-                      size="small"
-                    />
-                  </TableCell>
+                    <TableCell align="right">
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => toggleVisibility(post.id)}
+                      >
+                        {isLoadingThis ? (
+                          <CircularProgress size={16} sx={{ color: '#fff' }} />
+                        ) : (
+                          isHidden ? "Hiện lại" : "Ẩn bài"
+                        )}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+            )}
 
-                  <TableCell>
-                    <Chip
-                      label={isHidden ? "Đã ẩn" : "Đang hiển thị"}
-                      color={isHidden ? "default" : "success"}
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell align="right">
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => toggleVisibility(post.id)}
-                    >
-                      {isHidden ? "Hiện lại" : "Ẩn bài"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
         </Table>
       </Paper>
     </Box>

@@ -21,6 +21,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('ensureRole:user')->get('/pong', fn () => response()->json(['message' => 'ping']));
 });
 
+Route::middleware(['auth.cookie','ensureRole:admin'])->prefix('admin')->group(function(){
+    Route::get('/users',  [App\Http\Controllers\Api\AdminController::class, 'getUsers']);
+    Route::patch('/users/{user}/violated',  [App\Http\Controllers\Api\AdminController::class, 'toggleUsersViolated']);
+
+    Route::get('/posts/violation',  [App\Http\Controllers\Api\AdminController::class, 'getPostsViolation']);
+    Route::patch('/posts/{post}/is_visible',  [App\Http\Controllers\Api\AdminController::class, 'togglePostsVisible']);
+
+});
+
 Route::prefix('auth')->group(function () {
     Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::middleware('throttle:10,1')->post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
@@ -52,6 +61,8 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);  
     Route::get('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'show']);
     Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
+    Route::patch('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'update']);
+
     Route::post('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'store']);
     Route::get('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'index']);
     Route::delete('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'destroy']);
