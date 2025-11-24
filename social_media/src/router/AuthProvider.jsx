@@ -1,6 +1,7 @@
 import { ChildCare } from "@mui/icons-material";
 import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../shared/api";
+import { useNavigate } from "react-router-dom";
 import { createEcho } from "../shared/echo";
 import LoadingPage from "../pages/loading/LoadingPage";
 export const AuthContext = createContext(null);
@@ -14,6 +15,7 @@ export default function AuthProvider({ children }) {
     const [authReady, setAuthReady] = useState(false);
     const [token, setToken] = useState(null);
     const [echoInstance, setEchoInstance] = useState(null);
+    const navigate = useNavigate();
     const register = async (userData) => {
         console.log(userData);
         const response = await api.post("/auth/register", userData);
@@ -60,7 +62,8 @@ export default function AuthProvider({ children }) {
 
     const logout = async () => {
         const response = await api.post("/auth/logout");
-        // setToken(null);
+        setUserData(null);
+        navigate("/login");
     }
 
     if (loading) return <LoadingPage />
