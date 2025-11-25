@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Post;
 use App\Models\Comment;
+use App\Models\CommentReaction;
+
 
 class CommentController extends Controller
 {
@@ -21,7 +23,17 @@ class CommentController extends Controller
         if(!$post){
             return response()->json(['message' => 'Post not found'], 404);
         }
-        $comment = Comment::where('post_id', $post->id)->with('user')->orderBy('created_at', 'desc')->get();
+        $userId = $user->id;
+        $comment = Comment::where('post_id', $post->id)
+                ->with('user')
+                ->orderBy('created_at', 'desc')
+                ->withExists([
+                    'reactions as is_liked' => function ($q) use ($userId) {
+                        $q->where('user_id', $userId);
+                    }
+                ])
+                ->withCount(['reactions'])
+                ->get();
         return response()->json($comment,200);
     }
     public function store(Request $request, Post $post)
@@ -82,4 +94,73 @@ class CommentController extends Controller
         $comment->update(['content'=>$request->content]);
         return response()->json($comment, 200);
     }
+    public function toggleReaction(Request $request,Post $post, Comment $comment){
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+        if(!$post){
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+        if(!$comment){
+            return response()->json(['message' => 'Comment not found'], 404);
+        }
+       
+        $CommentReaction = CommentReaction::where('user_id', $user->id)
+                            ->where('comment_id', $comment->id)
+                            ->first();
+        if(!$CommentReaction){
+            $CommentReaction = CommentReaction::create(['user_id'=>$user->id, 'comment_id'=>$comment->id]);
+            return response()->json($CommentReaction, 201);
+        }
+        $CommentReaction->delete();
+        
+        return response()->json(['message'=>'delete comment reaction successfully'], 200);
+    }
+
+    public function getCommentReactions(Request $request,Post $post, Comment $comment){
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+        if(!$post){
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+        if(!$comment){
+            return response()->json(['message' => 'Comment not found'], 404);
+        }
+
+        $CommentReaction = CommentReaction::where('comment_id', $comment->id)
+                            ->with('user')
+                            ->get();
+        
+        return response()->json($CommentReaction, 200);
+    }
+    public function replyComment(Request $request,Post $post, Comment $comment){
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+        if(!$post){
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+        if(!$comment){
+            return response()->json(['message' => 'Comment not found'], 404);
+        }
+      
+        $replyComment = Comment::create([
+            'content' => $request->content,
+            'user_id' => $user->id,
+            'post_id' => $post->id,
+            'parent_comment_id' => $comment->id
+        ]);
+        return response()->json($replyComment, 201);
+    }
+
 }

@@ -67,6 +67,10 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::get('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'index']);
     Route::delete('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'destroy']);
     Route::patch('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'update']);
+    Route::post('/posts/{post}/comments/{comment}/reactions', [App\Http\Controllers\Api\CommentController::class, 'toggleReaction']);
+    Route::get('/posts/{post}/comments/{comment}/reactions', [App\Http\Controllers\Api\CommentController::class, 'getCommentReactions']);
+    Route::post('/posts/{post}/comments/{comment}/replies', [App\Http\Controllers\Api\CommentController::class, 'replyComment']);
+
 
     Route::post('/posts/{post}/reaction',  [App\Http\Controllers\Api\PostReactionController::class, 'toggle']);
     Route::get('/posts/{post}/reactions',  [App\Http\Controllers\Api\PostReactionController::class, 'index']);

@@ -6,12 +6,19 @@ import { api } from '../../../shared/api';
 import CircularProgress from '@mui/material/CircularProgress';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
+import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
+// import CommentReactionsListModal from '../reaction/ReactionsListModal';
+import CommentReactionsListModal from '../reaction/CommentReactionsListModal';
 
 export default function CommentItem({ comment, comments, setComments }) {
-    const { userData,  } = useContext(AuthContext);
+    const { userData, token } = useContext(AuthContext);
     const isOwner = comment.user.id === userData.id;
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
+    const [liked, setLiked] = useState(comment.is_liked);
+    const [likeCount, setLikeCount] = useState(comment.reactions_count);
+    const [showReactions, setShowReactions] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -79,11 +86,27 @@ export default function CommentItem({ comment, comments, setComments }) {
         setIsEditing(false);
     };
 
+    const toggleLike = async () => {
+        const newLikedState = !liked;
+        setLiked(newLikedState);
+        setLikeCount(prev => newLikedState ? prev + 1 : prev - 1); // Tăng giảm số lượng ngay lập tức
+
+        try {
+            // Gọi API like comment
+            const response = await api.post(`posts/${comment.post_id}/comments/${comment.id}/reactions`);
+            console.log(response.data);
+        } catch (error) {
+            console.error("Lỗi like comment", error);
+            // Rollback nếu lỗi
+            setLiked(!newLikedState);
+            setLikeCount(prev => !newLikedState ? prev + 1 : prev - 1);
+        }
+    }
 
     const handleCloseSnackbar = () => {
         setSnackbar(prev => ({ ...prev, open: false }));
     }
-
+    // console.log("Comment Data Check:", comment.id, comment.post_id);
     return (
         <div className="flex items-start gap-3 relative">
             <AvatarUser userData={comment.user} />
@@ -121,6 +144,19 @@ export default function CommentItem({ comment, comments, setComments }) {
                         ) : (
                             <p className="text-sm">{comment.content}</p>
                         )}
+                        {likeCount > 0 && (
+                            <div
+                                className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 rounded-full py-[2px] px-[6px] flex items-center gap-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-all z-10"
+                                onClick={() => setShowReactions(true)}
+                            >
+                                <div className="bg-primary rounded-full p-[2px] flex items-center justify-center">
+                                    <ThumbUpAltIcon sx={{ width: 10, height: 10, color: 'blue' }} />
+                                </div>
+                                <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary font-medium leading-none">
+                                    {likeCount}
+                                </span>
+                            </div>
+                        )}
                     </div>
 
 
@@ -128,7 +164,7 @@ export default function CommentItem({ comment, comments, setComments }) {
                     {isOwner && (
                         <div className="relative ml-2" ref={menuRef}>
                             <button
-                                className="text-sm font-bold px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded flex items-center justify-center"
+                                className="text-sm font-bold px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center justify-center"
                                 onClick={() => setMenuOpen(!menuOpen)}
                                 disabled={loading}
                             > ...
@@ -156,10 +192,26 @@ export default function CommentItem({ comment, comments, setComments }) {
                     )}
                 </div>
 
-                <div className="flex gap-3 text-xs font-semibold text-text-light-secondary dark:text-text-dark-secondary px-3 py-1">
-                    <button className="hover:underline">Like</button>
-                    <button className="hover:underline">Reply</button>
+                <div className="flex gap-4 text-xs font-semibold text-text-light-secondary dark:text-text-dark-secondary px-3 py-1">
+
+                    {/* Nút Like */}
+                    <button
+                        onClick={toggleLike}
+
+                        className="flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                        {liked ? (
+                            <ThumbUpAltIcon fontSize="small" color="primary" />
+                        ) : (
+                            <ThumbUpOffAltIcon fontSize="small" />
+                        )}
+
+                    </button>
+
+                    {/* Nút Reply */}
+                    <button className="hover:underline cursor-pointer">Reply</button>
                 </div>
+
             </div>
 
             {/* Snackbar */}
@@ -173,6 +225,13 @@ export default function CommentItem({ comment, comments, setComments }) {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+            {showReactions && (
+                <CommentReactionsListModal
+                    commentId={comment.id} // Hoặc postId tùy API của bạn
+                    postId={comment.post_id}
+                    onClose={() => setShowReactions(false)} 
+                />
+            )}
         </div>
     );
 }
