@@ -20,12 +20,12 @@ export default function PostDetailPage() {
     // --- 2. SỬ DỤNG USEQUERY ---
     const { data: postData, isLoading, isError } = useQuery({
         // Key phụ thuộc postId, đổi ID là tự fetch lại
-        queryKey: ["post", postId], 
+        queryKey: ["post", postId],
         queryFn: fetchPostDetail,
         // Chỉ chạy khi có postId
-        enabled: !!postId, 
+        enabled: !!postId,
         // Cache trong 60s (nếu user back ra rồi vào lại ngay thì không load lại)
-        staleTime: 300 * 1000, 
+        staleTime: 300 * 1000,
         // Tắt tính năng tự fetch lại khi switch tab (tùy chọn)
         refetchOnWindowFocus: false,
     });
@@ -37,21 +37,15 @@ export default function PostDetailPage() {
                 <div className="flex justify-center items-center h-[80vh]">
                     <span className="text-gray-500 text-lg">Đang tải bài viết...</span>
                 </div>
-            ) : isError || !postData ? (
-                <div className="flex justify-center items-center h-[80vh]">
-                    <span className="text-gray-500 text-lg">
-                        Bài viết không tồn tại hoặc đã bị xóa.
-                    </span>
-                </div>
             ) : (
-                <>
-                    {/* Truyền dữ liệu vào PostCard */}
-                    <PostCard postData={postData} />
-                    
-                    {/* CommentsSection có thể tự quản lý fetch comment của riêng nó */}
-                    <CommentsSection postId={postId} />
-                </>
+
+
+                < PostCard postData={postData} />
             )}
+            {/* CommentsSection có thể tự quản lý fetch comment của riêng nó */}
+            <CommentsSection postId={postId} />
+
+
         </div>
     );
 }
