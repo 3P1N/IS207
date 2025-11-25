@@ -7,10 +7,16 @@ use App\Models\User;
 use App\Models\Friendship; 
 use Illuminate\Http\Request;
 class UserController extends Controller{
-    public function show(Request $request, $id){
+    public function show(Request $request, User $user){
         /** @var User|null $viewer */
         $viewer = $request->user();
-        $user = User::findOrFail($id); 
+        if(!$viewer){
+            return response()->JSON(['message'=>"UnAuthorized"],401);
+        } 
+        if(!$user || $user->is_Violated){
+            return response()->json(['message'=>'user not found'],404);
+        }
+        
         // --- 1. Xác định trạng thái quan hệ bạn bè ---
         $friendStatus = 'none';    // mặc định: không có quan hệ gì
         $friendshipId = null;      // để FE dùng nếu cần (unfriend / cancel request)
