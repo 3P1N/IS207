@@ -9,7 +9,7 @@ import { AuthContext } from "../../router/AuthProvider.jsx";
 
 export default function PostDetailPage() {
     const { postId } = useParams();
-    // const { token } = useContext(AuthContext); // React Query tự dùng axios instance (api) nên thường không cần token thủ công ở đây nếu api đã cấu hình interceptor
+    // const {  } = useContext(AuthContext); // React Query tự dùng axios instance (api) nên thường không cần  thủ công ở đây nếu api đã cấu hình interceptor
 
     // --- 1. HÀM FETCH DATA ---
     const fetchPostDetail = async () => {

@@ -3,7 +3,7 @@ import { useContext } from "react";
 import { AuthContext } from "./AuthProvider";
 
 export default function RoleRoute({ roles = [], redirectTo = "/403" }) {
-  const { userData, token } = useContext(AuthContext);
+  const { userData } = useContext(AuthContext);
 
   // Nếu chưa đăng nhập → quay lại login
 

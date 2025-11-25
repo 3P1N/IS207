@@ -8,7 +8,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 
 export default function CommentItem({ comment, comments, setComments }) {
-    const { userData, token } = useContext(AuthContext);
+    const { userData,  } = useContext(AuthContext);
     const isOwner = comment.user.id === userData.id;
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);

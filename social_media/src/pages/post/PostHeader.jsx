@@ -21,7 +21,7 @@ import { AuthContext } from "../../router/AuthProvider";
 export default function PostHeader({ headerData, postData, index }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-  const { token, postsData, setPostsData } = useContext(AuthContext);
+  const { postsData, setPostsData } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");

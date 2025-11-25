@@ -31,7 +31,7 @@ export default function ProfilePost() {
     
     const [loading, setLoading] = useState(false);
     
-    const { token } = useContext(AuthContext);
+    const {  } = useContext(AuthContext);
 
     const getPostData = async (url = "/posts") => {
         if (loading) return;

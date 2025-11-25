@@ -9,7 +9,7 @@ import AvatarUser from '../../shared/components/AvatarUser';
 
 export default function PostCreate() {
 
-    const { userData, token, postsData, setPostsData } = useContext(AuthContext);
+    const { userData, postsData, setPostsData } = useContext(AuthContext);
     const [postContent, setPostContent] = useState('');
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");

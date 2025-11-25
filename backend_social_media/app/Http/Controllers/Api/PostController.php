@@ -82,6 +82,7 @@ class PostController extends Controller
             ->whereDoesntHave('reports', function($query) use ($userId) {
                 $query->where('reporter_id', $userId);
             })
+            ->withCount(['reactions', 'comments'])
             ->find($index);
         if(!$post){
             return response()->json(['message' => 'Post not found'], 404);

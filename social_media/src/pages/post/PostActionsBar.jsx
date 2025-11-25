@@ -6,45 +6,57 @@ import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
-
-
+import ReactionsListModal from "./reaction/ReactionListModal";
 export default function PostActionsBar({ likes, comments, shares, isLiked, postId }) {
     const navigate = useNavigate();
     const [liked, setLiked] = useState(isLiked);
-    const { token } = useContext(AuthContext);
+    
+    // State quản lý hiển thị Modal danh sách like
+    const [showReactionsModal, setShowReactionsModal] = useState(false);
+
     const sendReaction = async () => {
         console.log("postId: ", postId);
-
         const response = await api.post(`/posts/${postId}/reaction`);
         return response;
     }
+
     const handleLike = async () => {
-        const prevLiked = liked;  // lưu trạng thái trước
-        setLiked(!liked);         // optimistic UI
+        const prevLiked = liked; 
+        setLiked(!liked);       
 
         try {
             const response = await sendReaction();
             console.log(response.data);
         } catch (err) {
             console.log("lỗi khi gửi post reaction: ", err);
-            setLiked(prevLiked);   // rollback về trạng thái trước
+            setLiked(prevLiked);  
         }
     }
-
 
     return (
         <>
             {/* Stat Bar */}
             <div className="flex flex-wrap gap-4 px-4 py-3 justify-between items-center border-b border-border-light dark:border-border-dark">
-                <div className="flex items-center gap-2">
+                {/* Khu vực hiển thị số Like - Click vào đây sẽ mở Modal */}
+                <div 
+                    className="flex items-center gap-2 cursor-pointer hover:underline decoration-gray-400"
+                    onClick={() => setShowReactionsModal(true)} 
+                >
                     <div className="flex items-center">
                         {/* Biểu tượng Likes */}
-                        <ThumbUpAltOutlinedIcon />
+                        <ThumbUpAltIcon className="text-primary w-4 h-4" fontSize="small" /> 
+                        {/* Bạn có thể dùng icon màu xanh để biểu thị danh sách like */}
                     </div>
-                    <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm font-normal">{likes}</p>
+                    <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm font-normal hover:text-primary transition-colors">
+                        {likes}
+                    </p>
                 </div>
+
                 <div className="flex items-center gap-4 text-text-light-secondary dark:text-text-dark-secondary text-sm">
-                    <span>{comments} Comments</span>
+                    {/* Click comment thì navigate hoặc mở modal comment tùy bạn */}
+                    <span className="cursor-pointer hover:underline" onClick={() => navigate(`/post/${postId}`)}>
+                        {comments} Comments
+                    </span>
                     <span>{shares} Shares</span>
                 </div>
             </div>
@@ -67,7 +79,7 @@ export default function PostActionsBar({ likes, comments, shares, isLiked, postI
                             className="text-gray-500 dark:text-gray-300 transition-all group-hover:text-primary"
                         />
                     )}
-                    <span className="font-semibold text-sm">Like</span>
+                    <span className={`font-semibold text-sm ${liked ? 'text-primary' : ''}`}>Like</span>
                 </button>
 
                 <button
@@ -86,10 +98,17 @@ export default function PostActionsBar({ likes, comments, shares, isLiked, postI
                     <span className="font-semibold text-sm">Comment</span>
                 </button>
                 <button className="flex items-center justify-center gap-2 h-10 rounded-lg text-text-light-secondary dark:text-text-dark-secondary hover:bg-hover-light dark:hover:bg-hover-dark">
-                    {/* <span className="material-symbols-outlined">retweet</span> */}
                     <span className="font-semibold text-sm">Share</span>
                 </button>
             </div>
+
+            {/* Render Modal nếu showReactionsModal === true */}
+            {showReactionsModal && (
+                <ReactionsListModal 
+                    postId={postId} 
+                    onClose={() => setShowReactionsModal(false)} 
+                />
+            )}
         </>
     );
 }

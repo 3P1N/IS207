@@ -5,11 +5,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Post;
-use App\Models\Comment;
-use App\Models\PostReaction;
+use App\Models\PostShare;
 
 
-class PostReactionController extends Controller
+class PostShareController extends Controller
 {
 public function index(Request $request, Post $post)
     {
@@ -24,7 +23,7 @@ public function index(Request $request, Post $post)
             return response()->json(['message' => 'Post not found'], 404);
         }
 
-        $postReactions = PostReaction::where('post_id', $post->id)
+        $postShares = PostShare::where('post_id', $post->id)
                                     ->with('user')
                                     ->get();
         
@@ -43,20 +42,20 @@ public function index(Request $request, Post $post)
             return response()->json(['message' => 'Post not found'], 404);
         }
 
-        $postReaction = PostReaction::where('post_id', $post->id)
+        $postShares = PostShare::where('post_id', $post->id)
                                     ->where('user_id', $user->id)
                                     ->first();
 
-        if(!$postReaction){
-            $postReaction = PostReaction::create([
+        if(!$postShares){
+            $postShares = PostShare::create([
                 'user_id' => $user->id,
                 'post_id' => $post->id,
             ]);
-            return response()->json(['post_reaction'=>$postReaction],201);
+            return response()->json($postShares,201);
 
         }
-        $postReaction->delete();
-        return response()->json(['message' => 'PostReaction deleted successfully'], 200);
+        $postShares->delete();
+        return response()->json(['message' => 'PostShare deleted successfully'], 200);
         
     }
 

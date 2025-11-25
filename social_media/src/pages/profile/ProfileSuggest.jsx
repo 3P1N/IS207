@@ -8,7 +8,7 @@ import FriendCard from "./FriendCard";
 export default function ProfileSuggest() {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const { token } = useContext(AuthContext);
+  const {  } = useContext(AuthContext);
 
   const getSuggestions = async () => {
     setLoading(true);
