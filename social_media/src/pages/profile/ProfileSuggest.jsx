@@ -11,6 +11,7 @@ export default function ProfileSuggest() {
   const { token } = useContext(AuthContext);
   const { profileUser, isOwnProfile } = useOutletContext();
   const id = profileUser?.id;
+  const {  } = useContext(AuthContext);
   const getSuggestions = async () => {
     setLoading(true);
     try {

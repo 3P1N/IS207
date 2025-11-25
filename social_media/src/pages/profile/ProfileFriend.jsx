@@ -8,7 +8,7 @@ export default function ProfileFriend() {
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("friends"); // "friends" | "requests"
-  const { token } = useContext(AuthContext);
+  const {  } = useContext(AuthContext);
   const { profileUser, isOwnProfile } = useOutletContext();
   const id =profileUser?.id;
   const getFriends = async () => {

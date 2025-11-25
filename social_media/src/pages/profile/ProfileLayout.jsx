@@ -6,7 +6,7 @@ import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
 
 export default function ProfileLayout() {
-  const { userData, token } = useContext(AuthContext);
+  const { userData,  } = useContext(AuthContext);
   const { id } = useParams(); // /profile/:id
 
   // nếu không có id (vd: /profile) thì coi là trang của chính mình
@@ -42,7 +42,7 @@ export default function ProfileLayout() {
     };
 
     fetchProfile();
-  }, [id, isOwnProfile, userData, token]);
+  }, [id, isOwnProfile, userData, ]);
 
   if (loading || !profileUser) {
     return (

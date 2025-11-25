@@ -60,8 +60,8 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::post('/posts/{post}/report', [App\Http\Controllers\Api\ReportController::class, 'store']);
     Route::delete('/posts/{post}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
 
-    // Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);  
     Route::get('/users/{user}', [App\Http\Controllers\Api\UserController::class, 'show']);
+
     Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
     Route::patch('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'update']);
 
@@ -69,8 +69,17 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::get('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'index']);
     Route::delete('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'destroy']);
     Route::patch('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'update']);
+    Route::post('/posts/{post}/comments/{comment}/reactions', [App\Http\Controllers\Api\CommentController::class, 'toggleReaction']);
+    Route::get('/posts/{post}/comments/{comment}/reactions', [App\Http\Controllers\Api\CommentController::class, 'getCommentReactions']);
+    Route::post('/posts/{post}/comments/{comment}/replies', [App\Http\Controllers\Api\CommentController::class, 'replyComment']);
+
 
     Route::post('/posts/{post}/reaction',  [App\Http\Controllers\Api\PostReactionController::class, 'toggle']);
+    Route::get('/posts/{post}/reactions',  [App\Http\Controllers\Api\PostReactionController::class, 'index']);
+
+    Route::post('/posts/{post}/share',  [App\Http\Controllers\Api\PostShareController::class, 'toggle']);
+    Route::get('/posts/{post}/shares',  [App\Http\Controllers\Api\PostShareController::class, 'index']);
+
 
 });
 

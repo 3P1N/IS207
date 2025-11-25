@@ -9,7 +9,7 @@ export default function HomePage() {
     const [nextPageUrl, setNextPageUrl] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const { token, postsData, setPostsData } = useContext(AuthContext);
+    const { postsData, setPostsData } = useContext(AuthContext);
 
     const getPostData = async (url = "/posts") => {
         if (loading) return;

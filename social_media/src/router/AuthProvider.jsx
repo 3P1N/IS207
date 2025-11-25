@@ -13,7 +13,7 @@ export default function AuthProvider({ children }) {
     const [postsData, setPostsData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [authReady, setAuthReady] = useState(false);
-    const [token, setToken] = useState(null);
+   
     const [echoInstance, setEchoInstance] = useState(null);
     const navigate = useNavigate();
     const register = async (userData) => {
@@ -48,7 +48,7 @@ export default function AuthProvider({ children }) {
         const response = await api.post("/auth/login", userData);
 
         setUserData(response.data.user);
-        setToken(response.data.access_token);
+        
         setTimeout(() => {
             setEchoInstance(createEcho());
         }, 50);
@@ -68,7 +68,7 @@ export default function AuthProvider({ children }) {
 
     if (loading) return <LoadingPage />
     return ( 
-        <AuthContext.Provider value={{ userData, token, login, logout, echoInstance, register, postsData, setPostsData, authReady }}>
+        <AuthContext.Provider value={{ userData, login, logout, echoInstance, register, postsData, setPostsData, authReady }}>
             {children}
         </AuthContext.Provider>
     )

@@ -5,11 +5,12 @@ import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { AuthContext } from '../../router/AuthProvider';
 import { api } from '../../shared/api';
 import AvatarUser from '../../shared/components/AvatarUser';
+
 import { EditTwoTone } from '@mui/icons-material';
 
 export default function EditPostModal({ postData, postIndex }) {
     console.log("postIndex:", postIndex);
-    const { userData, token, postsData, setPostsData } = useContext(AuthContext);
+    const { userData, postsData, setPostsData } = useContext(AuthContext);
     const [open, setOpen] = useState(false);
     const [postContent, setPostContent] = useState(postData.content || '');
     const [mediaFiles, setMediaFiles] = useState(postData.media?.map(url => ({ file: null, url, type: 'image' })) || []);

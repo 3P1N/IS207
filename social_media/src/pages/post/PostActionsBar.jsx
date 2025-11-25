@@ -6,46 +6,113 @@ import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
+import ReactionsListModal from "./reaction/ReactionsListModal";
+import SharesListModal from "./share/SharesListModal";
+import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
+import ShareIcon from "@mui/icons-material/Share";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
+import { CircularProgress } from "@mui/material";
+import React from "react";
 
-
-export default function PostActionsBar({ likes, comments, shares, isLiked, postId }) {
+export default function PostActionsBar({ likes, comments, shares, isShared, isLiked, postId }) {
     const navigate = useNavigate();
     const [liked, setLiked] = useState(isLiked);
-    const { token } = useContext(AuthContext);
+    const [shared, setShared] = useState(isShared);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // success | error
+
+    const Alert = React.forwardRef(function Alert(props, ref) {
+        return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+    });
+    const handleSnackbarClose = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setSnackbarOpen(false);
+    };
+
+    const [loadingShare, setLoadingShared] = useState(false);
+    // State quản lý hiển thị Modal danh sách like
+    const [showReactionsModal, setShowReactionsModal] = useState(false);
+    const [showSharesModal, setShowSharesModal] = useState(false);
+    console.log("is shared: ", isShared);
+
     const sendReaction = async () => {
         console.log("postId: ", postId);
-
         const response = await api.post(`/posts/${postId}/reaction`);
         return response;
     }
+
+    const sharePost = async () => {
+        const response = await api.post(`/posts/${postId}/share`);
+        return response.data;
+    }
+    const handleShare = async () => {
+        const prevShared = shared;
+        setShared(!shared);
+        setLoadingShared(true);
+
+        try {
+            const response = await sharePost(); // gọi API share
+            setSnackbarMessage(!prevShared ? "Post shared successfully!" : "Share cancelled!");
+            setSnackbarSeverity("success");
+            setSnackbarOpen(true);
+        } catch (err) {
+            console.log("Error sharing post: ", err);
+            setShared(prevShared); // rollback nếu thất bại
+            setSnackbarMessage(!prevShared ? "Failed to share the post!" : "Failed to cancel share!");
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true);
+        } finally {
+            setLoadingShared(false);
+        }
+    };
+
+
+
     const handleLike = async () => {
-        const prevLiked = liked;  // lưu trạng thái trước
-        setLiked(!liked);         // optimistic UI
+        const prevLiked = liked;
+        setLiked(!liked);
 
         try {
             const response = await sendReaction();
             console.log(response.data);
         } catch (err) {
             console.log("lỗi khi gửi post reaction: ", err);
-            setLiked(prevLiked);   // rollback về trạng thái trước
+            setLiked(prevLiked);
         }
     }
-
 
     return (
         <>
             {/* Stat Bar */}
             <div className="flex flex-wrap gap-4 px-4 py-3 justify-between items-center border-b border-border-light dark:border-border-dark">
-                <div className="flex items-center gap-2">
+                {/* Khu vực hiển thị số Like - Click vào đây sẽ mở Modal */}
+                <div
+                    className="flex items-center gap-2 cursor-pointer hover:underline decoration-gray-400"
+                    onClick={() => setShowReactionsModal(true)}
+                >
                     <div className="flex items-center">
                         {/* Biểu tượng Likes */}
-                        <ThumbUpAltOutlinedIcon />
+                        <ThumbUpAltIcon className="text-primary w-4 h-4" fontSize="small" />
+                        {/* Bạn có thể dùng icon màu xanh để biểu thị danh sách like */}
                     </div>
-                    <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm font-normal">{likes}</p>
+                    <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm font-normal hover:text-primary transition-colors">
+                        {likes}
+                    </p>
                 </div>
+
                 <div className="flex items-center gap-4 text-text-light-secondary dark:text-text-dark-secondary text-sm">
-                    <span>{comments} Comments</span>
-                    <span>{shares} Shares</span>
+                    {/* Click comment thì navigate hoặc mở modal comment tùy bạn */}
+                    <span className="cursor-pointer hover:underline" onClick={() => navigate(`/post/${postId}`)}>
+                        {comments} Comments
+                    </span>
+                    <div
+                        className="flex items-center gap-2 cursor-pointer hover:underline decoration-gray-400"
+                        onClick={() => setShowSharesModal(true)}
+                    >
+                        <span >{shares} Shares</span>
+                    </div>
                 </div>
             </div>
 
@@ -67,7 +134,7 @@ export default function PostActionsBar({ likes, comments, shares, isLiked, postI
                             className="text-gray-500 dark:text-gray-300 transition-all group-hover:text-primary"
                         />
                     )}
-                    <span className="font-semibold text-sm">Like</span>
+                    <span className={`font-semibold text-sm ${liked ? 'text-primary' : ''}`}>Like</span>
                 </button>
 
                 <button
@@ -85,11 +152,55 @@ export default function PostActionsBar({ likes, comments, shares, isLiked, postI
                     />
                     <span className="font-semibold text-sm">Comment</span>
                 </button>
-                <button className="flex items-center justify-center gap-2 h-10 rounded-lg text-text-light-secondary dark:text-text-dark-secondary hover:bg-hover-light dark:hover:bg-hover-dark">
-                    {/* <span className="material-symbols-outlined">retweet</span> */}
-                    <span className="font-semibold text-sm">Share</span>
+                <button
+                    className={`
+                        flex items-center justify-center gap-2 h-10 rounded-lg
+                        transition-all
+                        ${shared ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-300'}
+                        hover:bg-gray-100 dark:hover:bg-gray-700
+                        cursor-pointer
+                    `}
+                    onClick={handleShare}
+                >
+                    {shared ? (
+                        <ShareIcon fontSize="small" className="transition-all" />
+                    ) : (
+                        <ShareOutlinedIcon fontSize="small" className="transition-all" />
+                    )}
+
+                    {loadingShare ? <CircularProgress size={16} color="inherit" /> :
+                        <span className={`font-semibold text-sm transition-all`}>
+                            Share
+                        </span>}
+
                 </button>
+
             </div>
+
+            {/* Render Modal nếu showReactionsModal === true */}
+            {showReactionsModal && (
+                <ReactionsListModal
+                    postId={postId}
+                    onClose={() => setShowReactionsModal(false)}
+                />
+            )}
+            {showSharesModal && (
+                <SharesListModal
+                    postId={postId}
+                    onClose={() => setShowSharesModal(false)}
+                />
+            )}
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={3000}
+                onClose={handleSnackbarClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
+
         </>
     );
 }
