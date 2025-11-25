@@ -12,7 +12,7 @@ import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import ShareIcon from "@mui/icons-material/Share";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
-import {CircularProgress} from "@mui/material";
+import { CircularProgress } from "@mui/material";
 import React from "react";
 
 export default function PostActionsBar({ likes, comments, shares, isShared, isLiked, postId }) {
@@ -54,20 +54,20 @@ export default function PostActionsBar({ likes, comments, shares, isShared, isLi
 
         try {
             const response = await sharePost(); // gọi API share
-            setSnackbarMessage("Share bài viết thành công!");
+            setSnackbarMessage(!prevShared ? "Post shared successfully!" : "Share cancelled!");
             setSnackbarSeverity("success");
             setSnackbarOpen(true);
         } catch (err) {
-            console.log("Lỗi khi share bài viết: ", err);
+            console.log("Error sharing post: ", err);
             setShared(prevShared); // rollback nếu thất bại
-            setSnackbarMessage("Không thể share bài viết.");
+            setSnackbarMessage(!prevShared ? "Failed to share the post!" : "Failed to cancel share!");
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
         } finally {
             setLoadingShared(false);
-
         }
     };
+
 
 
     const handleLike = async () => {
