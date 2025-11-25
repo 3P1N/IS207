@@ -10,10 +10,11 @@ export default function ProfileFriend() {
   const [activeTab, setActiveTab] = useState("friends"); // "friends" | "requests"
   const { token } = useContext(AuthContext);
   const { profileUser, isOwnProfile } = useOutletContext();
+  const id =profileUser?.id;
   const getFriends = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/friends");
+      const response = await api.get(`/friendship/${id}`);
       console.log(response);
       setFriends(response.data.friends || []);
     } catch (error) {
@@ -26,11 +27,13 @@ export default function ProfileFriend() {
   useEffect(() => {
     getFriends();
   }, []);
-
   // Tách 2 list: bạn bè & lời mời (tạm thời lấy những người chưa là bạn)
-  const friendList = friends.filter((f) => f.isFriend);      // bạn bè
-  const requestList = friends.filter((f) => !f.isFriend);    // lời mời / chưa là bạn
-
+  const friendList = friends.filter(
+    (f) => f.pivot?.status === "accepted"
+  );
+  const requestList = friends.filter(
+    (f) => f.pivot?.status === "pending"
+  );
   return (
     <div className="space-y-6">
       {/* Header + search + switch tab */}
@@ -91,17 +94,17 @@ export default function ProfileFriend() {
         {/* Tab: Bạn bè */}
         {activeTab === "friends" && (
           <>
-            {requestList.length === 0 && !loading && (
+            {friendList.length === 0 && !loading && (
               <p className="text-xs text-gray-500">
                 Bạn chưa có người bạn nào.
               </p>
             )}
 
-            {requestList.map((friend) => (
+            {friendList.map((friend) => (
               <FriendCard
                 key={friend.id}
                 friend={friend}
-                defaultStatus="friends"
+                defaultStatus={friend.pivot?.status}
               />
             ))}
           </>
@@ -120,7 +123,7 @@ export default function ProfileFriend() {
               <FriendCard
                 key={friend.id}
                 friend={friend}
-                defaultStatus="none" // để hiện nút "Accept / Add" bên trong FriendCard nếu bạn muốn
+                defaultStatus={friend.pivot?.status} 
               />
             ))}
           </>

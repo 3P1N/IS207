@@ -45,7 +45,9 @@ Route::middleware(['auth:sanctum', 'verified.api'])->get('/dashboard', function 
 });
 
 Route::middleware('auth.cookie', 'verified.api')->group(function () {
-    Route::get('/friends', [App\Http\Controllers\Api\FriendController::class, 'index']);
+    Route::get('/friendship/{user}', [App\Http\Controllers\Api\FriendShipController::class, 'getfriend']);
+    Route::get('/suggestfriends/{user}', [App\Http\Controllers\Api\FriendShipController::class, 'getsuggest']);
+    Route::delete('/friendship/{friendship}', [App\Http\Controllers\Api\FriendShipController::class, 'deletefriendship']);
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
     Route::get('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
     Route::post('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'store']);
@@ -72,7 +74,7 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
 
 });
 
-Broadcast::routes(['middleware' => ['auth.cookie']]);
+// Broadcast::routes(['middleware' => ['auth.cookie']]);
 
 // Broadcast::routes(['middleware' => ['auth:sanctum']]);
 

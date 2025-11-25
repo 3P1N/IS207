@@ -4,21 +4,23 @@ import { useEffect, useState, useContext } from "react";
 import { api } from "../../shared/api";
 import { AuthContext } from "../../router/AuthProvider";
 import FriendCard from "./FriendCard";
-
+import { useOutletContext } from "react-router-dom";
 export default function ProfileSuggest() {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const { token } = useContext(AuthContext);
-
+  const { profileUser, isOwnProfile } = useOutletContext();
+  const id = profileUser?.id;
   const getSuggestions = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/friends");
+      const response = await api.get(`/suggestfriends/${id}`);
+      console.log("hehe");
       console.log(response);
 
       const all = response.data.friends || [];
       // lấy những người CHƯA phải bạn bè
-      const suggestionList = all.filter((f) => !f.isFriend);
+      const suggestionList = response.data.friend ;
       setSuggestions(suggestionList);
     } catch (error) {
       console.log(error);
