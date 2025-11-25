@@ -58,7 +58,8 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::post('/posts/{post}/report', [App\Http\Controllers\Api\ReportController::class, 'store']);
     Route::delete('/posts/{post}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
 
-    Route::get('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'show']);
+    Route::get('/users/{user}', [App\Http\Controllers\Api\UserController::class, 'show']);
+
     Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
     Route::patch('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'update']);
 
