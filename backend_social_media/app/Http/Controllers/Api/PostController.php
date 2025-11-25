@@ -34,10 +34,15 @@ class PostController extends Controller
                 ->when(!empty($keyword), function($q) use ($keyword) {
                     $q->where('content', 'like', "%{$keyword}%");
                 })
-                ->withCount(['reactions', 'comments'])
+                ->withCount(['reactions', 'comments', 'shares'])
                 ->with(['user', 'media'])
                 ->withExists([
                     'reactions as is_liked' => function ($q) use ($userId) {
+                        $q->where('user_id', $userId);
+                    }
+                ])
+                ->withExists([
+                    'shares as is_shared' => function ($q) use ($userId) {
                         $q->where('user_id', $userId);
                     }
                 ])
@@ -82,7 +87,17 @@ class PostController extends Controller
             ->whereDoesntHave('reports', function($query) use ($userId) {
                 $query->where('reporter_id', $userId);
             })
-            ->withCount(['reactions', 'comments'])
+            ->withExists([
+                    'reactions as is_liked' => function ($q) use ($userId) {
+                        $q->where('user_id', $userId);
+                    }
+                ])
+            ->withExists([
+                    'shares as is_shared' => function ($q) use ($userId) {
+                        $q->where('user_id', $userId);
+                    }
+                ])
+            ->withCount(['reactions', 'comments', 'shares'])
             ->find($index);
         if(!$post){
             return response()->json(['message' => 'Post not found'], 404);

@@ -72,7 +72,7 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::get('/posts/{post}/reactions',  [App\Http\Controllers\Api\PostReactionController::class, 'index']);
 
     Route::post('/posts/{post}/share',  [App\Http\Controllers\Api\PostShareController::class, 'toggle']);
-    Route::get('/posts/{post}/shares',  [App\Http\Controllers\Api\PostReactionController::class, 'index']);
+    Route::get('/posts/{post}/shares',  [App\Http\Controllers\Api\PostShareController::class, 'index']);
 
 
 });

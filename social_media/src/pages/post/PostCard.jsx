@@ -55,7 +55,9 @@ export default function PostCard({ postData, index }) {
                 <PostActionsBar
                     likes={postData.reactions_count}
                     comments={postData.comments_count}
+                    shares = {postData.shares_count}
                     isLiked={postData.is_liked}
+                    isShared={postData.is_shared}
                     postId={postData.id}
                     index={index}
                 />

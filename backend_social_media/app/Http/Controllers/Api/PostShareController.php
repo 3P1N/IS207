@@ -27,8 +27,9 @@ public function index(Request $request, Post $post)
                                     ->with('user')
                                     ->get();
         
-        return response()->json($postReactions,200);
+        return response()->json($postShares,200);
     }
+    
     public function toggle(Request $request, Post $post)
     {
         $user = $request->user();
