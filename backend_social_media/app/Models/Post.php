@@ -36,4 +36,8 @@ class Post extends Model
     {
         return $this->hasMany(Report::class, 'post_id');
     }
+    public function shares()
+    {
+        return $this->hasMany(PostShare::class, 'post_id');
+    }
 }

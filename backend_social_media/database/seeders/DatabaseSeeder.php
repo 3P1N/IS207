@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
             PostSeeder::class,
             MediaSeeder::class,
             CommentSeeder::class,
+            PostSharesSeeder::class,
+            CommentReactionSeeder::class,
             PostReactionSeeder::class,
             BlockSeeder::class,
             PrivacySettingsTableSeeder::class,

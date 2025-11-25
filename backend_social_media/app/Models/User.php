@@ -121,6 +121,10 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(PostReaction::class);
     }
+    public function commentReactions()
+    {
+        return $this->hasMany(CommentReaction::class);
+    }
     public function comments()
     {
         return $this->hasMany(Comment::class);
@@ -141,6 +145,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(\App\Models\Report::class, 'reporter_id');
     }
-
+    public function sharesMade()
+    {
+        return $this->hasMany(\App\Models\PostShare::class, 'user_id');
+    }
 
 }
