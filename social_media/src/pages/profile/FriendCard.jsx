@@ -1,19 +1,165 @@
 import { useState } from "react";
 import AvatarUser from "../../shared/components/AvatarUser";
-export default function FriendCard({ friend, defaultStatus = "friends" }) {
-  const { name, gender, avatarUrl, email } = friend;
+import { api } from "../../shared/api";
 
-  // friends | pending | none
-  const [friendStatus, setFriendStatus] = useState(defaultStatus);
+export default function FriendCard({
+  friend,
+  defaultStatus,
+  onChange, // optional: parent muốn biết khi status đổi
+}) {
+  const {
+  id,
+  name,
+  gender,
+  avatarUrl,
+  email,
+  pivot = {},
+} = friend;
+const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null }=pivot;
 
-  const handleAddFriend = () => {
-    // TODO: gọi API gửi lời mời kết bạn
-    setFriendStatus("pending");
+  const [friendStatus, setFriendStatus] = useState(
+    friend_status || defaultStatus
+  ); // none | friends | pending_sent | pending_received | self
+  const [friendshipId, setFriendshipId] = useState(friendship_id || null);
+  const [loading, setLoading] = useState(false);
+
+  // --- GỬI LỜI MỜI KẾT BẠN ---
+  const handleAddFriend = async () => {
+    try {
+      setLoading(true);
+      const res = await api.post("/api/friendships", {
+        addressee_id: id,
+      });
+      setFriendStatus("pending");
+      setFriendshipId(res.data.id);
+      onChange?.({ status: "pending", friendshipId: res.data.id });
+    } catch (err) {
+      console.error(err);
+      alert("Gửi lời mời kết bạn thất bại");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUnfriend = () => {
-    // TODO: gọi API hủy kết bạn
-    setFriendStatus("none");
+  // --- HỦY KẾT BẠN / HỦY LỜI MỜI ---
+  const handleUnfriendOrCancel = async () => {
+    if (!friendshipId) return;
+    try {
+      setLoading(true);
+      const response = await api.delete(`/friendship/${friendshipId}`);
+      setFriendStatus("none");
+      setFriendshipId(null);
+      onChange?.({ status: "none", friendshipId: null });
+    } catch (err) {
+      console.error(err);
+      alert("Thao tác thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- CHẤP NHẬN YÊU CẦU ---
+  const handleAccept = async () => {
+    if (!friendshipId) return;
+    try {
+      setLoading(true);
+      await api.patch(`/api/friendships/${friendshipId}`, {
+        status: "accepted",
+      });
+      setFriendStatus("friends");
+      onChange?.({ status: "friends", friendshipId });
+    } catch (err) {
+      console.error(err);
+      alert("Không thể chấp nhận lời mời");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- TỪ CHỐI YÊU CẦU ---
+  const handleReject = async () => {
+    if (!friendshipId) return;
+    try {
+      setLoading(true);
+      await api.patch(`/api/friendships/${friendshipId}`, {
+        status: "rejected",
+      });
+      setFriendStatus("none");
+      setFriendshipId(null);
+      onChange?.({ status: "none", friendshipId: null });
+    } catch (err) {
+      console.error(err);
+      alert("Không thể từ chối lời mời");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- RENDER BUTTON THEO TRẠNG THÁI ---
+  const renderActions = () => {
+    if (friendStatus === "self") {
+      return <span className="friend-badge">Đây là bạn</span>;
+    }
+
+    if (friendStatus === "accepted") {
+      return (
+        <button
+          type="button"
+          className="btn-unfriend"
+          disabled={loading}
+          onClick={handleUnfriendOrCancel}
+        >
+          Unfriend
+        </button>
+      );
+    }
+
+    if (friendStatus === "pending" && user_id!==id) {
+      return (
+        <>
+          <button type="button" className="btn-pending" 
+          onClick={handleUnfriendOrCancel}
+          >
+            Chờ phản hồi
+          </button>
+        </>
+      );
+    }
+
+    if (friendStatus === "pending"&& user_id===id) {
+      return (
+        <>
+          <button
+            type="button"
+            className="btn-accept"
+            disabled={loading}
+            onClick={handleAccept}
+          >
+            Chấp nhận
+          </button>
+          <button
+            type="button"
+            className="btn-reject"
+            disabled={loading}
+            onClick={handleUnfriendOrCancel}
+          >
+            Từ chối
+          </button>
+        </>
+      );
+    }
+
+    // none
+    return (
+      <button
+        type="button"
+        className="btn-add-friend"
+        disabled={loading}
+        onClick={handleAddFriend}
+      >
+        Add friend
+      </button>
+    );
   };
 
   return (
@@ -28,35 +174,11 @@ export default function FriendCard({ friend, defaultStatus = "friends" }) {
       <div className="friend-info">
         <p className="friend-name">{name}</p>
         <p className="friend-username">{email || gender || "@username"}</p>
-        <p className="friend-mutual">{name} bạn chung</p>
+        <p className="friend-mutual">0 bạn chung</p>
       </div>
 
-      {/* Nút Add / Pending / Unfriend */}
-      {friendStatus === "friends" && (
-        <button
-          type="button"
-          className="btn-unfriend"
-          onClick={handleUnfriend}
-        >
-          Unfriend
-        </button>
-      )}
-
-      {friendStatus === "pending" && (
-        <button type="button" className="btn-pending" disabled>
-          Chờ phản hồi
-        </button>
-      )}
-
-      {friendStatus === "none" && (
-        <button
-          type="button"
-          className="btn-add-friend"
-          onClick={handleAddFriend}
-        >
-          Add friend
-        </button>
-      )}
+      {/* Actions */}
+      <div className="friend-actions">{renderActions()}</div>
     </div>
   );
 }
