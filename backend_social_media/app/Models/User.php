@@ -94,6 +94,17 @@ class User extends Authenticatable implements MustVerifyEmail
         ->withPivot(['id','status','created_at','updated_at'])
         ->withTimestamps();
     }
+    public function friendss()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'friendships',
+            'user_id',
+            'addressee_id'
+        )
+        ->withPivot(['id','status','created_at','updated_at'])
+        ->withTimestamps();
+    }
     public function friendsOfs()
     {
         return $this->belongsToMany(
@@ -129,11 +140,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function allFriendsIds()
     {
         // id friend mình đã add (mình là user_id)
-        $ids = $this->friends()->pluck('users.id');
+        $ids = $this->friendss()->pluck('users.id');
 
         // id friend đã add mình (mình là addressee_id)
         $ids = $ids->merge(
-            $this->friendsOf()->pluck('users.id')
+            $this->friendsOfs()->pluck('users.id')
         );
 
         // loại trùng + thêm luôn id của chính mình để exclude

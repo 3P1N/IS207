@@ -4,50 +4,48 @@ import AvatarUser from "../../shared/components/AvatarUser";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
-
+import { useQuery } from "@tanstack/react-query";
 export default function ProfileLayout() {
-  const { userData,  } = useContext(AuthContext);
-  const { id } = useParams(); // /profile/:id
+  const { userData } = useContext(AuthContext);
+  const { id } = useParams(); // /profile/:id hoặc /profile
 
-  // nếu không có id (vd: /profile) thì coi là trang của chính mình
-  const isOwnProfile = !id || String(userData?.id) === String(id);
+  // Nếu không có id (vd: /profile) thì dùng id của chính mình
+  const profileId = id ?? userData?.id;
 
-  const [profileUser, setProfileUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Xác định có phải đang xem profile của chính mình không
+  const isOwnProfile = String(userData?.id) === String(profileId);
 
-  useEffect(() => {
-    // nếu chưa có id và cũng chưa có userData thì khỏi làm gì
-    if (!id && !userData) return;
-
-    const fetchProfile = async () => {
-      // CASE 1: trang cá nhân của chính mình -> dùng luôn userData
-      if (isOwnProfile) {
-        setProfileUser(userData || null);
-        setLoading(false);
-        return;
+  const {
+    data: profileUser,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["profileUser", profileId],
+    enabled: !!profileId, // chỉ chạy khi đã có profileId
+    queryFn: async () => {
+      // Nếu là trang của chính mình và đã có userData thì xài luôn
+      if (isOwnProfile && userData) {
+        return userData;
       }
 
-      // CASE 2: trang cá nhân người khác -> gọi API theo id trên URL
-      try {
-        setLoading(true);
-        const res = await api.get(`/users/${id}`);
-        setProfileUser(res.data.user || res.data);
-        console.log("Fetched user from backend:", res.data);
-      } catch (err) {
-        console.error("Fetch user error:", err);
-        setProfileUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+      // Còn lại gọi API
+      const res = await api.get(`/users/${profileId}`);
+      return res.data.user || res.data;
+    },
+  });
 
-    fetchProfile();
-  }, [id, isOwnProfile, userData, ]);
-
-  if (loading || !profileUser) {
+  if (isLoading) {
     return (
       <div className="p-4 text-sm text-gray-500">
         Đang tải trang cá nhân...
+      </div>
+    );
+  }
+
+  if (isError || !profileUser) {
+    return (
+      <div className="p-4 text-sm text-red-500">
+        Không tìm thấy trang cá nhân.
       </div>
     );
   }
@@ -57,6 +55,7 @@ export default function ProfileLayout() {
 
   return (
     <ProfileShell
+      key={profileUser?.id}
       profileUser={profileUser}
       showSuggestTab={showSuggestTab}
       showAddFriendButton={showAddFriendButton}
@@ -64,6 +63,7 @@ export default function ProfileLayout() {
     />
   );
 }
+
 
 function ProfileShell({
   profileUser,
@@ -78,17 +78,8 @@ function ProfileShell({
         <header className="relative">
           {/* Cover */}
           <div className="profile-cover">
-            <div className="profile-cover-glow" />
-
-            {/* Avatar nổi giữa cover */}
-            <div className="profile-avatar-container">
-              <div className="profile-avatar-wrapper">
-                <div className="profile-avatar-glow" />
-                <div className="profile-avatar-frame">
-                  <AvatarUser userData={profileUser} />
-                </div>
-              </div>
-            </div>
+          <AvatarUser userData={profileUser} />
+            
           </div>
 
           {/* Info + Nav tab */}
@@ -163,7 +154,7 @@ function ProfileShell({
         {/* Nội dung các tab */}
         <main className="max-w-3xl mx-auto mt-4 px-4 pb-8">
           {/* Truyền profileUser + isOwnProfile xuống cho các tab con */}
-          <Outlet context={{ profileUser, isOwnProfile }} />
+          <Outlet context={{ profileUser, isOwnProfile }}/>
         </main>
       </div>
     </div>

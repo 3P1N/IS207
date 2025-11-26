@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Friendship; 
 use Illuminate\Http\Request;
+use App\Models\Post;
 class UserController extends Controller{
     public function show(Request $request, User $user){
         /** @var User|null $viewer */
@@ -91,5 +92,32 @@ class UserController extends Controller{
             ->where('is_Violated', false)
             ->get();
         return response()->json($users, 200); 
+    }
+    public function getpost(Request $request,User $user){
+        $userId = $user->id;
+        $viewer=$request->user();
+        $viewerId=$viewer->id;
+        $posts = Post::where('is_visible', true)
+                ->whereNull('deleted_at') 
+                ->whereDoesntHave('reports', function($query) use ($viewerId) {
+                    $query->where('reporter_id', $viewerId);
+                })
+                ->withCount(['reactions', 'comments', 'shares'])
+                ->with(['user', 'media'])
+                ->withExists([
+                    'reactions as is_liked' => function ($q) use ($viewerId) {
+                        $q->where('user_id', $viewerId);
+                    }
+                ])
+                ->withExists([
+                    'shares as is_shared' => function ($q) use ($viewerId) {
+                        $q->where('user_id', $viewerId);
+                    }
+                ])
+                ->where('user_id',$userId)
+                ->orderBy('created_at', 'desc')
+                ->simplePaginate(10);
+
+        return response()->json($posts, 200);
     }
 }

@@ -5,6 +5,7 @@ import { api } from "../../shared/api";
 export default function FriendCard({
   friend,
   defaultStatus,
+  isOwnProfile,
   onChange, // optional: parent muốn biết khi status đổi
 }) {
   const {
@@ -15,8 +16,8 @@ export default function FriendCard({
   email,
   pivot = {},
 } = friend;
-const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null }=pivot;
-
+  const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null }=pivot;
+  console.log("isOwnProfile: ", isOwnProfile);
   const [friendStatus, setFriendStatus] = useState(
     friend_status || defaultStatus
   ); // none | friends | pending_sent | pending_received | self
@@ -27,7 +28,7 @@ const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null
   const handleAddFriend = async () => {
     try {
       setLoading(true);
-      const res = await api.post("/api/friendships", {
+      const res = await api.post("/friendships", {
         addressee_id: id,
       });
       setFriendStatus("pending");
@@ -44,6 +45,7 @@ const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null
   // --- HỦY KẾT BẠN / HỦY LỜI MỜI ---
   const handleUnfriendOrCancel = async () => {
     if (!friendshipId) return;
+    console.log(friend);
     try {
       setLoading(true);
       const response = await api.delete(`/friendship/${friendshipId}`);
@@ -63,11 +65,11 @@ const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null
     if (!friendshipId) return;
     try {
       setLoading(true);
-      await api.patch(`/api/friendships/${friendshipId}`, {
+      await api.patch(`/friendships/${friendshipId}`, {
         status: "accepted",
       });
-      setFriendStatus("friends");
-      onChange?.({ status: "friends", friendshipId });
+      setFriendStatus("accepted");
+      onChange?.({ status: "accepted", friendshipId });
     } catch (err) {
       console.error(err);
       alert("Không thể chấp nhận lời mời");
@@ -96,6 +98,7 @@ const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null
   };
 
   // --- RENDER BUTTON THEO TRẠNG THÁI ---
+
   const renderActions = () => {
     if (friendStatus === "self") {
       return <span className="friend-badge">Đây là bạn</span>;
@@ -126,7 +129,7 @@ const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null
       );
     }
 
-    if (friendStatus === "pending"&& user_id===id) {
+    if (friendStatus === "pending"&& user_id===id  ) {
       return (
         <>
           <button
@@ -178,7 +181,7 @@ const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null
       </div>
 
       {/* Actions */}
-      <div className="friend-actions">{renderActions()}</div>
+      {isOwnProfile && <div className="friend-actions">{renderActions()}</div> }
     </div>
   );
 }
