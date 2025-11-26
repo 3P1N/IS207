@@ -45,7 +45,7 @@ export default function ThreadList() {
       const others = participants.filter((p) => p.user_id !== meId);
       const other = others[0]; 
 
-      const displayName = other?.user?.name ?? "Cuộc trò chuyện";
+      const displayName = t.name ?? other?.user?.name ?? "Cuộc trò chuyện";
       const avatarUrl = other?.user?.avatar || "image.png";
 
       // Ưu tiên conversation_id để điều hướng

@@ -53,8 +53,10 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::get('/suggestfriends/{user}', [App\Http\Controllers\Api\FriendShipController::class, 'getsuggest']);
     Route::delete('/friendship/{friendship}', [App\Http\Controllers\Api\FriendShipController::class, 'deletefriendship']);
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
-    Route::get('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
+    Route::post('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'store']);
+    Route::get('/conversations/{conversation}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
     Route::post('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'store']);
+
     // Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
     Route::get('/posts', [App\Http\Controllers\Api\PostController::class, 'index']);
     Route::post('/posts', [App\Http\Controllers\Api\PostController::class, 'store']);

@@ -1,9 +1,15 @@
 import ThreadList from "./ThreadList";
 import { Outlet } from "react-router-dom";
-import { Box } from "@mui/material";
-
+import { useOutlet } from "react-router-dom";
+import { Box,Button  } from "@mui/material";
+import DefaultMessagePage from "./DefaultMessagePage";
+import CreateConversationModal from "./CreateConversationModal";
+import { useState } from "react";
 export default function MessageLayout() {
+  const outlet = useOutlet();
+  const [isCreateConversation, setIsCreateConversation] = useState(false);
   return (
+    <>
     <Box
       sx={{
         display: "flex",
@@ -21,6 +27,19 @@ export default function MessageLayout() {
           bgcolor: "white",
         }}
       >
+        <Box sx={{ p: 1, borderBottom: "1px solid #eee" }}>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            onClick={() => {
+              setIsCreateConversation(true);
+              console.log("Thêm cuộc trò chuyện mới"); // TODO: xử lý mở form tạo thread
+            }}
+          >
+            Thêm cuộc trò chuyện mới
+          </Button>
+        </Box>
         <ThreadList />
       </Box>
 
@@ -36,8 +55,13 @@ export default function MessageLayout() {
           bgcolor: "#f5f6fa",
         }}
       >
-        <Outlet /> {/* ✅ Hiển thị ThreadPage tương ứng */}
+        {outlet || <DefaultMessagePage />}
       </Box>
     </Box>
+    {isCreateConversation && (
+       <CreateConversationModal
+        onClose={()=>setIsCreateConversation(false)}
+       />)}
+    </>
   );
 }
