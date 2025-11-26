@@ -34,6 +34,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
     Route::middleware('throttle:10,1')->post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+    Route::middleware('auth.cookie')->post('change-password',[App\Http\Controllers\Api\AuthController::class, 'changePassword'] );
+    Route::post('/forgot-password', [App\Http\Controllers\Api\AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [App\Http\Controllers\Api\AuthController::class, 'resetPassword']);
+
 });
 
 Route::get('/email/verify/{id}/{hash}', [App\Http\Controllers\Api\VerificationController::class, 'verifyStateless'])
