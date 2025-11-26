@@ -52,6 +52,8 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::get('/friendship/{user}', [App\Http\Controllers\Api\FriendShipController::class, 'getfriend']);
     Route::get('/suggestfriends/{user}', [App\Http\Controllers\Api\FriendShipController::class, 'getsuggest']);
     Route::delete('/friendship/{friendship}', [App\Http\Controllers\Api\FriendShipController::class, 'deletefriendship']);
+    Route::post('/friendships', [App\Http\Controllers\Api\FriendShipController::class, 'addfriend']);
+    Route::patch('/friendships/{friendship}', [App\Http\Controllers\Api\FriendShipController::class, 'acceptfriend']);
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
     Route::post('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'store']);
     Route::get('/conversations/{conversation}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
@@ -65,7 +67,8 @@ Route::middleware('auth.cookie', 'verified.api')->group(function () {
     Route::put('/posts/{id}', [App\Http\Controllers\Api\PostController::class, 'update']);
     Route::post('/posts/{post}/report', [App\Http\Controllers\Api\ReportController::class, 'store']);
     Route::delete('/posts/{post}', [App\Http\Controllers\Api\PostController::class, 'destroy']);
-
+    Route::get('/users/{user}/posts', [App\Http\Controllers\Api\UserController::class, 'getpost']);
+    
     Route::get('/users/{user}', [App\Http\Controllers\Api\UserController::class, 'show']);
 
     Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);

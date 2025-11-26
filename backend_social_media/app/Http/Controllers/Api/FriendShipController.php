@@ -9,32 +9,106 @@ use App\Models\User;
 
 class FriendShipController extends Controller
 {
-    public function getfriend(User $user)
+    public function getfriend(Request $request, User $user)
     {
-        
-        if (!$user) {
+        /** @var User|null $viewer */
+        $viewer = $request->user();
+
+        // Nếu muốn bắt buộc phải đăng nhập
+        if (!$viewer) {
             return response()->json([
                 'message' => 'Unauthorized',
             ], 401);
         }
-        
-        // Lấy danh sách bạn bè của user hiện tại
-        $friends = $user->allFriendss();
+
+        // Lấy danh sách bạn bè của profile $user
+        $friends = $user->allFriendss()
+            ->map(function ($friend) use ($viewer) {
+                // Nếu chính viewer = friend
+                if ($viewer->id === $friend->id) {
+                    $friend->relationship_with_viewer = 'self';
+                    return $friend;
+                }
+
+                // Tìm mối quan hệ giữa viewer và từng friend
+                $friendship = Friendship::betweenUsers($viewer->id, $friend->id)->first();
+
+                if (!$friendship) {
+                    // Không có record friendship => chưa liên quan gì
+                    $friend->relationship_with_viewer = 'none';
+                }
+                else {
+                    // fallback: trả về đúng status trong DB (blocked, rejected, ...)
+                    $friend->relationship_with_viewer = $friendship->status;
+                    
+                }
+
+                return $friend;
+            });
 
         return response()->json([
             'friends' => $friends,
-        ]);
+        ], 200);
     }
     public function getsuggest(User $user){
         $friends=$user->getSuggestFriends();
         return response()->json([
             'friend'=>$friends,
-        ]);
+        ],200);
     }
-    public function deletefriendship(Friendship $friendship){
+    public function deletefriendship(Request $request,Friendship $friendship){
+        $user=$request->user();
+        if($user->id!==$friendship->user_id && $user->id!==$friendship->addressee_id){
+            return response()->json([
+                'message' => 'Forbidden',
+            ], 403);
+        }
         $friendship->delete();
         return response()->json([
         'message' => 'Đã xóa mối quan hệ bạn bè thành công',
-    ]);
+    ],200);
     }
+    public function addfriend(Request $request){
+        $user=$request->user();
+        $addressee_id = $request->addressee_id;
+        if ($user->id == $addressee_id) {
+            return response()->json([
+                'message' => 'Bạn không thể gửi lời mời kết bạn cho chính mình.'
+            ], 400); // Bad Request
+        }
+        $existingFriendship = Friendship::where(function ($query) use ($user, $addressee_id) {
+            $query->where('user_id', $user->id)
+                  ->where('addressee_id', $addressee_id);
+        })->orWhere(function ($query) use ($user, $addressee_id) {
+            $query->where('user_id', $addressee_id)
+                  ->where('addressee_id', $user->id);
+        })->first();
+        if($existingFriendship){
+            return response()->json(['message' => 'Đã tồn tại'], 409);
+        }
+        $friendship = Friendship::create([
+            'user_id'=>$user->id,
+            'addressee_id'=>$addressee_id
+        ]);
+        return response()->json($friendship ,201);
+    }
+    public function acceptfriend(Request $request, Friendship $friendship){
+        // (khuyến khích) kiểm tra đúng người được nhận lời mời mới được accept
+        $user = $request->user();
+        if (!$user || $user->id !== $friendship->addressee_id) {
+            return response()->json([
+                'message' => 'Bạn không có quyền chấp nhận lời mời này',
+            ], 403);
+        }
+
+        // cập nhật trạng thái
+        $friendship->update([
+            'status' => 'accepted',
+        ]);
+
+        return response()->json([
+            'message' => 'Đã chấp nhận lời mời kết bạn',
+            'friendship' => $friendship,
+        ], 200);
+        }
 }
