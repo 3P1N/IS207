@@ -15,6 +15,15 @@ class Comment extends Model
         'content',
         'parent_comment_id',
     ];
+    protected $appends = ['is_liked'];
+
+    public function getIsLikedAttribute()
+    {
+        $userId = auth()->id();
+        if (!$userId) return false;
+
+        return $this->reactions()->where('user_id', $userId)->exists();
+    }
 
     public function post(){
         return $this->belongsTo(Post::class);
@@ -29,6 +38,12 @@ class Comment extends Model
 
     public function childComments(){
         return $this->hasMany(Comment::class, 'parent_comment_id');
+    }
+    public function childrenRecursive()
+    {
+        return $this->childComments()
+            ->with(['user', 'childrenRecursive', 'reactions']) // load user + reactions
+            ->withCount('reactions'); // count reactions cho mọi level
     }
     public function reactions()
     {

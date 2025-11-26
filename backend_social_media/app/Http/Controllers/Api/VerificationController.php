@@ -34,4 +34,5 @@ class VerificationController extends Controller
 
         return redirect()->away('http://localhost:5173/login?verified=success');
     }
+    
 }

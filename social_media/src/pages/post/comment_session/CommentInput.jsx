@@ -23,7 +23,7 @@ export default function CommentInput({
     const [content, setContent] = useState("");
     const textareaRef = useRef(null);
     const [loading, setLoading] = useState(false);
-    const {  } = useContext(AuthContext);
+    // const {  } = useContext(AuthContext);
 
     // auto-resize textarea
     const resize = () => {

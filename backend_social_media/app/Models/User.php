@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail; 
+use Illuminate\Support\Facades\Password;
 use App\Enums\FriendshipStatus;
 use App\Models\Friendship;
 
@@ -205,6 +206,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sharesMade()
     {
         return $this->hasMany(\App\Models\PostShare::class, 'user_id');
+    }
+    public function sendResetPasswordMail()
+    {
+        $token = Password::createToken($this);
+
+        $resetUrl = "http://localhost:5173/reset-password?token={$token}&email={$this->email}";
+
+        \Mail::send('emails.reset-password',['url' => $resetUrl, 'user' => $this], function ($message) {
+            $message->to($this->email)
+                    ->subject('Reset your password');
+        });
     }
 
 }

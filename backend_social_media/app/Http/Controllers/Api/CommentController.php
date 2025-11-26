@@ -25,13 +25,8 @@ class CommentController extends Controller
         }
         $userId = $user->id;
         $comment = Comment::where('post_id', $post->id)
-                ->with('user')
+                ->with('user','childrenRecursive')
                 ->orderBy('created_at', 'desc')
-                ->withExists([
-                    'reactions as is_liked' => function ($q) use ($userId) {
-                        $q->where('user_id', $userId);
-                    }
-                ])
                 ->withCount(['reactions'])
                 ->get();
         return response()->json($comment,200);
@@ -160,6 +155,7 @@ class CommentController extends Controller
             'post_id' => $post->id,
             'parent_comment_id' => $comment->id
         ]);
+        $replyComment->load('user');
         return response()->json($replyComment, 201);
     }
 

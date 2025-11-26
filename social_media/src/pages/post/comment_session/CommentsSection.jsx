@@ -62,12 +62,13 @@ export default function CommentsSection() {
                 ) : (
                     <div className="flex flex-col gap-4">
                         {comments.map((comment, index) => (
+                            !comment.parent_comment_id &&
                             <CommentItem 
                                 key={comment.id || index} // Ưu tiên dùng ID nếu có
                                 comment={comment}
                                 setComments={setComments} // Truyền hàm wrapper vào đây
                                 comments={comments}
-                            />
+                            /> 
                         ))}
                     </div>
                 )
