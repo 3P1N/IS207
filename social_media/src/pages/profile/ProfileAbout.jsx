@@ -1,7 +1,8 @@
 // src/pages/profile/ProfileAbout.jsx
+import { alertClasses } from "@mui/material";
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-
+import { api } from "../../shared/api";
 export default function ProfileAbout() {
   const { profileUser, isOwnProfile } = useOutletContext();
 
@@ -14,7 +15,6 @@ export default function ProfileAbout() {
     username: profileUser?.username || "@username",
     email: profileUser?.email || "user@example.com",
     gender: profileUser?.gender || "",
-    joinDate: profileUser?.joinDate || "01/01/2024",
   });
 
   const handleChange = (e) => {
@@ -22,15 +22,19 @@ export default function ProfileAbout() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // TODO: call API update profile ở đây
-    console.log("Update profile info:", formData);
+  const handleSubmit = async (e) => {
+    e.preventDefault();  // chặn reload trang
 
-    // Sau khi lưu thì quay về tab xem
-    setActiveTab("view");
+    try {
+      await api.patch("/userProfile", {
+        formData: formData, // ở đây sẽ là formData MỚI NHẤT
+      });
+      setActiveTab("view");
+    } catch (error) {
+      console.error("Lỗi cập nhật profile:", error);
+      alert("Chỉnh sửa thông tin thất bại");
+    }
   };
-
   return (
     <div className="space-y-6">
       {/* Tiêu đề */}
@@ -83,13 +87,11 @@ export default function ProfileAbout() {
         {(!isOwnProfile || activeTab === "view") && (
           <dl className="space-y-3 text-sm text-gray-700">
             <InfoRow label="Tên hiển thị" value={formData.displayName} />
-            <InfoRow label="Username" value={formData.username} />
             <InfoRow label="Email" value={formData.email} />
             <InfoRow
               label="Giới tính"
               value={formData.gender || "Chưa cập nhật"}
             />
-            <InfoRow label="Ngày tham gia" value={formData.joinDate} />
           </dl>
         )}
 
@@ -109,18 +111,7 @@ export default function ProfileAbout() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
                 />
               </div>
-
-              <div>
-                <label className="block text-gray-600 mb-1">Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                />
-              </div>
-
+      
               <div>
                 <label className="block text-gray-600 mb-1">Email</label>
                 <input
@@ -138,19 +129,6 @@ export default function ProfileAbout() {
                   type="text"
                   name="gender"
                   value={formData.gender}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-gray-600 mb-1">
-                  Ngày tham gia
-                </label>
-                <input
-                  type="text"
-                  name="joinDate"
-                  value={formData.joinDate}
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
                 />
