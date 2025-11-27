@@ -1,316 +1,328 @@
-import { useContext, useState, useRef, useEffect } from 'react';
-// import CommentInput from './CommentInput'; // Nếu bạn muốn dùng component nhập liệu riêng
-import AvatarUser from "../../../shared/components/AvatarUser";
-import { AuthContext } from '../../../router/AuthProvider';
-import { api } from '../../../shared/api';
-import CircularProgress from '@mui/material/CircularProgress';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
-import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
-import SendIcon from '@mui/icons-material/Send'; // Import thêm icon gửi
-import CommentReactionsListModal from '../reaction/CommentReactionsListModal';
+import React, { useState, useContext, useEffect, useRef } from "react";
+import {
+    Avatar,
+    Typography,
+    Box,
+    IconButton,
+    Menu,
+    MenuItem,
+    TextField,
+    Button,
+    CircularProgress,
+    Snackbar,
+    Alert,
+} from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
+import ThumbUpAltIcon from "@mui/icons-material/ThumbUpAlt";
+import SendIcon from "@mui/icons-material/Send";
+import CommentReactionsListModal from "../reaction/CommentReactionsListModal";
+import { api } from "../../../shared/api";
+import { AuthContext } from "../../../router/AuthProvider";
+// Import component hiển thị danh sách like nếu cần (giữ placeholder nếu chưa có)
+// import CommentReactionsListModal from '../reaction/CommentReactionsListModal';
 
-// Thêm prop isChild (mặc định false) để kiểm tra cấp độ comment
-export default function CommentItem({ comment, comments, setComments, isChild = false }) {
+export default function CommentItem({ comment, setComments, postId }) {
     const { userData } = useContext(AuthContext);
-    const isOwner = comment.user.id === userData.id;
-
-    // State cho comment hiện tại
-    const [isEditing, setIsEditing] = useState(false);
-    const [editContent, setEditContent] = useState(comment.content);
-    const [liked, setLiked] = useState(comment.is_liked);
-    const [likeCount, setLikeCount] = useState(comment.reactions_count);
-    const [showReactions, setShowReactions] = useState(false);
-
-    // State quản lý comment con (QUAN TRỌNG)
-    // Khởi tạo từ props, nếu không có thì là mảng rỗng
+    const isOwner = userData?.id === comment.user?.id;
+    const [showReactionsModal, setShowReactionsModal] = useState(false);
+    // --- STATE DỮ LIỆU ---
+    // Quản lý danh sách comment con của comment này
     const [childComments, setChildComments] = useState(comment.children_recursive || []);
 
-    // State cho chức năng Reply
+    // --- STATE HIỂN THỊ & EDIT ---
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(comment.content);
+    const [anchorEl, setAnchorEl] = useState(null); // Menu 3 chấm
+
+    // --- STATE LIKE ---
+    const [isLiked, setIsLiked] = useState(comment.is_liked);
+    const [likesCount, setLikesCount] = useState(comment.reactions_count);
+
+    // --- STATE REPLY ---
     const [isReplying, setIsReplying] = useState(false);
-    const [replyContent, setReplyContent] = useState('');
+    const [replyContent, setReplyContent] = useState("");
     const [replyLoading, setReplyLoading] = useState(false);
 
+    // --- STATE CHUNG ---
     const [loading, setLoading] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-    const menuRef = useRef(null);
-
-    // Đồng bộ lại childComments nếu props thay đổi (tùy chọn, tốt cho realtime)
+    // Đồng bộ lại childComments nếu props thay đổi
     useEffect(() => {
         if (comment.children_recursive) {
             setChildComments(comment.children_recursive);
         }
     }, [comment.children_recursive]);
 
-    // Close dropdown khi click ra ngoài
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setMenuOpen(false);
+    // --- HANDLERS: MENU ---
+    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+    const handleMenuClose = () => setAnchorEl(null);
+
+    // --- HANDLERS: DELETE ---
+    const handleDelete = async () => {
+        handleMenuClose();
+        if (!window.confirm("Bạn có chắc muốn xóa bình luận này?")) return;
+
+        setLoading(true);
+        try {
+            await api.delete(`/posts/${postId}/comments/${comment.id}`);
+
+            // Xóa comment này khỏi danh sách của cha (thông qua prop setComments)
+            if (setComments) {
+                setComments((prev) => prev.filter((c) => c.id !== comment.id));
             }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // --- CÁC HÀM XỬ LÝ CŨ (DELETE, EDIT, LIKE) ---
-    const deleteComment = async () => {
-        setLoading(true);
-        try {
-            await api.delete(`posts/${comment.post_id}/comments/${comment.id}`);
-            // Hàm setComments này sẽ xóa comment khỏi danh sách của cha (hoặc root)
-            setComments(prev => prev.filter(c => c.id !== comment.id));
-            setSnackbar({ open: true, message: 'Delete comment successfully', severity: 'success' });
-
+            setSnackbar({ open: true, message: "Đã xóa bình luận", severity: "success" });
         } catch (err) {
-            console.log("lỗi khi delete comment: ", err);
-            setSnackbar({ open: true, message: 'Failed to delete comment', severity: 'error' });
+            console.error("Delete error:", err);
+            setSnackbar({ open: true, message: "Lỗi khi xóa bình luận", severity: "error" });
         } finally {
             setLoading(false);
-            setMenuOpen(false);
         }
-    }
-
-    const editComment = () => {
-        setIsEditing(true);
-        setMenuOpen(false);
     };
 
-    const saveEdit = async () => {
+    // --- HANDLERS: EDIT ---
+    const handleEditSubmit = async () => {
         if (!editContent.trim()) return;
-
         setLoading(true);
         try {
-            await api.patch(
-                `posts/${comment.post_id}/comments/${comment.id}`,
-                { content: editContent },
-            );
-            setComments(prev => prev.map(c => c.id === comment.id ? { ...c, content: editContent } : c));
-            setSnackbar({ open: true, message: 'Comment updated successfully', severity: 'success' });
+            // Giả sử API patch comment
+            await api.patch(`/posts/${postId}/comments/${comment.id}`, { content: editContent });
+
+            // Update UI cục bộ (Vì ta đang hiển thị editContent trong ô input, 
+            // nhưng cần update lại content gốc để hiển thị khi thoát chế độ edit)
+            comment.content = editContent;
+
             setIsEditing(false);
+            setSnackbar({ open: true, message: "Đã chỉnh sửa bình luận", severity: "success" });
         } catch (err) {
-            console.log("Lỗi khi update comment:", err);
-            setSnackbar({ open: true, message: 'Failed to update comment', severity: 'error' });
+            console.error("Edit error:", err);
+            setSnackbar({ open: true, message: "Lỗi khi sửa bình luận", severity: "error" });
         } finally {
             setLoading(false);
         }
     };
 
-    const cancelEdit = () => {
-        setEditContent(comment.content);
-        setIsEditing(false);
-    };
-
-    const toggleLike = async () => {
-        const newLikedState = !liked;
-        setLiked(newLikedState);
-        setLikeCount(prev => newLikedState ? prev + 1 : prev - 1);
+    // --- HANDLERS: LIKE ---
+    const handleLike = async () => {
+        const prevLiked = isLiked;
+        setIsLiked(!prevLiked);
+        setLikesCount(prevLiked ? likesCount - 1 : likesCount + 1);
 
         try {
-            await api.post(`posts/${comment.post_id}/comments/${comment.id}/reactions`);
-            console.log("like comment: ", comment.post_id, comment.id)
-        } catch (error) {
-            console.error("Lỗi like comment", error);
-            setLiked(!newLikedState);
-            setLikeCount(prev => !newLikedState ? prev + 1 : prev - 1);
+            await api.post(`/posts/${postId}/comments/${comment.id}/reaction`);
+        } catch (err) {
+            console.error("Like error:", err);
+            // Rollback
+            setIsLiked(prevLiked);
+            setLikesCount(prevLiked ? likesCount : likesCount);
         }
-    }
+    };
 
-    // --- HÀM MỚI: XỬ LÝ REPLY ---
+    // --- HANDLERS: REPLY ---
     const handleReplySubmit = async () => {
         if (!replyContent.trim()) return;
-
         setReplyLoading(true);
+
         try {
-            const response = await api.post(`posts/${comment.post_id}/comments/${comment.id}/replies`, {
+            const res = await api.post(`/posts/${postId}/comments`, {
                 content: replyContent,
+                parent_comment_id: comment.id, // ID của comment hiện tại làm cha
             });
-            // response.data trả về object comment mới
-            const newComment = response.data;
 
-            // Cập nhật danh sách comment con
-            // Giả sử API trả về đúng format comment, ta cần thêm child_comments: [] cho nó an toàn
-            const newCommentFormatted = { ...newComment, child_comments: [] };
+            // Tạo object comment mới từ response (hoặc mock nếu API không trả về full user)
+            const newComment = {
+                ...res.data,
+                // Nếu API trả về thiếu thông tin user, ta có thể fill tạm từ userData hiện tại
+                user: res.data.user || userData,
+                children_recursive: []
+            };
 
-            setChildComments(prev => [...prev, newCommentFormatted]);
-
-            // Reset form
-            setReplyContent('');
+            setChildComments((prev) => [...prev, newComment]);
+            setReplyContent("");
             setIsReplying(false);
-            setSnackbar({ open: true, message: 'Replied successfully', severity: 'success' });
-
-        } catch (error) {
-            console.error("Lỗi reply comment", error);
-            setSnackbar({ open: true, message: 'Failed to reply', severity: 'error' });
+            setSnackbar({ open: true, message: "Đã trả lời bình luận", severity: "success" });
+        } catch (err) {
+            console.error("Reply error:", err);
+            setSnackbar({ open: true, message: "Lỗi gửi phản hồi", severity: "error" });
         } finally {
             setReplyLoading(false);
         }
     };
 
-    const handleCloseSnackbar = () => {
-        setSnackbar(prev => ({ ...prev, open: false }));
-    }
+    const timeAgo = new Date(comment.created_at).toLocaleDateString("vi-VN");
 
     return (
-        <div className="flex flex-col w-full"> {/* Bọc ngoài bằng flex-col để chứa children bên dưới */}
+        <Box sx={{ display: "flex", gap: 1.5, mb: 2, width: "100%" }}>
+            {/* Avatar */}
+            <Avatar
+                src={comment.user?.avatarUrl || "/default-avatar.png"}
+                alt={comment.user?.name}
+                sx={{ width: 32, height: 32 }}
+            />
 
-            {/* PHẦN HIỂN THỊ COMMENT CHÍNH */}
-            <div className="flex items-start gap-3 relative">
-                <AvatarUser userData={comment.user} />
-                <div className="flex-1 flex flex-col items-start">
-                    <div className="flex items-center justify-between relative w-full">
-                        {/* Comment box */}
-                        <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-3 flex flex-col max-w-[90%]"> {/* Tăng max-width lên chút */}
-                            <p className="font-semibold text-sm">{comment.user.name}</p>
+            <Box sx={{ flex: 1 }}>
+                {/* --- KHỐI BONG BÓNG CHAT --- */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                        className="bg-gray-100 dark:bg-gray-700"
+                        sx={{
+                            borderRadius: 4,
+                            p: 1.5,
+                            width: "fit-content",
+                            minWidth: "150px",
+                            position: "relative",
+                        }}
+                    >
+                        <Typography variant="subtitle2" sx={{ fontWeight: "bold", fontSize: "0.9rem" }}>
+                            {comment.user?.name}
+                        </Typography>
 
-                            {isEditing ? (
-                                <div className="flex flex-col gap-2 min-w-[200px]">
-                                    <textarea
-                                        value={editContent}
-                                        onChange={(e) => setEditContent(e.target.value)}
-                                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 focus:outline-none text-sm"
-                                        rows={2}
-                                    />
-                                    <div className="flex gap-2">
-                                        <button onClick={saveEdit} disabled={loading} className="bg-blue-600 text-white px-3 py-1 rounded text-xs">
-                                            {loading ? 'Saving...' : 'Save'}
-                                        </button>
-                                        <button onClick={cancelEdit} disabled={loading} className="bg-gray-300 dark:bg-gray-700 px-3 py-1 rounded text-xs">
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="text-sm break-words whitespace-pre-wrap">{comment.content}</p>
-                            )}
-
-                            {likeCount > 0 && (
-                                <div
-                                    className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-700 shadow-md border border-gray-200 dark:border-gray-600 rounded-full py-[2px] px-[6px] flex items-center gap-1 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-all z-10"
-                                    onClick={() => setShowReactions(true)}
-                                >
-                                    <div className="bg-primary rounded-full p-[2px] flex items-center justify-center">
-                                        <ThumbUpAltIcon sx={{ width: 10, height: 10, color: 'blue' }} />
-                                    </div>
-                                    <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary font-medium leading-none">
-                                        {likeCount}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Nút menu (3 chấm) */}
-                        {isOwner && (
-                            <div className="relative ml-2" ref={menuRef}>
-                                <button
-                                    className="text-sm font-bold px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center justify-center"
-                                    onClick={() => setMenuOpen(!menuOpen)}
-                                    disabled={loading}
-                                > ... </button>
-
-                                {menuOpen && (
-                                    <div className="absolute right-0 mt-2 w-24 bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700 z-20">
-                                        <button onClick={editComment} className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                            Edit
-                                        </button>
-                                        <button onClick={deleteComment} className="block w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                            {loading ? <CircularProgress size={16} /> : <>Delete</>}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                        {/* Nội dung Comment hoặc Ô Edit */}
+                        {isEditing ? (
+                            <Box sx={{ mt: 1, minWidth: "200px" }}>
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    size="small"
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    sx={{ bgcolor: "background.paper" }}
+                                />
+                                <Box sx={{ mt: 1, display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                                    <Button size="small" onClick={() => setIsEditing(false)} color="inherit">Hủy</Button>
+                                    <Button size="small" variant="contained" onClick={handleEditSubmit} disabled={loading}>Lưu</Button>
+                                </Box>
+                            </Box>
+                        ) : (
+                            <Typography variant="body2" sx={{ fontSize: "0.95rem", whiteSpace: "pre-wrap" }}>
+                                {comment.content}
+                            </Typography>
                         )}
-                    </div>
 
-                    {/* Action Bar: Like, Reply */}
-                    <div className="flex gap-4 text-xs font-semibold text-text-light-secondary dark:text-text-dark-secondary px-3 py-1 mt-1">
-                        <button onClick={toggleLike} className="flex items-center gap-1 hover:underline cursor-pointer">
-                            {liked ? <ThumbUpAltIcon fontSize="small" color="primary" /> : <ThumbUpOffAltIcon fontSize="small" />}
-                            Like
-                        </button>
+                        {/* Hiển thị icon Like nhỏ ở góc bong bóng nếu có like */}
+                        {likesCount > 0 && !isEditing && (
+                            <Box
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Tránh bubbling sự kiện không mong muốn
+                                    setShowReactionsModal(true);
+                                }}
+                                sx={{
+                                    position: 'absolute', bottom: -10, right: 0,
+                                    bgcolor: 'background.paper', borderRadius: 10,
+                                    boxShadow: 1, px: 0.5, py: 0.2, display: 'flex', alignItems: 'center', gap: 0.5,
+                                    cursor: "pointer",
+                                    transition: "all 0.15s ease-in-out",   // 👈 Mượt
+                                    "&:hover": {
+                                        transform: "scale(1.05)",         // 👈 Phóng nhẹ 5%
+                                        bgcolor: "action.hover",          // 👈 Nền xám trong theme
+                                        boxShadow: 2                      // 👈 Shadow mạnh hơn chút
+                                    }
+                                }}
+                            >
+                                <ThumbUpAltIcon sx={{ width: 12, height: 12, color: '#1976d2' }} />
+                                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>{likesCount}</Typography>
+                            </Box>
+                        )}
+                    </Box>
 
+                    {/* Menu 3 chấm (Chỉ hiện nếu là owner) */}
+                    {isOwner && !isEditing && (
+                        <IconButton size="small" onClick={handleMenuOpen}>
+                            <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                    )}
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={handleMenuClose}
+                    >
+                        <MenuItem onClick={() => { handleMenuClose(); setIsEditing(true); }}>Chỉnh sửa</MenuItem>
+                        <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>Xóa</MenuItem>
+                    </Menu>
+                </Box>
 
-                        <button
-                            className="hover:underline cursor-pointer"
+                {/* --- THANH ACTION (Like, Reply, Time) --- */}
+                {!isEditing && (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, ml: 1, mt: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary">{timeAgo}</Typography>
+
+                        <Typography
+                            variant="caption"
+                            sx={{ fontWeight: "bold", cursor: "pointer", color: isLiked ? "primary.main" : "text.secondary" }}
+                            onClick={handleLike}
+                        >
+                            Thích
+                        </Typography>
+
+                        <Typography
+                            variant="caption"
+                            sx={{ fontWeight: "bold", cursor: "pointer", color: "text.secondary" }}
                             onClick={() => setIsReplying(!isReplying)}
                         >
-                            Reply
-                        </button>
+                            Phản hồi
+                        </Typography>
+                    </Box>
+                )}
 
-
-                        <span className="text-gray-400 font-normal">
-                            {/* Hiển thị thời gian (nếu muốn) */}
-                            {/* {new Date(comment.created_at).toLocaleDateString()} */}
-                        </span>
-                    </div>
-
-                    {/* Ô NHẬP LIỆU REPLY (Chỉ hiển thị khi bấm Reply) */}
-                    {isReplying && (
-                        <div className="flex items-start gap-2 w-full mt-2 animate-fadeIn">
-                            {/* Avatar người đang login (User hiện tại) */}
-                            <AvatarUser userData={userData} size={30} />
-                            <div className="flex-1 relative">
-                                <textarea
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    placeholder={`Reply to ${comment.user.name}...`}
-                                    className="w-full p-2 pr-10 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500 text-sm bg-gray-50 dark:bg-gray-900 resize-none"
-                                    rows={1}
-                                    autoFocus
-                                />
-                                <button
-                                    onClick={handleReplySubmit}
-                                    disabled={replyLoading || !replyContent.trim()}
-                                    className="absolute right-2 bottom-1.5 text-blue-600 disabled:text-gray-400 hover:bg-blue-100 rounded-full p-1 transition-all"
-                                >
-                                    {replyLoading ? <CircularProgress size={16} /> : <SendIcon fontSize="small" />}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* HIỂN THỊ DANH SÁCH CHILD COMMENTS */}
-            {childComments && childComments.length > 0 && (
-                <div className="flex flex-col gap-3 mt-3 ml-12 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
-                    {childComments.map((childComment) => (
-                        <CommentItem
-                            key={childComment.id}
-                            comment={childComment}
-                            // QUAN TRỌNG: setComments ở đây là setChildComments của cha
-                            // Điều này giúp hàm delete/edit của con tự động cập nhật list con của cha
-                            setComments={setChildComments}
-                            comments={childComments}
-                            isChild={true} // Đánh dấu đây là comment con để ẩn nút Reply
+                {/* --- FORM NHẬP REPLY --- */}
+                {isReplying && (
+                    <Box sx={{ mt: 1.5, display: "flex", gap: 1, alignItems: "flex-start" }}>
+                        <Avatar src={userData?.avatarUrl} sx={{ width: 24, height: 24 }} />
+                        <TextField
+                            fullWidth
+                            size="small"
+                            placeholder={`Phản hồi ${comment.user?.name}...`}
+                            value={replyContent}
+                            onChange={(e) => setReplyContent(e.target.value)}
+                            autoFocus
+                            InputProps={{
+                                sx: { borderRadius: 3, fontSize: '0.9rem' },
+                                endAdornment: (
+                                    <IconButton size="small" onClick={handleReplySubmit} disabled={!replyContent.trim() || replyLoading}>
+                                        {replyLoading ? <CircularProgress size={16} /> : <SendIcon fontSize="small" color={replyContent.trim() ? "primary" : "disabled"} />}
+                                    </IconButton>
+                                )
+                            }}
                         />
-                    ))}
-                </div>
-            )}
+                    </Box>
+                )}
+
+                {/* --- ĐỆ QUY: RENDER DANH SÁCH COMMENT CON --- */}
+                {childComments && childComments.length > 0 && (
+                    <Box sx={{ mt: 1.5 }}>
+                        {childComments.map((child) => (
+                            <CommentItem
+                                key={child.id}
+                                comment={child}
+                                postId={postId}
+                                // Quan trọng: Truyền setChildComments của cha xuống làm setComments cho con
+                                // Để con có thể gọi setComments để tự xóa mình khỏi danh sách cha
+                                setComments={setChildComments}
+                            />
+                        ))}
+                    </Box>
+                )}
+            </Box>
 
             {/* Snackbar thông báo */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={3000}
-                onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
             >
-                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+                <Alert severity={snackbar.severity} variant="filled" onClose={() => setSnackbar({ ...snackbar, open: false })}>
                     {snackbar.message}
                 </Alert>
             </Snackbar>
-
-            {/* Modal Reaction */}
-            {showReactions && (
+            {showReactionsModal && (
                 <CommentReactionsListModal
+                    postId={postId}
                     commentId={comment.id}
-                    postId={comment.post_id}
-                    onClose={() => setShowReactions(false)}
+                    onClose={() => setShowReactionsModal(false)}
                 />
             )}
-        </div>
+        </Box>
     );
 }

@@ -14,15 +14,16 @@ import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import { CircularProgress } from "@mui/material";
 import React from "react";
+import PostCommentsModal from "./comment_session/PostCommentsModal";
 
-export default function PostActionsBar({ likes, comments, shares, isShared, isLiked, postId }) {
+export default function PostActionsBar({ likes, comments, shares, isShared, isLiked, postId, postData }) {
     const navigate = useNavigate();
     const [liked, setLiked] = useState(isLiked);
     const [shared, setShared] = useState(isShared);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // success | error
-
+const [showCommentsModal, setShowCommentsModal] = useState(false);
     const Alert = React.forwardRef(function Alert(props, ref) {
         return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
     });
@@ -144,7 +145,7 @@ export default function PostActionsBar({ likes, comments, shares, isShared, isLi
                         text-text-light-secondary dark:text-text-dark-secondary
                         hover:bg-gray-100 dark:hover:bg-gray-700
                     "
-                    onClick={() => navigate(`/post/${postId}`)}
+                    onClick={() => setShowCommentsModal(true)}
                 >
                     <ChatBubbleOutlineIcon
                         fontSize="small"
@@ -200,7 +201,14 @@ export default function PostActionsBar({ likes, comments, shares, isShared, isLi
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
-
+            {showCommentsModal && (
+                <PostCommentsModal
+                    open={showCommentsModal}
+                    onClose={() => setShowCommentsModal(false)}
+                    postId={postId}
+                    postData={postData} // Cần truyền postData xuống để hiển thị Header
+                />
+            )}
         </>
     );
 }

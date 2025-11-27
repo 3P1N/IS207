@@ -48,7 +48,7 @@ export default function AddMemberModal({ open, onClose, threadId, currentMemberI
     try {
       // Gọi API thêm thành viên (Bạn cần điều chỉnh URL API cho đúng với Backend của bạn)
       await api.post(`/conversations/${threadId}/participants`, {
-        user_ids: selectedIds
+        participant_ids: selectedIds
       });
 
       // Quan trọng: Refresh lại data của cuộc trò chuyện bên ngoài

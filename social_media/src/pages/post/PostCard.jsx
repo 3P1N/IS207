@@ -60,6 +60,7 @@ export default function PostCard({ postData, index }) {
                     isShared={postData.is_shared}
                     postId={postData.id}
                     index={index}
+                    postData={postData}
                 />
             </div>
             {selectedImage && (

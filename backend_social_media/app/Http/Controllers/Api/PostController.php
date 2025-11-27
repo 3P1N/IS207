@@ -35,7 +35,11 @@ class PostController extends Controller
                     $q->where('content', 'like', "%{$keyword}%");
                 })
                 ->withCount(['reactions', 'comments', 'shares'])
-                ->with(['user', 'media'])
+                ->with([
+                'user',
+                'media',
+                
+                ])
                 ->withExists([
                     'reactions as is_liked' => function ($q) use ($userId) {
                         $q->where('user_id', $userId);
