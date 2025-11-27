@@ -124,18 +124,13 @@ class UserController extends Controller{
     {
         // Lấy user đang đăng nhập
         $user = $request->user(); // hoặc auth()->user()
-
         if (!$user) {
             return response()->json([
                 'message' => 'Không tìm thấy người dùng',
             ], 401);
         }
-
         // Lấy dữ liệu formData từ body: { formData: { ... } }
         $formData = $request->input('formData', []);
-
-        
-
         // Gán lại cho user
         $user->name   = $formData['displayName'];
         $user->email  = $formData['email'];

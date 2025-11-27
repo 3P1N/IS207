@@ -2,7 +2,7 @@
 import { alertClasses } from "@mui/material";
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-
+import { api } from "../../shared/api";
 export default function ProfileAbout() {
   const { profileUser, isOwnProfile } = useOutletContext();
 
@@ -12,6 +12,7 @@ export default function ProfileAbout() {
   // dữ liệu form (tạm thời lấy từ profileUser hoặc giá trị default)
   const [formData, setFormData] = useState({
     displayName: profileUser?.name || "User Name",
+    username: profileUser?.username || "@username",
     email: profileUser?.email || "user@example.com",
     gender: profileUser?.gender || "",
   });
@@ -19,22 +20,21 @@ export default function ProfileAbout() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    console.log(profileUser);
   };
 
-  const handleSubmit = async() => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();  // chặn reload trang
+
     try {
-      await api.patch( 'userProfile' , {
-        formData: formData,
+      await api.patch("/userProfile", {
+        formData: formData, // ở đây sẽ là formData MỚI NHẤT
       });
+      setActiveTab("view");
     } catch (error) {
-      console.error(err);
+      console.error("Lỗi cập nhật profile:", error);
       alert("Chỉnh sửa thông tin thất bại");
-    } finally{
-    setActiveTab("view");
     }
   };
-
   return (
     <div className="space-y-6">
       {/* Tiêu đề */}
