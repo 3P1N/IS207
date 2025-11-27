@@ -51,11 +51,12 @@ export default function ThreadList() {
       const displayName = t.name ?? other?.user?.name ?? "Cuộc trò chuyện";
       const avatarUrl = other?.user?.avatar || "image.png";
       const conversationId = t.conversation_id ?? t.id;
-
+      const last_message = t?.last_message?.content || "Chưa có tin nhắn nào";
       return {
         conversationId,
         displayName,
         avatarUrl,
+        last_message
       };
     });
   }, [threads, meId]);
@@ -135,7 +136,7 @@ export default function ThreadList() {
               </ListItemAvatar>
               <ListItemText
                 primary={thread.displayName}
-                secondary={`Tin nhắn gần nhất...`}
+                secondary={thread.last_message}
                 primaryTypographyProps={{
                   fontWeight: 500,
                   noWrap: true,

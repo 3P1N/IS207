@@ -9,7 +9,7 @@ class Conversation extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'id',
+        
         'conversation_id',
         'name'
     ];
@@ -20,6 +20,10 @@ class Conversation extends Model
     public function participants()
     {
         return $this->hasMany(ConversationParticipant::class);
+    }
+    public function lastMessage()
+    {
+        return $this->hasOne(Message::class)->latestOfMany();
     }
     
 }

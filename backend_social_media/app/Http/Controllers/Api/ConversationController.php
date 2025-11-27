@@ -12,12 +12,26 @@ class ConversationController extends Controller
 {
     public function index(Request $request)
     {
-        $requester = $request->user();
-        
-        // Lấy danh sách cuộc trò chuyện của user hiện tại
-        $conversations = $requester->conversations()->with('participants.user')->get();
-        return response()->json($conversations,200);
+        $user = $request->user();
+
+        $subquery = "(select max(messages.created_at) 
+                    from messages 
+                    where messages.conversation_id = conversations.id)";
+
+        $conversations = $user->conversations()
+            ->with([
+                'participants.user',
+                'lastMessage'
+            ])
+            ->select('conversations.*')
+            ->selectRaw("$subquery as last_message_at")
+            ->orderByRaw("COALESCE(($subquery), conversations.created_at) DESC")
+            ->get();
+
+        return response()->json($conversations, 200);
     }
+
+
     public function store(Request $request){
         $name = $request->name;
         $requester= $request->user();
