@@ -16,7 +16,7 @@ class MessageController extends Controller
     {
         $user = $request->user();
 
-        // Kiểm tra xem người dùng có phải là thành viên của cuộc trò chuyện không
+        // 1. Check quyền (giữ nguyên logic của bạn)
         $isParticipant = ConversationParticipant::where('conversation_id', $conversation->id)
             ->where('user_id', $user->id)
             ->exists();
@@ -24,15 +24,22 @@ class MessageController extends Controller
         if (!$isParticipant) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
-        // Eager load participants -> user, và messages kèm sender, đồng thời order messages
-        $conversation->load([
-            'participants.user',
-            'messages' => function ($q) {
-                $q->with('sender')->orderBy('created_at', 'asc');
-            }
-        ]);
 
-        return response()->json($conversation, 200);
+        // 2. Load thông tin Conversation và Participants (không load messages ở đây nữa)
+        $conversation->load(['participants.user']);
+
+        // 3. Load Messages riêng biệt để lấy object phân trang chuẩn
+        // Lấy tin nhắn MỚI NHẤT trước (DESC) để trang 1 là tin mới nhất, trang 2 cũ hơn...
+        $messages = $conversation->messages()
+            ->with('sender')
+            ->orderBy('created_at', 'desc') 
+            ->simplePaginate(20); // Lấy 15 tin mỗi lần tải
+
+        // 4. Trả về format tách biệt để frontend dễ xử lý
+        return response()->json([
+            'conversation' => $conversation,
+            'messages' => $messages // Object này chứa data, next_page_url, prev_page_url...
+        ], 200);
     }
     public function store(Request $request, $id)
     {
