@@ -7,6 +7,8 @@ use App\Models\ConversationParticipant;
 use App\Models\Conversation;
 
 use App\Events\MessageSent;
+use App\Events\ConversationSent;
+
 
 class MessageController extends Controller
 {
@@ -52,8 +54,13 @@ class MessageController extends Controller
             'content' => $request->input('content'),
         ]);
         $message->load('sender');
+        
+        $participantIds = ConversationParticipant::where('conversation_id', $id)
+        ->pluck('user_id')
+        ->toArray();
 
         broadcast(new \App\Events\MessageSent($message));
+        broadcast(new \App\Events\ConversationSent($message, $participantIds) );
         
         return response()->json($message, 201);
 

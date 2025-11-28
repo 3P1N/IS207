@@ -1,36 +1,40 @@
 import * as React from "react";
-import { useContext, useMemo, useState } from "react"; // 1. Import useState
+import { useContext, useMemo, useState, useEffect } from "react";
 import {
   List,
   ListItemButton,
   ListItemText,
   ListItemAvatar,
   Typography,
-  TextField, // 2. Import TextField cho ô tìm kiếm
+  TextField,
   InputAdornment,
   Box,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search"; // 3. Import Icon Search
+import SearchIcon from "@mui/icons-material/Search";
 import { Link as RouterLink } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+// --- 1. SỬA: Import thêm useQueryClient ---
+import { useQuery, useQueryClient } from "@tanstack/react-query"; 
 import AvatarUser from "../../shared/components/AvatarUser";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
 
 export default function ThreadList() {
-  const { userData } = useContext(AuthContext);
+  // --- 2. SỬA: Khởi tạo queryClient ---
+  const queryClient = useQueryClient(); 
+  
+  const { userData, echoInstance } = useContext(AuthContext);
   const meId = userData ? userData.id : null;
 
   // --- STATE TÌM KIẾM ---
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- 1. HÀM FETCH DATA ---
+  // --- HÀM FETCH DATA ---
   const fetchThreads = async () => {
     const response = await api.get("/conversations");
     return response.data;
   };
 
-  // --- 2. SỬ DỤNG USEQUERY ---
+  // --- SỬ DỤNG USEQUERY ---
   const { data: threads = [], isLoading } = useQuery({
     queryKey: ["conversations"],
     queryFn: fetchThreads,
@@ -39,7 +43,7 @@ export default function ThreadList() {
     refetchOnWindowFocus: false,
   });
 
-  // --- 3. CHUẨN HÓA DỮ LIỆU ---
+  // --- CHUẨN HÓA DỮ LIỆU ---
   const normalizedThreads = useMemo(() => {
     if (!Array.isArray(threads)) return [];
 
@@ -51,7 +55,8 @@ export default function ThreadList() {
       const displayName = t.name ?? other?.user?.name ?? "Cuộc trò chuyện";
       const avatarUrl = other?.user?.avatar || "image.png";
       const conversationId = t.conversation_id ?? t.id;
-      const last_message = t?.last_message?.content || "Chưa có tin nhắn nào";
+      // Lưu ý: Nếu t.last_message là object (do socket update), logic này vẫn chạy đúng vì nó lấy .content
+      const last_message = t?.last_message?.content ?? "Chưa có tin nhắn nào";
       return {
         conversationId,
         displayName,
@@ -61,18 +66,75 @@ export default function ThreadList() {
     });
   }, [threads, meId]);
 
-  // --- 4. LOGIC LỌC TÌM KIẾM (MỚI) ---
+  // --- LOGIC LỌC TÌM KIẾM ---
   const filteredThreads = useMemo(() => {
-    // Nếu không có từ khóa search, trả về list gốc
     if (!searchTerm) return normalizedThreads;
-
-    // Lọc theo tên (chuyển về chữ thường để so sánh chính xác hơn)
     return normalizedThreads.filter((thread) =>
       thread.displayName.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [normalizedThreads, searchTerm]);
 
-  // --- 5. RENDER ---
+  // --- EFFECT LẮNG NGHE SOCKET ---
+ useEffect(() => {
+    if (!userData?.id || !echoInstance) return;
+
+    // Channel riêng của user để nhận tin mới từ mọi group/chat
+    const channelName = `conversations.${userData.id}`;
+    const channel = echoInstance.private(channelName);
+
+    const handler = (event) => {
+      // Kiểm tra cấu trúc event trả về
+      // Thông thường event sẽ chứa { message: {...}, conversation_id: ... }
+      // Hoặc đôi khi chính là object message nếu backend broadcast thẳng model.
+      
+      const incomingMessage = event.message || event; 
+      const conversationId = event.conversation_id || incomingMessage.conversation_id;
+
+      if (!conversationId) return;
+
+      queryClient.setQueryData(["conversations"], (oldThreads) => {
+        if (!Array.isArray(oldThreads)) return oldThreads;
+
+        const targetIndex = oldThreads.findIndex(
+          (t) => (t.conversation_id ?? t.id) == conversationId
+        );
+
+        // Trường hợp 1: Thread đã có trong list -> Cập nhật và đưa lên đầu
+        if (targetIndex > -1) {
+          const targetThread = oldThreads[targetIndex];
+          
+          const updatedThread = {
+            ...targetThread,
+            last_message: incomingMessage, // Cập nhật message mới nhất
+            updated_at: incomingMessage.created_at || new Date().toISOString()
+          };
+
+          const otherThreads = oldThreads.filter((_, index) => index !== targetIndex);
+          return [updatedThread, ...otherThreads];
+        }
+
+        // Trường hợp 2: Tin nhắn từ cuộc trò chuyện mới chưa có trong list
+        // Cách tốt nhất là fetch lại list để đảm bảo dữ liệu đầy đủ (participants, name...)
+        queryClient.invalidateQueries(["conversations"]);
+        return oldThreads;
+      });
+    };
+
+    // Lắng nghe nhiều tên sự kiện để chắc chắn bắt được (giống ThreadPage)
+    channel.listen(".MessageSent", handler);
+    channel.listen("MessageSent", handler);
+    channel.listen(".ConversationSent", handler); // Giữ lại cái cũ của bạn đề phòng
+
+    // Cleanup function chuẩn
+    return () => {
+      channel.stopListening(".MessageSent");
+      channel.stopListening("MessageSent");
+      channel.stopListening(".ConversationSent");
+      echoInstance.leave(channelName); // Rời channel khi unmount
+    };
+  }, [userData?.id, echoInstance, queryClient]);
+
+  // --- RENDER ---
   if (isLoading) {
     return (
       <Typography variant="body2" sx={{ color: "text.secondary", p: 2 }}>
@@ -112,7 +174,6 @@ export default function ThreadList() {
               : "Chưa có cuộc trò chuyện nào."}
           </Typography>
         ) : (
-          // Render danh sách đã lọc (filteredThreads) thay vì danh sách gốc
           filteredThreads.map((thread) => (
             <ListItemButton
               key={thread.conversationId}
@@ -120,7 +181,7 @@ export default function ThreadList() {
               to={`/message/${thread.conversationId}`}
               sx={{
                 borderRadius: 2,
-                mx: 1, // Thêm margin ngang một chút cho đẹp so với ô search
+                mx: 1,
                 mb: 0.5,
                 "&.active": { backgroundColor: "#e3f2fd" },
               }}

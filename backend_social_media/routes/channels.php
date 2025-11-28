@@ -30,6 +30,12 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
         ->exists();
 });
 
+Broadcast::channel('conversations.{userId}', function ($user, $userId) {
+    if (! $user) return false;
+    return (int) $user->id === (int) $userId;
+});
+
+
 Route::get('/test-auth', function (Request $request) {
     return response()->json(['user' => $request->user()]);
 })->middleware('auth.cookie');
