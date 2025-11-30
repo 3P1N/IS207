@@ -12,4 +12,4 @@ Một ứng dụng mạng xã hội đơn giản cho phép người dùng đăng
 - Trang cá nhân người dùng
 ### 🔗 Live Demo
 Bạn có thể trải nghiệm ứng dụng ngay tại:
-https://your-frontend-url.vercel.app](https://is-207-steel.vercel.app/
+https://is-207-steel.vercel.app/
