@@ -29,7 +29,7 @@ export default function Navbar() {
                         fontWeight: "bold",
                     }}
                 >
-                    FITNESS247
+                    Social Media
                 </Typography>
 
                 {/* Ô tìm kiếm */}
