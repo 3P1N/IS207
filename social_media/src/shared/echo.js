@@ -13,13 +13,13 @@ export function createEcho() {
 
   const echo = new Echo({
     broadcaster: 'pusher',
-    
+
     // 1. Key lấy từ env hoặc fallback sang key trong ví dụ HTML của bạn
     key: import.meta.env.VITE_PUSHER_APP_KEY || 'fa5b12accf383fffbde7',
-    
+
     // 2. Cluster là bắt buộc đối với Pusher thật (ví dụ HTML dùng 'ap1')
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'ap1',
-    
+
     // 3. Luôn dùng HTTPS/TLS với Pusher thật
     forceTLS: true,
 
@@ -31,13 +31,22 @@ export function createEcho() {
     authorizer: (channel, options) => {
       return {
         authorize: (socketId, callback) => {
-          axios.post('broadcasting/auth', {
-            socket_id: socketId,
-            channel_name: channel.name
-          }, {
-            baseURL: apiBase,
-            withCredentials: true
-          })
+          const token = localStorage.getItem("access_token"); // Lấy token từ localStorage
+
+          axios.post(
+            'broadcasting/auth',
+            {
+              socket_id: socketId,
+              channel_name: channel.name
+            },
+            {
+              baseURL: apiBase,
+              headers: {
+                Authorization: token ? `Bearer ${token}` : '',
+                Accept: 'application/json',
+              },
+            }
+          )
             .then(response => {
               callback(false, response.data);
             })
@@ -47,6 +56,7 @@ export function createEcho() {
         }
       };
     },
+
   });
 
   // 🔥 Lắng nghe kết nối socket thành công
