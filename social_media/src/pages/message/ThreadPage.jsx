@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useContext, useRef, useLayoutEffect, useState } from "react";
 import { Box, Typography, CircularProgress, IconButton, Tooltip, ButtonBase } from "@mui/material";
 import { useParams } from "react-router-dom";
-import { PersonAdd } from "@mui/icons-material";
-// 1. Import useInfiniteQuery
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PersonAdd, VideoCall } from "@mui/icons-material";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
+import { VideoCallContext } from "../../router/VideoCallProvider";
 
 import ParticipantsModal from "./ParticipantsModal";
 import AddMemberModal from "./AddMemberModal";
@@ -18,7 +18,7 @@ export default function ThreadPage() {
   const { echoInstance, userData } = useContext(AuthContext);
   const meId = userData ? userData.id : null;
   const queryClient = useQueryClient();
-
+  // const { startCall } = useContext(VideoCallContext);
   const containerRef = useRef(null);
   // Ref để lưu chiều cao cũ trước khi load thêm tin nhắn
   const prevScrollHeightRef = useRef(0);
@@ -83,9 +83,20 @@ export default function ThreadPage() {
     return {
       name: other?.user?.name || "Cuộc trò chuyện",
       isGroup: false,
-      avatar: other?.user?.avatarUrl
+      avatar: other?.user?.avatarUrl,
+      id: other?.user?.id
     };
   }, [conversationName, participants, meId]);
+
+  const handleVideoCallClick = () => {
+    // Gọi hàm startCall từ Provider. 
+    // Truyền vào ID cuộc hội thoại và thông tin người nhận (để hiển thị UI "Đang gọi cho A...")
+    startCall(threadId, {
+        name: displayInfo.name,
+        avatar: displayInfo.avatar,
+        id: displayInfo.id
+    });
+  };
 
   // --- 2. XỬ LÝ SCROLL LOGIC ---
 
@@ -241,13 +252,24 @@ export default function ThreadPage() {
               </Typography>
             )}
           </ButtonBase>
-          {displayInfo.isGroup && (
-            <Tooltip title="Thêm người vào nhóm">
-              <IconButton color="primary" onClick={() => setIsAddMemberOpen(true)}>
-                <PersonAdd />
+          <Box>
+            {/* <Tooltip title="Gọi Video">
+              <IconButton
+                color="primary"
+                onClick={handleVideoCallClick}
+                sx={{ mr: 1 }}
+              >
+                <VideoCall />
               </IconButton>
-            </Tooltip>
-          )}
+            </Tooltip> */}
+            {displayInfo.isGroup && (
+              <Tooltip title="Thêm người vào nhóm">
+                <IconButton color="primary" onClick={() => setIsAddMemberOpen(true)}>
+                  <PersonAdd />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
         </Box>
 
         {/* --- MESSAGES LIST --- */}
@@ -298,6 +320,7 @@ export default function ThreadPage() {
       {/* --- MODALS --- */}
       <ParticipantsModal open={isParticipantsOpen} onClose={() => setIsParticipantsOpen(false)} participants={participants} />
       <AddMemberModal open={isAddMemberOpen} onClose={() => setIsAddMemberOpen(false)} threadId={threadId} currentMemberIds={currentMemberIds} />
+  
     </>
   );
 }

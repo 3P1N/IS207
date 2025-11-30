@@ -28,70 +28,73 @@ import PostCreate from "../pages/post/PostCreate";
 import ProfileSuggest from "../pages/profile/ProfileSuggest";
 import ResetPasswordForm from "../pages/auth/reset-password-form";
 import ChangePasswordForm from "../pages/changepassword/ChangePasswordForm";
+import VideoCallProvider from "./VideoCallProvider";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <Routes>
+                {/* <VideoCallProvider> */}
+                    <Routes>
 
-                    <Route element={<GuestRouter />}>
-                        {/* Đăng nhập, Đăng ký */}
-                        <Route element={<AuthLayout />} >
-                            <Route path="login" element={<LoginForm />} />
-                            <Route path="signup" element={<SignupForm />} />
-                            <Route path="reset-password" element={<ResetPasswordForm />} />
+                        <Route element={<GuestRouter />}>
+                            {/* Đăng nhập, Đăng ký */}
+                            <Route element={<AuthLayout />} >
+                                <Route path="login" element={<LoginForm />} />
+                                <Route path="signup" element={<SignupForm />} />
+                                <Route path="reset-password" element={<ResetPasswordForm />} />
 
+                            </Route>
                         </Route>
-                    </Route>
-                    <Route element={<ProtectedRoute />}>
-                        {/* Layout route */}
+                        <Route element={<ProtectedRoute />}>
+                            {/* Layout route */}
 
-                        <Route element={<MainLayout />}>
-                            <Route index element={<HomePage />} />
-                            <Route path="explore" element={<ExplorePage />} />
-                            <Route path="search" element={<SearchResultPage />} />
-                            <Route path="change-password" element={<ChangePasswordForm />} />
+                            <Route element={<MainLayout />}>
+                                <Route index element={<HomePage />} />
+                                <Route path="explore" element={<ExplorePage />} />
+                                <Route path="search" element={<SearchResultPage />} />
+                                <Route path="change-password" element={<ChangePasswordForm />} />
 
-                            {/* Profile có tab */}
-                            <Route path="profile/:id" element={<ProfileLayout />}>
-                                <Route index element={<ProfilePost />} />
-                                <Route path="ProfileAbout" element={<ProfileAbout />} />
-                                <Route path="ProfileFriend" element={<ProfileFriend />} />
-                                <Route path="ProfileSuggest" element={<ProfileSuggest />} />
-                            </Route>
-                            {/* Setting */}
-                            <Route path="setting" element={<ProfileSetting />} />
-                            <Route path="create-post" element={<PostCreate />} />
-
-                            {/* Post detail */}
-                            <Route path="post/:postId" element={<PostDetailPage />} />
-
-                            {/* Message và MessageThread (ô trò chuyện) */}
-                            <Route path="message" element={<MessageLayout />}>
-                                {/* <Route index element={<ThreadList />} /> */}
-                                <Route path=":threadId" element={<ThreadPage />} />
-                            </Route>
-
-                            {/* Phần riêng quản lý của Admin */}
-                            <Route element={<RoleRoute roles={['admin']} />}>
-                                <Route path="admin" element={<AdminLayout />}>
-                                    <Route index element={<Navigate to="users" replace />} />
-                                    <Route path="users" element={<UsersAdminPage />} />
-                                    <Route path="posts" element={<PostsAdminPage />} />
+                                {/* Profile có tab */}
+                                <Route path="profile/:id" element={<ProfileLayout />}>
+                                    <Route index element={<ProfilePost />} />
+                                    <Route path="ProfileAbout" element={<ProfileAbout />} />
+                                    <Route path="ProfileFriend" element={<ProfileFriend />} />
+                                    <Route path="ProfileSuggest" element={<ProfileSuggest />} />
                                 </Route>
+                                {/* Setting */}
+                                <Route path="setting" element={<ProfileSetting />} />
+                                <Route path="create-post" element={<PostCreate />} />
+
+                                {/* Post detail */}
+                                <Route path="post/:postId" element={<PostDetailPage />} />
+
+                                {/* Message và MessageThread (ô trò chuyện) */}
+                                <Route path="message" element={<MessageLayout />}>
+                                    {/* <Route index element={<ThreadList />} /> */}
+                                    <Route path=":threadId" element={<ThreadPage />} />
+                                </Route>
+
+                                {/* Phần riêng quản lý của Admin */}
+                                <Route element={<RoleRoute roles={['admin']} />}>
+                                    <Route path="admin" element={<AdminLayout />}>
+                                        <Route index element={<Navigate to="users" replace />} />
+                                        <Route path="users" element={<UsersAdminPage />} />
+                                        <Route path="posts" element={<PostsAdminPage />} />
+                                    </Route>
+                                </Route>
+
                             </Route>
-
                         </Route>
-                    </Route>
-                    {/* Redirect ví dụ */}
-                    <Route path="/home" element={<Navigate to="/" replace />} />
+                        {/* Redirect ví dụ */}
+                        <Route path="/home" element={<Navigate to="/" replace />} />
 
-                    {/* 404 */}
-                    <Route path="*" element={<NotFoundPage />} />
+                        {/* 404 */}
+                        <Route path="*" element={<NotFoundPage />} />
 
-                </Routes>
+                    </Routes>
+                {/* </VideoCallProvider> */}
             </AuthProvider>
         </BrowserRouter>
     );
