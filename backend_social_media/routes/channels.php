@@ -38,4 +38,4 @@ Broadcast::channel('conversations.{userId}', function ($user, $userId) {
 
 Route::get('/test-auth', function (Request $request) {
     return response()->json(['user' => $request->user()]);
-})->middleware('auth.cookie');
+})->middleware('auth:sanctum');
