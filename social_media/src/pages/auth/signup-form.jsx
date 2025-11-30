@@ -59,7 +59,7 @@ export default function SignupForm() {
             });
 
             // Thay vì Snackbar, hiển thị modal
-            setModalMessage(response.data.message || "Đăng ký thành công, hãy kiểm tra email");
+            setModalMessage(response.data.message || "Đăng ký thành công, hãy kiểm tra email (thư rác hoặc spam)");
             setModalOpen(true);
         } catch (err) {
             if (err.response) {
