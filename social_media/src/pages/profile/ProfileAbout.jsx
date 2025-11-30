@@ -11,8 +11,8 @@ export default function ProfileAbout() {
 
   // dữ liệu form (tạm thời lấy từ profileUser hoặc giá trị default)
   const [formData, setFormData] = useState({
-    displayName: profileUser?.name || "User Name",
-    username: profileUser?.username || "@username",
+    name: profileUser?.name || "User Name",
+  
     email: profileUser?.email || "user@example.com",
     gender: profileUser?.gender || "",
   });
@@ -86,7 +86,7 @@ export default function ProfileAbout() {
         {/* Tab XEM thông tin (luôn dùng cho người khác, hoặc khi mình ở tab view) */}
         {(!isOwnProfile || activeTab === "view") && (
           <dl className="space-y-3 text-sm text-gray-700">
-            <InfoRow label="Tên hiển thị" value={formData.displayName} />
+            <InfoRow label="Tên hiển thị" value={formData.name} />
             <InfoRow label="Email" value={formData.email} />
             <InfoRow
               label="Giới tính"
@@ -105,8 +105,8 @@ export default function ProfileAbout() {
                 </label>
                 <input
                   type="text"
-                  name="displayName"
-                  value={formData.displayName}
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
                 />

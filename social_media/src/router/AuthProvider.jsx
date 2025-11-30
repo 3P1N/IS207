@@ -70,7 +70,7 @@ export default function AuthProvider({ children }) {
 
     if (loading) return <LoadingPage />
     return (
-        <AuthContext.Provider value={{ userData, login, logout, echoInstance, register, postsData, setPostsData, authReady }}>
+        <AuthContext.Provider value={{ userData,setUserData, login, logout, echoInstance, register, postsData, setPostsData, authReady }}>
             {children}
         </AuthContext.Provider>
     )

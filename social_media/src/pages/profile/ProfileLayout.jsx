@@ -3,9 +3,11 @@ import { useContext, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircularProgress } from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import { Snackbar, Alert } from "@mui/material";
 
 // Import các thành phần từ dự án của bạn
 import AvatarUser from "../../shared/components/AvatarUser";
+// import { AuthContext } from "../../router/AuthProvider";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
 // Import ImageViewer
@@ -15,6 +17,12 @@ export default function ProfileLayout() {
   const { userData, setUserData } = useContext(AuthContext);
   const { id } = useParams();
   const queryClient = useQueryClient();
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success", // "success" | "error" | "info" | "warning"
+  });
+
 
   // State loading cho việc upload avatar
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -59,7 +67,7 @@ export default function ProfileLayout() {
 
       const cloudRes = await fetch(
         import.meta.env.VITE_CLOUDINARY_UPLOAD_URL ||
-          "https://api.cloudinary.com/v1_1/dezlofvj8/auto/upload",
+        "https://api.cloudinary.com/v1_1/dezlofvj8/auto/upload",
         {
           method: "POST",
           body: formData,
@@ -70,7 +78,7 @@ export default function ProfileLayout() {
 
       const cloudData = await cloudRes.json();
       const newAvatarUrl = cloudData.secure_url;
-
+      console.log(newAvatarUrl);
       // 2. Gọi API Patch update user
       await api.patch(`/userProfile`, {
         avatarUrl: newAvatarUrl,
@@ -78,15 +86,23 @@ export default function ProfileLayout() {
 
       // 3. Cập nhật UI
       // Cập nhật AuthContext
-      setUserData((prev) => ({ ...prev, avatar: newAvatarUrl }));
+      setUserData((prev) => ({ ...prev, avatarUrl: newAvatarUrl }));
 
       // Invalidate query để load lại dữ liệu profile
       queryClient.invalidateQueries(["profileUser", profileId]);
 
-      alert("Cập nhật ảnh đại diện thành công!");
+      setSnackbar({
+        open: true,
+        message: "Cập nhật ảnh đại diện thành công!",
+        severity: "success",
+      });
     } catch (error) {
       console.error("Lỗi khi đổi avatar:", error);
-      alert("Đổi ảnh thất bại, vui lòng thử lại.");
+      setSnackbar({
+        open: true,
+        message: "Đổi ảnh thất bại, vui lòng thử lại.",
+        severity: "error",
+      });
     } finally {
       setIsUploadingAvatar(false);
       // Reset input value để user có thể chọn lại cùng 1 file nếu muốn
@@ -112,15 +128,31 @@ export default function ProfileLayout() {
   const showAddFriendButton = !isOwnProfile;
 
   return (
-    <ProfileShell
-      key={profileUser?.id}
-      profileUser={profileUser}
-      showSuggestTab={showSuggestTab}
-      showAddFriendButton={showAddFriendButton}
-      isOwnProfile={isOwnProfile}
-      onAvatarChange={handleAvatarChange}
-      isUploadingAvatar={isUploadingAvatar}
-    />
+    <>
+      <ProfileShell
+        key={profileUser?.id}
+        profileUser={profileUser}
+        showSuggestTab={showSuggestTab}
+        showAddFriendButton={showAddFriendButton}
+        isOwnProfile={isOwnProfile}
+        onAvatarChange={handleAvatarChange}
+        isUploadingAvatar={isUploadingAvatar}
+      />
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 }
 
@@ -144,20 +176,32 @@ function ProfileShell({
           <div className="profile-cover flex justify-center items-end pb-0 relative">
             {/* Wrapper cho Avatar */}
             <div className="relative group">
-              
+
               {/* PHẦN 1: Hiển thị Avatar - Click để xem ảnh (ImageViewer) */}
               <div
-                className={`rounded-full border-4 border-white dark:border-gray-800 transition-opacity cursor-pointer ${
-                  isUploadingAvatar ? "opacity-50" : ""
-                }`}
+                className={`
+    relative flex items-center justify-center overflow-hidden
+    rounded-full border-4 border-white dark:border-gray-800 transition-opacity cursor-pointer
+    w-32 h-32 md:w-40 md:h-40
+    ${isUploadingAvatar ? "opacity-50" : ""}
+  `}
                 onClick={() => {
-                   // Nếu đang upload thì không cho xem ảnh
-                   if (!isUploadingAvatar && profileUser?.avatarUrl) {
-                      setSelectedImage(profileUser.avatarUrl);
-                   }
+                  if (!isUploadingAvatar && profileUser?.avatarUrl) {
+                    setSelectedImage(profileUser.avatarUrl);
+                  }
                 }}
               >
-                <AvatarUser userData={profileUser} size={120} />
+                {/* LOGIC MỚI: Kiểm tra có URL ảnh thì render thẻ img trực tiếp */}
+                {profileUser?.avatarUrl ? (
+                  <img
+                    src={profileUser.avatarUrl}
+                    alt={profileUser?.name || "Avatar"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  /* Fallback: Nếu không có ảnh thì hiển thị Avatar mặc định/chữ cái */
+                  <AvatarUser userData={profileUser} size={150} />
+                )}
               </div>
 
               {/* Loading Spinner */}
@@ -280,6 +324,7 @@ function ProfileShell({
           onClose={() => setSelectedImage(null)}
         />
       )}
+
     </div>
   );
 }
