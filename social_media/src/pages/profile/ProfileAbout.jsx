@@ -12,7 +12,6 @@ export default function ProfileAbout() {
   // dữ liệu form (tạm thời lấy từ profileUser hoặc giá trị default)
   const [formData, setFormData] = useState({
     name: profileUser?.name || "User Name",
-  
     email: profileUser?.email || "user@example.com",
     gender: profileUser?.gender || "",
   });
@@ -60,22 +59,20 @@ export default function ProfileAbout() {
               <button
                 type="button"
                 onClick={() => setActiveTab("view")}
-                className={`px-3 py-1 rounded-full ${
-                  activeTab === "view"
+                className={`px-3 py-1 rounded-full ${activeTab === "view"
                     ? "bg-white shadow text-gray-900 font-semibold"
                     : "text-gray-500 hover:text-gray-800"
-                }`}
+                  }`}
               >
                 Xem
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("edit")}
-                className={`px-3 py-1 rounded-full ${
-                  activeTab === "edit"
+                className={`px-3 py-1 rounded-full ${activeTab === "edit"
                     ? "bg-white shadow text-gray-900 font-semibold"
                     : "text-gray-500 hover:text-gray-800"
-                }`}
+                  }`}
               >
                 Chỉnh sửa
               </button>
@@ -111,7 +108,7 @@ export default function ProfileAbout() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
                 />
               </div>
-      
+
               <div>
                 <label className="block text-gray-600 mb-1">Email</label>
                 <input
@@ -125,13 +122,17 @@ export default function ProfileAbout() {
 
               <div>
                 <label className="block text-gray-600 mb-1">Giới tính</label>
-                <input
-                  type="text"
+                <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                />
+                >
+                  <option value="">Chọn giới tính</option>
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
+                  <option value="other">Khác</option>
+                </select>
               </div>
             </div>
 
@@ -223,11 +224,10 @@ function PrivacyRow({ label, options, defaultValue, editable }) {
         <button
           type="button"
           onClick={() => editable && setOpen((prev) => !prev)}
-          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow ${
-            editable
+          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow ${editable
               ? "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] transition"
               : "bg-gray-200 text-gray-700 cursor-default"
-          }`}
+            }`}
         >
           <span>{current}</span>
         </button>
@@ -240,9 +240,8 @@ function PrivacyRow({ label, options, defaultValue, editable }) {
                 key={opt}
                 type="button"
                 onClick={() => handleSelect(opt)}
-                className={`block w-full px-3 py-1.5 text-left hover:bg-gray-100 ${
-                  opt === current ? "font-semibold text-gray-900" : "text-gray-700"
-                }`}
+                className={`block w-full px-3 py-1.5 text-left hover:bg-gray-100 ${opt === current ? "font-semibold text-gray-900" : "text-gray-700"
+                  }`}
               >
                 {opt}
               </button>
