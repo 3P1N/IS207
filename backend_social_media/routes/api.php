@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-Route::middleware('auth.cookie')->get('/me', fn (Illuminate\Http\Request $r) => $r->user());
+Route::middleware('auth:sanctum')->get('/me', fn (Illuminate\Http\Request $r) => $r->user());
 
 //test role middleware
 Route::middleware('auth:sanctum')->group(function () {
@@ -21,7 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('ensureRole:user')->get('/pong', fn () => response()->json(['message' => 'ping']));
 });
 
-Route::middleware(['auth.cookie','ensureRole:admin'])->prefix('admin')->group(function(){
+Route::middleware(['auth:sanctum','ensureRole:admin'])->prefix('admin')->group(function(){
     Route::get('/users',  [App\Http\Controllers\Api\AdminController::class, 'getUsers']);
     Route::patch('/users/{user}/violated',  [App\Http\Controllers\Api\AdminController::class, 'toggleUsersViolated']);
 
@@ -48,7 +48,7 @@ Route::middleware(['auth:sanctum', 'verified.api'])->get('/dashboard', function 
     return 'Chỉ user đã xác thực email mới vào được';
 });
 
-Route::middleware('auth.cookie', 'verified.api')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/friendship/{user}', [App\Http\Controllers\Api\FriendShipController::class, 'getfriend']);
     Route::get('/suggestfriends/{user}', [App\Http\Controllers\Api\FriendShipController::class, 'getsuggest']);
     Route::delete('/friendship/{friendship}', [App\Http\Controllers\Api\FriendShipController::class, 'deletefriendship']);

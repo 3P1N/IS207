@@ -16,7 +16,7 @@ class BroadcastServiceProvider extends ServiceProvider
     {
         // Broadcast::routes();
         Broadcast::routes([
-            'middleware' => ['auth.cookie'],
+            'middleware' => ['auth:sanctum'],
             'prefix' => 'api',
         ]);
 
