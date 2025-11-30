@@ -20,7 +20,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'http://localhost:5173',
+        'http://localhost:5173', 'https://is-207-steel.vercel.app/'
     ],
 
 
