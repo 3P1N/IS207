@@ -123,10 +123,8 @@ class UserController extends Controller{
     public function updateProfile(Request $request, User $user)
     {
         // Lấy user đang đăng nhập
-        $requester = $request->user();
-        if($requester->id !== $user->id){
-            return response()->json(['message'=> 'Forbidden'], 403);
-        }
+        $user = $request->user();
+        
         // Lấy dữ liệu formData từ body: { formData: { ... } }
         $data = $request->only([
             'name',
