@@ -18,16 +18,17 @@ export default function ProfileAbout() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log(formData.gender);
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();  // chặn reload trang
-
+    console.log(profileUser.gender);
     try {
-      await api.patch("/userProfile", {
-        formData: formData, // ở đây sẽ là formData MỚI NHẤT
-      });
+      await api.patch("/userProfile",
+       formData, // ở đây sẽ là formData MỚI NHẤT
+      );
       setActiveTab("view");
     } catch (error) {
       console.error("Lỗi cập nhật profile:", error);
