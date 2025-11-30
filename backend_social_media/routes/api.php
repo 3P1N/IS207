@@ -73,7 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}', [App\Http\Controllers\Api\UserController::class, 'show']);
 
     Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
-    Route::patch('/users/{id}', [App\Http\Controllers\Api\UserController::class, 'update']);
+    Route::patch('/users/{user}', [App\Http\Controllers\Api\UserController::class, 'update']);
 
     Route::post('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'store']);
     Route::get('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'index']);

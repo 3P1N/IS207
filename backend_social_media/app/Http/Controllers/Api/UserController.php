@@ -120,27 +120,26 @@ class UserController extends Controller{
 
         return response()->json($posts, 200);
     }
-    public function updateProfile(Request $request)
+    public function updateProfile(Request $request, User $user)
     {
         // Lấy user đang đăng nhập
-        $user = $request->user(); // hoặc auth()->user()
-        if (!$user) {
-            return response()->json([
-                'message' => 'Không tìm thấy người dùng',
-            ], 401);
+        $requester = $request->user();
+        if($requester->id !== $user->id){
+            return response()->json(['message'=> 'Forbidden'], 403);
         }
         // Lấy dữ liệu formData từ body: { formData: { ... } }
-        $formData = $request->input('formData', []);
-        // Gán lại cho user
-        $user->name   = $formData['displayName'];
-        $user->email  = $formData['email'];
-        $user->gender = $formData['gender'] ?? null;
+        $data = $request->only([
+            'name',
+            'email',
+            'gender',
+            'avatarUrl'
+        ]);
 
-        $user->save();
+         $user->update($data);
 
         return response()->json([
             'message' => 'Cập nhật thông tin thành công',
             'user'    => $user,
-        ]);
+        ],200);
     }
 }

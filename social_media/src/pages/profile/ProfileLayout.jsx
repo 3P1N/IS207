@@ -1,13 +1,21 @@
-// src/layouts/ProfileLayout.jsx
 import { Outlet, NavLink, useParams } from "react-router-dom";
+import { useContext, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CircularProgress } from "@mui/material";
+import PhotoCamera from "@mui/icons-material/PhotoCamera";
+
+// Import các thành phần từ dự án của bạn
 import AvatarUser from "../../shared/components/AvatarUser";
-import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
-import { useQuery } from "@tanstack/react-query";
+
 export default function ProfileLayout() {
-  const { userData } = useContext(AuthContext);
-  const { id } = useParams(); // /profile/:id hoặc /profile
+  const { userData, setUserData } = useContext(AuthContext); 
+  const { id } = useParams();
+  const queryClient = useQueryClient();
+
+  // State loading cho việc upload avatar
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Nếu không có id (vd: /profile) thì dùng id của chính mình
   const profileId = id ?? userData?.id;
@@ -21,33 +29,75 @@ export default function ProfileLayout() {
     isError,
   } = useQuery({
     queryKey: ["profileUser", profileId],
-    enabled: !!profileId, // chỉ chạy khi đã có profileId
+    enabled: !!profileId,
     queryFn: async () => {
-      // Nếu là trang của chính mình và đã có userData thì xài luôn
+      // Nếu là trang của chính mình và đã có userData thì ưu tiên dùng userData
       if (isOwnProfile && userData) {
         return userData;
       }
-
-      // Còn lại gọi API
       const res = await api.get(`/users/${profileId}`);
       return res.data.user || res.data;
     },
   });
 
+  // --- LOGIC UPLOAD AVATAR ---
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+
+    try {
+      // 1. Upload lên Cloudinary
+      const formData = new FormData();
+      formData.append("file", file);
+      // Sử dụng thông tin config từ file PostCreate mẫu của bạn
+      formData.append("upload_preset", "3P1N-PMIT"); 
+      formData.append("cloud_name", "dezlofvj8");    
+
+      const cloudRes = await fetch(
+        import.meta.env.VITE_CLOUDINARY_UPLOAD_URL || "https://api.cloudinary.com/v1_1/dezlofvj8/auto/upload", 
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      
+      if (!cloudRes.ok) throw new Error("Upload Cloudinary failed");
+      
+      const cloudData = await cloudRes.json();
+      const newAvatarUrl = cloudData.secure_url;
+
+      // 2. Gọi API Patch update user
+      await api.patch(`/users/${userData.id}`, {
+        avatarUrl: newAvatarUrl, 
+      });
+
+      // 3. Cập nhật UI
+      // Cập nhật AuthContext
+      setUserData((prev) => ({ ...prev, avatar: newAvatarUrl }));
+      
+      // Invalidate query để load lại dữ liệu profile
+      queryClient.invalidateQueries(["profileUser", profileId]);
+
+      alert("Cập nhật ảnh đại diện thành công!");
+
+    } catch (error) {
+      console.error("Lỗi khi đổi avatar:", error);
+      alert("Đổi ảnh thất bại, vui lòng thử lại.");
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset input value
+      event.target.value = null;
+    }
+  };
+
   if (isLoading) {
-    return (
-      <div className="p-4 text-sm text-gray-500">
-        Đang tải trang cá nhân...
-      </div>
-    );
+    return <div className="p-4 text-sm text-gray-500">Đang tải trang cá nhân...</div>;
   }
 
   if (isError || !profileUser) {
-    return (
-      <div className="p-4 text-sm text-red-500">
-        Không tìm thấy trang cá nhân.
-      </div>
-    );
+    return <div className="p-4 text-sm text-red-500">Không tìm thấy trang cá nhân.</div>;
   }
 
   const showSuggestTab = isOwnProfile;
@@ -60,16 +110,19 @@ export default function ProfileLayout() {
       showSuggestTab={showSuggestTab}
       showAddFriendButton={showAddFriendButton}
       isOwnProfile={isOwnProfile}
+      onAvatarChange={handleAvatarChange}
+      isUploadingAvatar={isUploadingAvatar}
     />
   );
 }
-
 
 function ProfileShell({
   profileUser,
   showSuggestTab,
   showAddFriendButton,
   isOwnProfile,
+  onAvatarChange,
+  isUploadingAvatar,
 }) {
   return (
     <div className="profile-layout">
@@ -77,20 +130,51 @@ function ProfileShell({
         {/* Header profile */}
         <header className="relative">
           {/* Cover */}
-          <div className="profile-cover">
-          <AvatarUser userData={profileUser} />
+          <div className="profile-cover flex justify-center items-end pb-0 relative">
             
+            {/* Wrapper cho Avatar: Xử lý hover + button upload */}
+            <div className="relative group">
+              <div className={`rounded-full border-4 border-white dark:border-gray-800 transition-opacity ${isUploadingAvatar ? 'opacity-50' : ''}`}>
+                 {/* AvatarUser component từ dự án của bạn */}
+                 <AvatarUser userData={profileUser} size={120} /> 
+              </div>
+
+              {/* Loading Spinner */}
+              {isUploadingAvatar && (
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                  <CircularProgress size={30} />
+                </div>
+              )}
+
+              {/* Nút upload ảnh - Chỉ hiện khi là chính chủ */}
+              {isOwnProfile && !isUploadingAvatar && (
+                <>
+                  <input
+                    accept="image/*"
+                    id="icon-button-avatar"
+                    type="file"
+                    className="hidden"
+                    onChange={onAvatarChange}
+                  />
+                  <label 
+                    htmlFor="icon-button-avatar"
+                    className="absolute bottom-1 right-1 bg-gray-200 dark:bg-gray-700 p-1.5 rounded-full cursor-pointer hover:bg-gray-300 transition shadow-md flex items-center justify-center z-20"
+                    title="Đổi ảnh đại diện"
+                  >
+                    <PhotoCamera sx={{ fontSize: 20, color: '#555' }} />
+                  </label>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Info + Nav tab */}
-          <div className="px-4 pt-16 pb-4 sm:px-8 flex flex-col items-center gap-3">
-            {/* Tên + mô tả + nút Add friend (nếu là người khác) */}
+          <div className="px-4 pt-4 pb-4 sm:px-8 flex flex-col items-center gap-3">
             <div className="text-center">
-              <h1 className="text-2xl font-semibold text-gray-900">
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {profileUser?.name || "User Name"}
               </h1>
               <p className="text-sm text-gray-500">
-                {/* model User của bạn không có username, nên fallback email */}
                 {profileUser?.username
                   ? `@${profileUser.username}`
                   : profileUser?.email || "@username"}
@@ -107,12 +191,12 @@ function ProfileShell({
             </div>
 
             {/* Nav tab */}
-            <nav className="profile-tabs">
+            <nav className="profile-tabs flex gap-4 border-b border-gray-200 dark:border-gray-700 w-full justify-center mt-4">
               <NavLink
                 to=""
                 end
                 className={({ isActive }) =>
-                  isActive ? "profile-tab-link active" : "profile-tab-link"
+                  isActive ? "profile-tab-link active border-b-2 border-blue-500 text-blue-600 pb-2" : "profile-tab-link pb-2 text-gray-500 hover:text-gray-700"
                 }
               >
                 Bài viết
@@ -121,7 +205,7 @@ function ProfileShell({
               <NavLink
                 to="ProfileAbout"
                 className={({ isActive }) =>
-                  isActive ? "profile-tab-link active" : "profile-tab-link"
+                  isActive ? "profile-tab-link active border-b-2 border-blue-500 text-blue-600 pb-2" : "profile-tab-link pb-2 text-gray-500 hover:text-gray-700"
                 }
               >
                 Giới thiệu
@@ -130,18 +214,17 @@ function ProfileShell({
               <NavLink
                 to="ProfileFriend"
                 className={({ isActive }) =>
-                  isActive ? "profile-tab-link active" : "profile-tab-link"
+                  isActive ? "profile-tab-link active border-b-2 border-blue-500 text-blue-600 pb-2" : "profile-tab-link pb-2 text-gray-500 hover:text-gray-700"
                 }
               >
                 Bạn bè
               </NavLink>
 
-              {/* Chỉ trang của mình mới có tab Gợi ý kết bạn */}
               {showSuggestTab && (
                 <NavLink
                   to="ProfileSuggest"
                   className={({ isActive }) =>
-                    isActive ? "profile-tab-link active" : "profile-tab-link"
+                    isActive ? "profile-tab-link active border-b-2 border-blue-500 text-blue-600 pb-2" : "profile-tab-link pb-2 text-gray-500 hover:text-gray-700"
                   }
                 >
                   Gợi ý kết bạn
@@ -153,8 +236,7 @@ function ProfileShell({
 
         {/* Nội dung các tab */}
         <main className="max-w-3xl mx-auto mt-4 px-4 pb-8">
-          {/* Truyền profileUser + isOwnProfile xuống cho các tab con */}
-          <Outlet context={{ profileUser, isOwnProfile }}/>
+          <Outlet context={{ profileUser, isOwnProfile }} />
         </main>
       </div>
     </div>
