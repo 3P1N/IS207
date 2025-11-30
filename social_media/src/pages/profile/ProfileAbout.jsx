@@ -3,12 +3,24 @@ import { alertClasses } from "@mui/material";
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { api } from "../../shared/api";
+import { Snackbar, Alert, CircularProgress } from "@mui/material";
+
+
 export default function ProfileAbout() {
   const { profileUser, isOwnProfile } = useOutletContext();
 
   // tab hiện tại: "view" hoặc "edit" (chỉ dùng khi là trang của mình)
   const [activeTab, setActiveTab] = useState("view");
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success", // 'success' | 'error' | 'info' | 'warning'
+  });
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === "clickaway") return;
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
   // dữ liệu form (tạm thời lấy từ profileUser hoặc giá trị default)
   const [formData, setFormData] = useState({
     name: profileUser?.name || "User Name",
@@ -24,15 +36,26 @@ export default function ProfileAbout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();  // chặn reload trang
-    console.log(profileUser.gender);
+    setIsLoading(true);
     try {
       await api.patch("/userProfile",
-       formData, // ở đây sẽ là formData MỚI NHẤT
+        formData, // ở đây sẽ là formData MỚI NHẤT
       );
+      setSnackbar({
+        open: true,
+        message: "Cập nhật thông tin thành công!",
+        severity: "success",
+      });
       setActiveTab("view");
     } catch (error) {
       console.error("Lỗi cập nhật profile:", error);
-      alert("Chỉnh sửa thông tin thất bại");
+      setSnackbar({
+        open: true,
+        message: "Có lỗi xảy ra, vui lòng thử lại!",
+        severity: "error",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
   return (
@@ -61,8 +84,8 @@ export default function ProfileAbout() {
                 type="button"
                 onClick={() => setActiveTab("view")}
                 className={`px-3 py-1 rounded-full ${activeTab === "view"
-                    ? "bg-white shadow text-gray-900 font-semibold"
-                    : "text-gray-500 hover:text-gray-800"
+                  ? "bg-white shadow text-gray-900 font-semibold"
+                  : "text-gray-500 hover:text-gray-800"
                   }`}
               >
                 Xem
@@ -71,8 +94,8 @@ export default function ProfileAbout() {
                 type="button"
                 onClick={() => setActiveTab("edit")}
                 className={`px-3 py-1 rounded-full ${activeTab === "edit"
-                    ? "bg-white shadow text-gray-900 font-semibold"
-                    : "text-gray-500 hover:text-gray-800"
+                  ? "bg-white shadow text-gray-900 font-semibold"
+                  : "text-gray-500 hover:text-gray-800"
                   }`}
               >
                 Chỉnh sửa
@@ -149,11 +172,29 @@ export default function ProfileAbout() {
                 type="submit"
                 className="rounded-full bg-gray-900 px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 active:scale-[0.98] transition"
               >
-                Lưu thay đổi
+                {isLoading && (
+                  <CircularProgress size={14} style={{ color: "white" }} />
+                )}
+                {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
               </button>
             </div>
           </form>
         )}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000} // Tự tắt sau 4 giây
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }} // Vị trí góc dưới phải
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity} // Màu xanh (success) hoặc đỏ (error)
+            sx={{ width: "100%" }}
+            variant="filled" // Kiểu hiển thị đậm màu
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </div>
 
       {/* Card quyền riêng tư */}
@@ -226,8 +267,8 @@ function PrivacyRow({ label, options, defaultValue, editable }) {
           type="button"
           onClick={() => editable && setOpen((prev) => !prev)}
           className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow ${editable
-              ? "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] transition"
-              : "bg-gray-200 text-gray-700 cursor-default"
+            ? "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] transition"
+            : "bg-gray-200 text-gray-700 cursor-default"
             }`}
         >
           <span>{current}</span>
