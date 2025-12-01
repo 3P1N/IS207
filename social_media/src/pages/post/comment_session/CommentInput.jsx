@@ -17,8 +17,10 @@ export default function CommentInput({
     currentUserProfile,
     postId,
     comments,
+    // onCommentSuccess,
     setComments,
-    placeholder = "Write a comment..."
+    placeholder = "Write a comment...",
+    
 }) {
     const [content, setContent] = useState("");
     const textareaRef = useRef(null);
@@ -63,6 +65,9 @@ export default function CommentInput({
             if (newComment) {
                 setComments(prev => [newComment, ...(prev || [])]);
             }
+            if (onCommentSuccess) {
+                    onCommentSuccess(); 
+                }
 
             // clear input
             setContent("");

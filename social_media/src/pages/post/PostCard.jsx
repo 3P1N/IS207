@@ -15,18 +15,59 @@ export default function PostCard({ postData, index }) {
     const [headerData, setHeaderData] = useState(null);
     const { userData } = useContext(AuthContext);
 
+    const [localPostData, setLocalPostData] = useState({
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        isLiked: false,
+        isShared: false,
+        ...postData // fallback
+    });
 
     useEffect(() => {
+        if (!postData) return;
+        setLocalPostData({
+            likes: postData.reactions_count,
+            comments: postData.comments_count,
+            shares: postData.shares_count,
+            isLiked: postData.is_liked,
+            isShared: postData.is_shared,
+        });
+
         if (!postData.user) return;
-        console.log("time: ",postData.created_at);
         setHeaderData({
             author: postData.user.name,
             id: postData.user.id,
             created_at: postData.created_at,
             isOwner: userData.id === postData.user.id,
             avatarUrl: postData.user.avatarUrl
-        })
-    }, [postData]);
+        });
+    }, [postData, userData.id]);
+
+    const handleLikeUpdate = (isLikedNow) => {
+        setLocalPostData(prev => ({
+            ...prev,
+            isLiked: isLikedNow,
+            likes: isLikedNow ? prev.likes + 1 : prev.likes - 1
+        }));
+    };
+
+    // Tăng số comment
+    const handleCommentUpdate = () => {
+        setLocalPostData(prev => ({
+            ...prev,
+            comments: prev.comments + 1
+        }));
+    };
+
+    // Tăng số share và đổi trạng thái
+    const handleShareUpdate = (isSharedNow) => {
+        setLocalPostData(prev => ({
+            ...prev,
+            isShared: isSharedNow,
+            shares: isSharedNow ? prev.shares + 1 : prev.shares - 1 // Hoặc chỉ cộng nếu không cho unshare
+        }));
+    };
 
     return (
         <>
@@ -54,13 +95,15 @@ export default function PostCard({ postData, index }) {
 
                 {/* Action Bar */}
                 <PostActionsBar
-                    likes={postData.reactions_count}
-                    comments={postData.comments_count}
-                    shares = {postData.shares_count}
-                    isLiked={postData.is_liked}
-                    isShared={postData.is_shared}
+                    likes={localPostData.likes}
+                    comments={localPostData.comments}
+                    shares={localPostData.shares}
+                    isLiked={localPostData.isLiked}
+                    isShared={localPostData.isShared}
                     postId={postData.id}
-                    index={index}
+                    onLikeUpdate={handleLikeUpdate}   
+                    onShareUpdate={handleShareUpdate}
+                    onCommentUpdate={handleCommentUpdate} 
                     postData={postData}
                 />
             </div>

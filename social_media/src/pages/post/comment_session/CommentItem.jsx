@@ -150,7 +150,7 @@ export default function CommentItem({ comment, setComments, postId }) {
         }
     };
 
-    const timeAgo = new Date(comment.created_at).toLocaleDateString("vi-VN");
+    const time = new Date(comment.created_at).toLocaleDateString("vi-VN");
 
     return (
         <Box sx={{ display: "flex", gap: 1.5, mb: 2, width: "100%" }}>
@@ -245,7 +245,16 @@ export default function CommentItem({ comment, setComments, postId }) {
                 {/* --- THANH ACTION (Like, Reply, Time) --- */}
                 {!isEditing && (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2, ml: 1, mt: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">{timeAgo}</Typography>
+                        {comment.isSending ? (
+                            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                                Đang gửi...
+                            </Typography>
+                        ) : (
+                            <Typography variant="caption" color="text.secondary">
+                                {/* Hàm format time của bạn, ví dụ: moment(comment.created_at).fromNow() */}
+                                {time || "Vừa xong"}
+                            </Typography>
+                        )}
 
                         <Typography
                             variant="caption"

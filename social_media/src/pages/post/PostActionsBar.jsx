@@ -16,14 +16,15 @@ import { CircularProgress } from "@mui/material";
 import React from "react";
 import PostCommentsModal from "./comment_session/PostCommentsModal";
 
-export default function PostActionsBar({ likes, comments, shares, isShared, isLiked, postId, postData }) {
+export default function PostActionsBar({ likes, comments, shares, isShared, isLiked,
+         postId, postData, onLikeUpdate, onShareUpdate, onCommentUpdate }) {
     const navigate = useNavigate();
-    const [liked, setLiked] = useState(isLiked);
-    const [shared, setShared] = useState(isShared);
+    // const [liked, setLiked] = useState(isLiked);
+    // const [shared, setShared] = useState(isShared);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // success | error
-const [showCommentsModal, setShowCommentsModal] = useState(false);
+    const [showCommentsModal, setShowCommentsModal] = useState(false);
     const Alert = React.forwardRef(function Alert(props, ref) {
         return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
     });
@@ -48,20 +49,19 @@ const [showCommentsModal, setShowCommentsModal] = useState(false);
         const response = await api.post(`/posts/${postId}/share`);
         return response.data;
     }
-    const handleShare = async () => {
-        const prevShared = shared;
-        setShared(!shared);
+    const handleShare = async () => {        
+        const newStatus = !isShared;
         setLoadingShared(true);
 
         try {
             const response = await sharePost(); // gọi API share
-            setSnackbarMessage(!prevShared ? "Post shared successfully!" : "Share cancelled!");
+            setSnackbarMessage(!isShared ? "Post shared successfully!" : "Share cancelled!");
             setSnackbarSeverity("success");
             setSnackbarOpen(true);
+            onShareUpdate(newStatus);
         } catch (err) {
             console.log("Error sharing post: ", err);
-            setShared(prevShared); // rollback nếu thất bại
-            setSnackbarMessage(!prevShared ? "Failed to share the post!" : "Failed to cancel share!");
+            setSnackbarMessage(!isShared ? "Failed to share the post!" : "Failed to cancel share!");
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
         } finally {
@@ -69,18 +69,16 @@ const [showCommentsModal, setShowCommentsModal] = useState(false);
         }
     };
 
-
-
     const handleLike = async () => {
-        const prevLiked = liked;
-        setLiked(!liked);
+        const newStatus = !isLiked;
+        onLikeUpdate(newStatus);
 
         try {
             const response = await sendReaction();
             console.log(response.data);
         } catch (err) {
             console.log("lỗi khi gửi post reaction: ", err);
-            setLiked(prevLiked);
+            onLikeUpdate(!newStatus);
         }
     }
 
@@ -127,7 +125,7 @@ const [showCommentsModal, setShowCommentsModal] = useState(false);
                     `}
                     onClick={handleLike}
                 >
-                    {liked ? (
+                    {isLiked ? (
                         <ThumbUpAltIcon fontSize="small" className="text-primary transition-all" />
                     ) : (
                         <ThumbUpAltOutlinedIcon
@@ -135,7 +133,7 @@ const [showCommentsModal, setShowCommentsModal] = useState(false);
                             className="text-gray-500 dark:text-gray-300 transition-all group-hover:text-primary"
                         />
                     )}
-                    <span className={`font-semibold text-sm ${liked ? 'text-primary' : ''}`}>Like</span>
+                    <span className={`font-semibold text-sm ${isLiked ? 'text-primary' : ''}`}>Like</span>
                 </button>
 
                 <button
@@ -157,13 +155,13 @@ const [showCommentsModal, setShowCommentsModal] = useState(false);
                     className={`
                         flex items-center justify-center gap-2 h-10 rounded-lg
                         transition-all
-                        ${shared ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-300'}
+                        ${isShared ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-300'}
                         hover:bg-gray-100 dark:hover:bg-gray-700
                         cursor-pointer
                     `}
                     onClick={handleShare}
                 >
-                    {shared ? (
+                    {isShared ? (
                         <ShareIcon fontSize="small" className="transition-all" />
                     ) : (
                         <ShareOutlinedIcon fontSize="small" className="transition-all" />
@@ -206,7 +204,8 @@ const [showCommentsModal, setShowCommentsModal] = useState(false);
                     open={showCommentsModal}
                     onClose={() => setShowCommentsModal(false)}
                     postId={postId}
-                    postData={postData} // Cần truyền postData xuống để hiển thị Header
+                    postData={postData}
+                    onCommentSuccess={onCommentUpdate}
                 />
             )}
         </>

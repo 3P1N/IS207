@@ -20,7 +20,7 @@ import CommentItem from "./CommentItem";
 import ImageViewer from "../../../shared/components/ImageViewer";
 import { AuthContext } from "../../../router/AuthProvider";
 
-export default function PostCommentsModal({ open, onClose, postId, postData }) {
+export default function PostCommentsModal({ open, onClose, postId, postData, onCommentSuccess }) {
   const queryClient = useQueryClient();
   const [inputContent, setInputContent] = useState("");
   const [replyTo, setReplyTo] = useState(null);
@@ -51,13 +51,56 @@ export default function PostCommentsModal({ open, onClose, postId, postData }) {
     mutationFn: async (payload) => {
       return await api.post(`/posts/${postId}/comments`, payload);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["comments", postId]);
+    // 1. Khi bắt đầu mutate (chưa gọi API xong)
+    onMutate: async (newCommentPayload) => {
+      // Hủy các query đang chạy liên quan để tránh ghi đè dữ liệu
+      await queryClient.cancelQueries({ queryKey: ["comments", postId] });
+
+      // Lưu lại dữ liệu cũ để rollback nếu lỗi
+      const previousComments = queryClient.getQueryData(["comments", postId]);
+
+      // Tạo object comment "giả"
+      const optimisticComment = {
+        id: Date.now(), // ID tạm thời
+        content: newCommentPayload.content,
+        parent_comment_id: newCommentPayload.parent_comment_id,
+        user: userData, // Lấy thông tin user hiện tại để hiển thị avatar/tên ngay
+        created_at: new Date().toISOString(),
+        isSending: true, // <--- Cờ đánh dấu đang gửi
+      };
+
+      // Cập nhật cache ngay lập tức
+      queryClient.setQueryData(["comments", postId], (oldData) => {
+        const currentComments = Array.isArray(oldData) ? oldData : [];
+        // Thêm comment mới vào cuối danh sách (hoặc đầu tùy logic sắp xếp của bạn)
+        return [...currentComments, optimisticComment];
+      });
+
+      // Reset input ngay lập tức để tạo cảm giác mượt mà
       setInputContent("");
       setReplyTo(null);
+
+      // Trả về context để dùng cho onError
+      return { previousComments };
     },
-    onError: (err) => {
+    // 2. Nếu có lỗi
+    onError: (err, newComment, context) => {
       console.error("Lỗi gửi comment:", err);
+      // Rollback về dữ liệu cũ
+      if (context?.previousComments) {
+        queryClient.setQueryData(["comments", postId], context.previousComments);
+      }
+      // Khôi phục lại nội dung input nếu muốn (optional)
+      setInputContent(newComment.content);
+    },
+    // 3. Khi xong (dù lỗi hay thành công) - hoặc dùng onSuccess
+    onSettled: () => {
+      // Invalidate để fetch lại dữ liệu thật từ server (để lấy ID thật và time chuẩn)
+      queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+
+      if (onCommentSuccess) {
+        onCommentSuccess();
+      }
     },
   });
 
@@ -88,12 +131,12 @@ export default function PostCommentsModal({ open, onClose, postId, postData }) {
 
   const headerData = postData?.user
     ? {
-        author: postData.user.name,
-        id: postData.user.id,
-        timeAgo: "Vừa xong",
-        isOwner: userData?.id === postData.user.id,
-        avatarUrl: postData.user.avatarUrl,
-      }
+      author: postData.user.name,
+      id: postData.user.id,
+      timeAgo: "Vừa xong",
+      isOwner: userData?.id === postData.user.id,
+      avatarUrl: postData.user.avatarUrl,
+    }
     : null;
 
   return (
@@ -106,12 +149,12 @@ export default function PostCommentsModal({ open, onClose, postId, postData }) {
         scroll="paper" // Cho phép cuộn nội dung trong Paper
         // Thiết lập chiều cao cố định (ví dụ 80-90% màn hình) để thanh cuộn hoạt động tốt
         PaperProps={{
-            sx: { height: '100%', maxHeight: '90vh' } 
+          sx: { height: '100%', maxHeight: '90vh' }
         }}
       >
         {/* --- 1. HEADER (CỐ ĐỊNH) --- */}
         <DialogTitle sx={{ p: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Typography variant="h6" sx={{ flex: 1, textAlign: "center", fontWeight: "bold" }}>
+          <Typography component="span" sx={{ flex: 1, textAlign: "center", fontWeight: "bold", fontSize: '1.25rem' }}>
             Bài viết của {headerData?.author}
           </Typography>
           <IconButton onClick={onClose}>
@@ -119,12 +162,13 @@ export default function PostCommentsModal({ open, onClose, postId, postData }) {
           </IconButton>
         </DialogTitle>
 
+
         <div className="border-b border-gray-200 dark:border-gray-700"></div>
 
         {/* --- 2. SCROLLABLE CONTENT (NỘI DUNG CUỘN CHUNG) --- */}
         {/* DialogContent tự động có overflow-y: auto. Ta bỏ display flex column đi để nó flow tự nhiên */}
         <DialogContent dividers={false} sx={{ p: 0 }}>
-          
+
           {/* A. Phần Post Content + Media */}
           <Box sx={{ p: 2 }}>
             {headerData && <PostHeader headerData={headerData} postData={postData} />}
@@ -133,25 +177,25 @@ export default function PostCommentsModal({ open, onClose, postId, postData }) {
             {/* Media Grid */}
             {postData?.media && postData.media.length > 0 && (
               <Box sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}>
-                 <div className={`grid gap-1 ${postData.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                    {postData.media.map((item, index) => (
-                       <div 
-                          key={index} 
-                          className={`
+                <div className={`grid gap-1 ${postData.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  {postData.media.map((item, index) => (
+                    <div
+                      key={index}
+                      className={`
                              relative overflow-hidden cursor-pointer bg-gray-100 group
                              ${postData.media.length === 1 ? 'aspect-video' : 'aspect-square'} 
                           `}
-                          onClick={() => setSelectedImage(item.media_url)}
-                       >
-                          <img 
-                            src={item.media_url} 
-                            alt={`media-${index}`}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            loading="lazy"
-                          />
-                       </div>
-                    ))}
-                 </div>
+                      onClick={() => setSelectedImage(item.media_url)}
+                    >
+                      <img
+                        src={item.media_url}
+                        alt={`media-${index}`}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
               </Box>
             )}
           </Box>
@@ -161,7 +205,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData }) {
           {/* B. Phần Danh Sách Comment */}
           <Box sx={{ px: 2, py: 1 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold", opacity: 0.8 }}>
-               Bình luận
+              Bình luận
             </Typography>
           </Box>
 
@@ -191,50 +235,50 @@ export default function PostCommentsModal({ open, onClose, postId, postData }) {
         {/* --- 3. FOOTER INPUT (CỐ ĐỊNH Ở ĐÁY) --- */}
         {/* Đặt Box này ra ngoài DialogContent để nó luôn hiển thị ở dưới cùng mà không bị cuộn theo nội dung */}
         <Box sx={{ p: 2, borderTop: "1px solid #eee", bgcolor: "background.paper", zIndex: 10 }}>
-            {replyTo && (
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1, bgcolor: "#f5f5f5", p: 1, borderRadius: 1 }}>
-                <Typography variant="caption">
-                  Đang phản hồi <b>{replyTo.user?.name}</b>...
-                </Typography>
-                <CloseIcon
-                  fontSize="small"
-                  sx={{ cursor: "pointer" }}
-                  onClick={() => setReplyTo(null)}
-                />
-              </Box>
-            )}
+          {replyTo && (
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1, bgcolor: "#f5f5f5", p: 1, borderRadius: 1 }}>
+              <Typography variant="caption">
+                Đang phản hồi <b>{replyTo.user?.name}</b>...
+              </Typography>
+              <CloseIcon
+                fontSize="small"
+                sx={{ cursor: "pointer" }}
+                onClick={() => setReplyTo(null)}
+              />
+            </Box>
+          )}
 
-            <TextField
-              fullWidth
-              inputRef={inputRef}
-              placeholder="Viết bình luận..."
-              variant="outlined"
-              size="small"
-              multiline
-              maxRows={4}
-              value={inputContent}
-              onChange={(e) => setInputContent(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendComment();
-                }
-              }}
-              InputProps={{
-                sx: { borderRadius: 5 },
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={handleSendComment}
-                      color="primary"
-                      disabled={!inputContent.trim() || sendCommentMutation.isPending}
-                    >
-                      {sendCommentMutation.isPending ? <CircularProgress size={20} /> : <SendIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+          <TextField
+            fullWidth
+            inputRef={inputRef}
+            placeholder="Viết bình luận..."
+            variant="outlined"
+            size="small"
+            multiline
+            maxRows={4}
+            value={inputContent}
+            onChange={(e) => setInputContent(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSendComment();
+              }
+            }}
+            InputProps={{
+              sx: { borderRadius: 5 },
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={handleSendComment}
+                    color="primary"
+                    disabled={!inputContent.trim()}
+                  >
+                     <SendIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
         </Box>
 
       </Dialog>
