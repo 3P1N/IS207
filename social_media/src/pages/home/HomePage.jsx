@@ -1,79 +1,103 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react"; // 1. Thêm useRef
 import { api } from "../../shared/api";
 import { AuthContext } from "../../router/AuthProvider";
 import PostCard from "../post/PostCard";
 
 export default function HomePage() {
-
-    // const [posts, setPosts] = useState([]);
+    // ... các state cũ giữ nguyên
     const [nextPageUrl, setNextPageUrl] = useState(null);
     const [loading, setLoading] = useState(false);
-
     const { postsData, setPostsData } = useContext(AuthContext);
 
-    const getPostData = async (url = "/posts") => {
+    // 2. Tạo Ref cho khung cuộn
+    const scrollContainerRef = useRef(null);
+
+    const getPostData = async (urlString = "") => {
+        // ... Logic gọi API giữ nguyên như bạn đã sửa ở bước trước
         if (loading) return;
-
         setLoading(true);
-
         try {
+            let url = "/posts";
+            if (urlString && urlString.includes("http")) {
+                const urlObj = new URL(urlString);
+                url += urlObj.search;
+            } else if (urlString) {
+                url = urlString;
+            }
+
             const response = await api.get(url);
 
-            console.log(response.data);
-
-            // response.data = paginate object
-            // response.data.data = array posts
             setPostsData((prev) => {
                 const newPosts = response.data.data.filter(
                     (p) => !prev.some((old) => old.id === p.id)
                 );
                 return [...prev, ...newPosts];
             });
-
-
-            // update next_page_url
             setNextPageUrl(response.data.next_page_url);
-
         } catch (err) {
-            console.log("lỗi khi tải bài viết: ", err);
+            console.log("lỗi: ", err);
         } finally {
             setLoading(false);
         }
     };
 
-    // load trang đầu tiên
     useEffect(() => {
-        getPostData();
-    }, []); // 👈 thêm dependency rỗng để tránh gọi vô hạn
+        getPostData("/posts");
+    }, []);
 
-
-    // scroll listener để auto load
+    // 3. Sửa Logic Scroll Listener: Dùng Ref thay vì Window
     useEffect(() => {
+        const scrollContainer = scrollContainerRef.current; // Lấy element từ ref
+
         const handleScroll = () => {
-            if (
-                window.innerHeight + document.documentElement.scrollTop + 50 >=
-                document.documentElement.scrollHeight
-            ) {
+            if (!scrollContainer) return;
+
+            // Công thức tính cho Element khác với Window một chút:
+            const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+
+            // scrollTop: Vị trí hiện tại đang cuộn
+            // clientHeight: Chiều cao nhìn thấy được của khung
+            // scrollHeight: Tổng chiều cao nội dung thực tế
+            
+            if (scrollTop + clientHeight >= scrollHeight - 50) { 
                 if (nextPageUrl && !loading) {
                     getPostData(nextPageUrl);
                 }
             }
         };
 
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, [nextPageUrl, loading]);
+        if (scrollContainer) {
+            scrollContainer.addEventListener("scroll", handleScroll);
+        }
+
+        // Cleanup function
+        return () => {
+            if (scrollContainer) {
+                scrollContainer.removeEventListener("scroll", handleScroll);
+            }
+        };
+    }, [nextPageUrl, loading]); // Dependencies giữ nguyên
 
     return (
-        <div className="mt-6 flex flex-col items-center gap-4">
-            {postsData.map((post, index) => (
-                <div key={post.id} className="w-full max-w-xl">
-                    <PostCard postData={post} index = {index} />
-                </div>
-            ))}
+        /* 4. Quan trọng về CSS: 
+           - h-[calc(100vh-64px)]: Chiều cao phải cố định. 
+             Ví dụ Navbar cao 64px thì trừ đi 64px để phần này chiếm hết phần còn lại.
+             Nếu Layout cha đã dùng flex-1 thì ở đây chỉ cần h-full.
+           - overflow-y-auto: Để hiện thanh cuộn riêng cho div này.
+        */
+        <div 
+            ref={scrollContainerRef} 
+            className="h-[calc(100vh-64px)] overflow-y-auto w-full flex flex-col items-center gap-4 pb-10"
+        >
+            <div className="mt-6 w-full flex flex-col items-center gap-4">
+                {postsData.map((post, index) => (
+                    <div key={post.id} className="w-full max-w-xl">
+                        <PostCard postData={post} index={index} />
+                    </div>
+                ))}
 
-            {loading && <div>Đang tải thêm...</div>}
+                {loading && <div className="py-4">Đang tải thêm...</div>}
+            </div>
         </div>
     );
-
 }
