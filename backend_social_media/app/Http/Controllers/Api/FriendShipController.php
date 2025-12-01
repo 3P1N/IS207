@@ -5,6 +5,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Friendship;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\ConversationParticipant;
+use App\Models\Conversation;
 
 
 class FriendShipController extends Controller
@@ -90,25 +92,46 @@ class FriendShipController extends Controller
             'user_id'=>$user->id,
             'addressee_id'=>$addressee_id
         ]);
-        return response()->json($friendship ,201);
+        
+        return response()->json($friendship,201);
     }
     public function acceptfriend(Request $request, Friendship $friendship){
-        // (khuyến khích) kiểm tra đúng người được nhận lời mời mới được accept
+       
         $user = $request->user();
         if (!$user || $user->id !== $friendship->addressee_id) {
             return response()->json([
                 'message' => 'Bạn không có quyền chấp nhận lời mời này',
             ], 403);
         }
+        $addressee_id = $friendship->addressee_id;
 
         // cập nhật trạng thái
         $friendship->update([
             'status' => 'accepted',
         ]);
 
+        $existingConversation = Conversation::whereHas('participants', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->whereHas('participants', function ($q) use ($addressee_id) {
+            $q->where('user_id', $addressee_id);
+        })->first();
+
+        if(!$existingConversation){
+            $conversation = Conversation::create([ 'name' => null ]);
+            ConversationParticipant::create([
+                'conversation_id'=>$conversation->id,
+                'user_id'=>$user->id
+            ]);
+            
+            ConversationParticipant::create([
+                'conversation_id'=>$conversation->id,
+                'user_id'=>$addressee_id
+            ]);
+        }   
+
         return response()->json([
             'message' => 'Đã chấp nhận lời mời kết bạn',
             'friendship' => $friendship,
         ], 200);
-        }
+    }
 }
