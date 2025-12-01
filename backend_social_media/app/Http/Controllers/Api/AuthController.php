@@ -31,7 +31,7 @@ class AuthController extends Controller
         if (! $user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email not verified'], 403);
         }
-        
+
         if($user->is_Violated){
             return response()->json(['message'=>'Forbidden'], 403);
         }
@@ -72,13 +72,14 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
+            'avatarUrl' => "https://www.pngall.com/wp-content/uploads/5/Profile-Avatar-PNG.png"
         ]);
 
         // Gửi email xác thực
         $user->sendEmailVerificationNotification();
 
         return response()->json([
-            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực.',
+            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực (Thư rác hoặc spam).',
         ]);
     }
     public function logout(Request $request)
