@@ -100,7 +100,7 @@ export default function ThreadPage() {
 
   // --- 2. XỬ LÝ SCROLL LOGIC ---
 
-  // Xử lý sự kiện scroll để load thêm
+  // Xử lý sự kiện scroll để load thêm  
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight } = e.target;
 

@@ -272,7 +272,7 @@ function ProfileShell({
   const friendshipId = profileUser?.friendship_id;
   const [showFriendMenu, setShowFriendMenu] = useState(false);
   return (
-    <div className="profile-layout">
+    <div className="profile-layout scrollbar-thin">
       <div className="profile-card">
         {/* Header profile */}
         <header className="relative">
