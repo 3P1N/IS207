@@ -72,7 +72,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'avatarUrl' => "https://www.pngall.com/wp-content/uploads/5/Profile-Avatar-PNG.png"
+            
         ]);
 
         // Gửi email xác thực
