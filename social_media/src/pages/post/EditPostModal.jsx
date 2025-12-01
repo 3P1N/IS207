@@ -1,17 +1,18 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Tooltip, CircularProgress, Snackbar, Alert } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
+
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { AuthContext } from '../../router/AuthProvider';
 import { api } from '../../shared/api';
 import AvatarUser from '../../shared/components/AvatarUser';
 
+
 import { EditTwoTone } from '@mui/icons-material';
 
-export default function EditPostModal({ postData, postIndex }) {
+export default function EditPostModal({ postData, postIndex, onClose }) {
     console.log("postIndex:", postIndex);
     const { userData, postsData, setPostsData } = useContext(AuthContext);
-    const [open, setOpen] = useState(false);
+    // const [open, setOpen] = useState(false);
     const [postContent, setPostContent] = useState(postData.content || '');
     const [mediaFiles, setMediaFiles] = useState(postData.media?.map(url => ({ file: null, url, type: 'image' })) || []);
     const [urlMedia, setUrlMedia] = useState([]);
@@ -24,9 +25,10 @@ export default function EditPostModal({ postData, postIndex }) {
         setMediaFiles(postData.media?.map(url => ({ file: null, url: url.media_url, type: 'image' })) || []);
     }, [postData]);
 
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
-
+    const handleClose = () => {
+        // Gọi hàm onClose được truyền từ PostHeader để unmount component
+        if (onClose) onClose();
+    };
     const uploadMultipleFilesParallel = async (files) => {
         const uploadPromises = files
             .filter(f => f.file) // chỉ upload file mới
@@ -81,17 +83,13 @@ export default function EditPostModal({ postData, postIndex }) {
             // console.log(uploadedUrls);
             const response = await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls });
             const editPost = response.data.post;
-            console.log("editing");
-            console.log("edit: ", postIndex);
+            
             setSnackbarMessage("Cập nhật bài viết thành công!");
-            setPostsData(prev => {
-                const newArr = [...prev];          // copy
-                newArr.splice(postIndex, 1);       // xóa phần tử tại vị trí index
-                return [editPost, ...newArr];      // đưa editPost lên đầu
-            });
-
             setSnackbarOpen(true);
-            setOpen(false);
+            
+            setTimeout(() => {
+                 handleClose(); 
+            }, 1000);
         } catch (err) {
             console.error(err);
             setSnackbarMessage("Cập nhật thất bại, vui lòng thử lại.");
@@ -105,9 +103,9 @@ export default function EditPostModal({ postData, postIndex }) {
 
     return (
         <>
-            <Button onClick={handleOpen} startIcon={<EditIcon />}>Edit</Button>
+            {/* <Button onClick={handleOpen} startIcon={<EditIcon />}>Edit</Button> */}
 
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+            <Dialog open={true} onClose={handleClose} fullWidth maxWidth="sm">
                 {loading && (
                     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30">
                         <CircularProgress color="primary" />

@@ -9,7 +9,7 @@ import {
   Alert,
   CircularProgress
 } from "@mui/material";
-
+import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FlagIcon from "@mui/icons-material/Flag";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -35,6 +35,7 @@ export default function PostHeader({ headerData, postData, index }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const { postsData, setPostsData } = useContext(AuthContext);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -49,6 +50,11 @@ export default function PostHeader({ headerData, postData, index }) {
   // close menu
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    handleMenuClose(); // Đóng menu dropdown
   };
 
   const deletePost = async (postId) => {
@@ -133,10 +139,11 @@ export default function PostHeader({ headerData, postData, index }) {
       >
         {headerData?.isOwner
           ? [
-            <MenuItem key="edit">
+            <MenuItem key="edit" onClick={handleEditClick}>
               <ListItemIcon>
-                <EditPostModal postData={postData} postIndex={index} />
+                <EditIcon fontSize="small" />
               </ListItemIcon>
+              <ListItemText>Edit Post</ListItemText>
             </MenuItem>,
             <MenuItem key="delete" onClick={handleDelete}>
               <ListItemIcon>
@@ -154,6 +161,14 @@ export default function PostHeader({ headerData, postData, index }) {
             </MenuItem>
           )}
       </Menu>
+
+      {isEditing && (
+        <EditPostModal
+          postData={postData}
+          postIndex={index}
+          onClose={() => setIsEditing(false)}
+        />
+      )}
 
       {/* Snackbar thông báo */}
       <Snackbar

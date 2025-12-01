@@ -58,6 +58,8 @@
   /* bỏ padding để card tràn sát mép */
   padding: 0;
   box-sizing: border-box;
+  overflow-y: auto;       /* Cho phép cuộn dọc */
+  overflow-x: hidden;
 }
 
 .profile-card {
