@@ -87,8 +87,8 @@ export default function PostCreate() {
     };
     // Hàm xử lý việc gửi bài viết (trong thực tế sẽ là API call)
     const handlePost = async () => {
-        if (!postContent.trim() && mediaFiles.length === 0) {
-            alert("Vui lòng nhập nội dung hoặc thêm ảnh/video.");
+        if (!postContent.trim()) {
+            alert("Vui lòng nhập nội dung");
             return;
         }
 

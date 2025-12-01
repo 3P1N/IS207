@@ -64,6 +64,11 @@ class PostController extends Controller
                 'message' => 'Unauthorized',
             ], 401);
         }
+        $validated = $request->validate([
+            'content' => 'required|string', // bắt buộc, phải là chuỗi
+            'media_url' => 'sometimes|string|nullable'
+        ]);
+
         $post = Post::create([
             'user_id' => $user->id,
             'content' => $request->input('content'),
