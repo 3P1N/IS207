@@ -1,51 +1,67 @@
-import { useContext } from "react";
 import { useParams } from "react-router-dom";
-// 1. Import hook
 import { useQuery } from "@tanstack/react-query";
 import PostCard from "./PostCard.jsx";
 import CommentsSection from "./comment_session/CommentsSection.jsx";
 import { api } from "../../shared/api.js";
-import { AuthContext } from "../../router/AuthProvider.jsx";
+import NotFoundPage from "../not-found/NotFoundPage.jsx";
 
 export default function PostDetailPage() {
     const { postId } = useParams();
-    // const {  } = useContext(AuthContext); // React Query tự dùng axios instance (api) nên thường không cần  thủ công ở đây nếu api đã cấu hình interceptor
 
-    // --- 1. HÀM FETCH DATA ---
+    // --- 1. HÀM FETCH DATA (Đã sửa ở trên) ---
     const fetchPostDetail = async () => {
-        const response = await api.get(`/posts/${postId}`);
-        return response.data;
+        try {
+            const response = await api.get(`/posts/${postId}`);
+            return response.data;
+        } catch (error) {
+            if (error.response && error.response.status === 404) {
+                return { isNotFound: true }; // Trả về data đánh dấu
+            }
+            throw error;
+        }
     };
 
     // --- 2. SỬ DỤNG USEQUERY ---
     const { data: postData, isLoading, isError } = useQuery({
-        // Key phụ thuộc postId, đổi ID là tự fetch lại
         queryKey: ["post", postId],
         queryFn: fetchPostDetail,
-        // Chỉ chạy khi có postId
         enabled: !!postId,
-        // Cache trong 60s (nếu user back ra rồi vào lại ngay thì không load lại)
-        staleTime: 300 * 1000,
-        // Tắt tính năng tự fetch lại khi switch tab (tùy chọn)
+        staleTime: 300 * 1000, // Cache 5 phút
         refetchOnWindowFocus: false,
+        retry: (failureCount, error) => {
+            // Không cần check 404 ở đây nữa vì 404 giờ là success
+            return failureCount < 3; 
+        }
     });
 
-    // --- 3. RENDER ---
+    // --- 3. XỬ LÝ NOT FOUND TỪ DATA ---
+    // Lúc này postData được lấy từ Cache ngay lập tức nếu đã từng load
+    if (postData?.isNotFound) {
+        return <NotFoundPage />;
+    }
+
+    // --- 4. RENDER LOADING ---
+    // Vấn đề 1: Lần đầu tiên truy cập vẫn sẽ hiện Loading (Bắt buộc vì phải chờ server trả lời)
+    // Nhưng các lần sau (Back lại) sẽ không hiện Loading nữa nhờ Cache.
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-[80vh]">
+                <span className="text-gray-500 text-lg">Đang tải bài viết...</span>
+            </div>
+        );
+    }
+
+    // --- 5. RENDER ERROR KHÁC (500, Network) ---
+    if (isError) {
+        return <div>Đã có lỗi xảy ra. Vui lòng thử lại.</div>;
+    }
+
+    // --- 6. RENDER GIAO DIỆN CHÍNH ---
     return (
         <div className="mt-6 flex flex-col gap-6">
-            {isLoading ? (
-                <div className="flex justify-center items-center h-[80vh]">
-                    <span className="text-gray-500 text-lg">Đang tải bài viết...</span>
-                </div>
-            ) : (
-
-
-                < PostCard postData={postData} />
-            )}
-            {/* CommentsSection có thể tự quản lý fetch comment của riêng nó */}
-            <CommentsSection postId={postId} />
-
-
+             <PostCard postData={postData} />
+             {/* Chỉ hiện comment nếu bài viết tồn tại thật */}
+             <CommentsSection postId={postId} />
         </div>
     );
 }

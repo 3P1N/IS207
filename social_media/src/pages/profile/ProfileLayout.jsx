@@ -13,6 +13,8 @@ import AvatarUser from "../../shared/components/AvatarUser";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
 import ImageViewer from "../../shared/components/ImageViewer";
+// 1. IMPORT NOT FOUND PAGE
+import NotFoundPage from "../not-found/NotFoundPage";
 
 export default function ProfileLayout() {
   const { userData, setUserData } = useContext(AuthContext);
@@ -22,19 +24,15 @@ export default function ProfileLayout() {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
-    severity: "success", // "success" | "error" | "info" | "warning"
+    severity: "success",
   });
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  // Nếu không có id (vd: /profile) thì dùng id của chính mình
   const profileId = id ?? userData?.id;
+  const isOwnProfile = String(userData?.id) === String(profileId);
 
-  // Xác định có phải đang xem profile của chính mình không (FE)
-  const isOwnProfile =
-    String(userData?.id) === String(profileId);
-
-  // --- LOAD PROFILE USER ---
+  // --- 2. SỬA LOGIC FETCH PROFILE ---
   const {
     data: profileUser,
     isLoading,
@@ -42,10 +40,26 @@ export default function ProfileLayout() {
   } = useQuery({
     queryKey: ["profileUser", profileId],
     enabled: !!profileId,
+    // Cache kết quả (bao gồm cả kết quả Not Found) trong 5 phút
+    staleTime: 5 * 60 * 1000, 
     queryFn: async () => {
-      const res = await api.get(`/users/${profileId}`);
-      return res.data.user; // backend trả { user: { ... } }
+      try {
+        const res = await api.get(`/users/${profileId}`);
+        return res.data.user; 
+      } catch (error) {
+        // Nếu 404 -> Trả về data đánh dấu (coi như thành công)
+        if (error.response && error.response.status === 404) {
+          return { isNotFound: true };
+        }
+        // Các lỗi khác thì ném ra để useQuery xử lý isError
+        throw error;
+      }
     },
+    retry: (failureCount, error) => {
+        // Không retry nếu lỗi 404 (dù logic trên đã bắt 404 rồi, thêm vào cho chắc chắn với các edge case)
+        if (error.response?.status === 404) return false;
+        return failureCount < 3;
+    }
   });
 
   // --- LOGIC UPLOAD AVATAR ---
@@ -80,7 +94,6 @@ export default function ProfileLayout() {
       });
 
       setUserData((prev) => ({ ...prev, avatarUrl: newAvatarUrl }));
-
       queryClient.invalidateQueries(["profileUser", profileId]);
 
       setSnackbar({
@@ -101,7 +114,7 @@ export default function ProfileLayout() {
     }
   };
 
-  // ====== MUTATION: GỬI LỜI MỜI KẾT BẠN ======
+  // ====== MUTATION: FRIEND LOGIC ======
   const addFriendMutation = useMutation({
     mutationFn: async () => {
       if (!profileUser?.id) throw new Error("No profile user id");
@@ -111,49 +124,28 @@ export default function ProfileLayout() {
       return res.data;
     },
     onSuccess: () => {
-      // refetch lại profile để cập nhật friend_status & friendship_id
       queryClient.invalidateQueries(["profileUser", profileId]);
-      setSnackbar({
-        open: true,
-        message: "Đã gửi lời mời kết bạn.",
-        severity: "success",
-      });
+      setSnackbar({ open: true, message: "Đã gửi lời mời kết bạn.", severity: "success" });
     },
-    onError: (err) => {
-      console.error(err);
-      setSnackbar({
-        open: true,
-        message: "Gửi lời mời kết bạn thất bại.",
-        severity: "error",
-      });
+    onError: () => {
+      setSnackbar({ open: true, message: "Gửi lời mời kết bạn thất bại.", severity: "error" });
     },
   });
 
-  // ====== MUTATION: XÁC NHẬN LỜI MỜI ======
   const acceptFriendMutation = useMutation({
     mutationFn: async (friendshipId) => {
       if (!friendshipId) throw new Error("No friendship id");
-      await api.patch(`/friendships/${friendshipId}`, {
-        status: "accepted",
-      });
+      await api.patch(`/friendships/${friendshipId}`, { status: "accepted" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["profileUser", profileId]);
-      setSnackbar({
-        open: true,
-        message: "Đã chấp nhận lời mời kết bạn.",
-        severity: "success",
-      });
+      setSnackbar({ open: true, message: "Đã chấp nhận lời mời kết bạn.", severity: "success" });
     },
-    onError: (err) => {
-      console.error(err);
-      setSnackbar({
-        open: true,
-        message: "Không thể chấp nhận lời mời.",
-        severity: "error",
-      });
+    onError: () => {
+      setSnackbar({ open: true, message: "Không thể chấp nhận lời mời.", severity: "error" });
     },
   });
+
   const unfriendMutation = useMutation({
     mutationFn: async (friendshipId) => {
       if (!friendshipId) throw new Error("No friendship id");
@@ -161,27 +153,16 @@ export default function ProfileLayout() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["profileUser", profileId]);
-      setSnackbar({
-        open: true,
-        message: "Đã hủy kết bạn.",
-        severity: "success",
-      });
+      setSnackbar({ open: true, message: "Đã hủy kết bạn.", severity: "success" });
     },
-    onError: (err) => {
-      console.error(err);
-      setSnackbar({
-        open: true,
-        message: "Hủy kết bạn thất bại.",
-        severity: "error",
-      });
+    onError: () => {
+      setSnackbar({ open: true, message: "Hủy kết bạn thất bại.", severity: "error" });
     },
   });
-  // Loading chung cho các hành động friend
-  const isFriendActionLoading =
-    addFriendMutation.isLoading || acceptFriendMutation.isLoading||
-  unfriendMutation.isLoading;
 
-  // --- HANDLERS ĐỂ TRUYỀN XUỐNG BUTTON ---
+  const isFriendActionLoading =
+    addFriendMutation.isLoading || acceptFriendMutation.isLoading || unfriendMutation.isLoading;
+
   const handleAddFriend = () => {
     if (!profileUser) return;
     addFriendMutation.mutate();
@@ -196,23 +177,33 @@ export default function ProfileLayout() {
     if (!profileUser?.friendship_id) return;
     unfriendMutation.mutate(profileUser.friendship_id);
   };
-  // --- RENDER ---
+
+  // --- 3. RENDER LOGIC MỚI ---
+  
+  // ƯU TIÊN 1: Kiểm tra Not Found từ Data (để tận dụng Cache)
+  if (profileUser?.isNotFound) {
+    return <NotFoundPage />;
+  }
+
+  // ƯU TIÊN 2: Loading (chỉ hiện khi lần đầu fetch và chưa có cache)
   if (isLoading) {
     return (
-      <div className="p-4 text-sm text-gray-500">
-        Đang tải trang cá nhân...
+      <div className="p-4 text-sm text-gray-500 flex justify-center pt-10">
+         <CircularProgress size={30} />
       </div>
     );
   }
 
-  if (isError || !profileUser) {
+  // ƯU TIÊN 3: Lỗi thực sự (Mất mạng, 500 Server Error)
+  if (isError) {
     return (
-      <div className="p-4 text-sm text-red-500">
-        Không tìm thấy trang cá nhân.
+      <div className="p-4 text-sm text-red-500 text-center pt-10">
+        Đã có lỗi xảy ra khi tải trang cá nhân.
       </div>
     );
   }
 
+  // Nếu code chạy đến đây, chắc chắn profileUser có data hợp lệ
   const showSuggestTab = isOwnProfile;
   const showAddFriendButton = !isOwnProfile;
 
@@ -234,15 +225,11 @@ export default function ProfileLayout() {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
-        onClose={() =>
-          setSnackbar((prev) => ({ ...prev, open: false }))
-        }
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
-          onClose={() =>
-            setSnackbar((prev) => ({ ...prev, open: false }))
-          }
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
           severity={snackbar.severity}
           sx={{ width: "100%" }}
         >
@@ -253,6 +240,7 @@ export default function ProfileLayout() {
   );
 }
 
+// ... (Phần ProfileShell giữ nguyên như cũ, không cần sửa)
 function ProfileShell({
   profileUser,
   showSuggestTab,
@@ -264,13 +252,12 @@ function ProfileShell({
   onAcceptFriend,
   onUnfriend, 
   isFriendActionLoading,
-  
+   
 }) {
   const [selectedImage, setSelectedImage] = useState(null);
-
-  const friendStatus = profileUser?.friend_status; // none/self/friends/...
-  const friendshipId = profileUser?.friendship_id;
+  const friendStatus = profileUser?.friend_status; 
   const [showFriendMenu, setShowFriendMenu] = useState(false);
+
   return (
     <div className="profile-layout scrollbar-thin">
       <div className="profile-card">
