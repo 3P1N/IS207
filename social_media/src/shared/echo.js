@@ -61,7 +61,7 @@ export function createEcho() {
 
   // 🔥 Lắng nghe kết nối socket thành công
   echo.connector.pusher.connection.bind('connected', () => {
-    console.log('%c✔ WebSocket connected to Pusher (Cloud)!', 'color: #4CAF50; font-weight: bold;');
+    // console.log('%c✔ WebSocket connected to Pusher (Cloud)!', 'color: #4CAF50; font-weight: bold;');
   });
 
   // 🔥 Lắng nghe lỗi

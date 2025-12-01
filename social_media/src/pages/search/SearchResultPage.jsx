@@ -94,7 +94,7 @@ function PeopleSection({ keyword }) {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["search", "people", keyword], // Key phụ thuộc vào keyword
     queryFn: async () => {
-      console.log("Fetching people for:", keyword);
+     
       const response = await api.get(`/users?search=${keyword}`);
       return response.data;
     },
@@ -149,7 +149,7 @@ function PostsSection({ keyword }) {
   const { data: postData = [], isLoading } = useQuery({
     queryKey: ["search", "posts", keyword],
     queryFn: async () => {
-      console.log("Fetching posts for:", keyword);
+   
       const response = await api.get(`/posts?search=${keyword}`);
       // Lưu ý: API của bạn trả về response.data.data trong code cũ
       // Nếu API trả về trực tiếp mảng thì bỏ .data cuối đi nhé

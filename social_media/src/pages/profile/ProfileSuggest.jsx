@@ -22,8 +22,6 @@ export default function ProfileSuggest() {
     enabled: !!id, // chỉ chạy khi đã có id (profileUser load xong)
     queryFn: async () => {
       const response = await api.get(`/suggestfriends/${id}`);
-      console.log("hehe");
-      console.log(response);
 
       // tuỳ backend trả gì, mình giữ nguyên logic cũ:
       const all = response.data.friends || [];

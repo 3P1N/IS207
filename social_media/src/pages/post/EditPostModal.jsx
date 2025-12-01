@@ -10,7 +10,6 @@ import AvatarUser from '../../shared/components/AvatarUser';
 import { EditTwoTone } from '@mui/icons-material';
 
 export default function EditPostModal({ postData, postIndex, onClose }) {
-    console.log("postIndex:", postIndex);
     const { userData, postsData, setPostsData } = useContext(AuthContext);
     // const [open, setOpen] = useState(false);
     const [postContent, setPostContent] = useState(postData.content || '');
@@ -80,7 +79,7 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
 
             const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
-            // console.log(uploadedUrls);
+            
             const response = await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls });
             const editPost = response.data.post;
             

@@ -37,10 +37,9 @@ export default function PostActionsBar({ likes, comments, shares, isShared, isLi
     // State quản lý hiển thị Modal danh sách like
     const [showReactionsModal, setShowReactionsModal] = useState(false);
     const [showSharesModal, setShowSharesModal] = useState(false);
-    console.log("is shared: ", isShared);
 
     const sendReaction = async () => {
-        console.log("postId: ", postId);
+       
         const response = await api.post(`/posts/${postId}/reaction`);
         return response;
     }
@@ -75,7 +74,7 @@ export default function PostActionsBar({ likes, comments, shares, isShared, isLi
 
         try {
             const response = await sendReaction();
-            console.log(response.data);
+            
         } catch (err) {
             console.log("lỗi khi gửi post reaction: ", err);
             onLikeUpdate(!newStatus);

@@ -17,9 +17,9 @@ export default function AuthProvider({ children }) {
     const [echoInstance, setEchoInstance] = useState(null);
     const navigate = useNavigate();
     const register = async (userData) => {
-        console.log(userData);
+      
         const response = await api.post("/auth/register", userData);
-        console.log("Registration successful:", response.data);
+
         return response;
     }
 
@@ -28,8 +28,7 @@ export default function AuthProvider({ children }) {
         try {
             const response = await api.get("/me");
             setUserData(response.data);
-            // console.log(response);
-            console.log("dữ liệu người dùng: ", userData);
+
         } catch (err) {
             console.log("lỗi khi lấy thông tin người dùng: ", err);
         } finally {
@@ -52,8 +51,7 @@ export default function AuthProvider({ children }) {
         setTimeout(() => {
             setEchoInstance(createEcho());
         }, 50);
-        // await setEchoInstance(createEcho()); // reset echo instance to force re-create with new token
-        console.log("Login successful:", response.data);
+
         return response;
 
     };

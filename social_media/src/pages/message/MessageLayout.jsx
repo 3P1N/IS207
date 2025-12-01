@@ -34,7 +34,6 @@ export default function MessageLayout() {
             fullWidth
             onClick={() => {
               setIsCreateConversation(true);
-              console.log("Thêm cuộc trò chuyện mới"); // TODO: xử lý mở form tạo thread
             }}
           >
             Thêm cuộc trò chuyện mới

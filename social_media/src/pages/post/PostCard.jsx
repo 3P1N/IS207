@@ -9,7 +9,7 @@ export default function PostCard({ postData, index }) {
 
     const { postsData, setPostsData } = useContext(AuthContext);
     const [selectedImage, setSelectedImage] = useState(null);
-    console.log("index: ", index, postData);
+    
     if (!postData) return null;
 
     const [headerData, setHeaderData] = useState(null);

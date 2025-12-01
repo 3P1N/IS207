@@ -77,7 +77,7 @@ export default function CreateConversationModal({ onClose, onSuccess }) {
                 name: conversationName,
                 users: selectedFriendIds,
             };
-            console.log(payload);
+            
             await api.post("/conversations", payload);
             await queryClient.invalidateQueries({ queryKey: ["conversations"] });
             setSnackbar({ open: true, message: "Tạo cuộc trò chuyện thành công!", severity: "success" });

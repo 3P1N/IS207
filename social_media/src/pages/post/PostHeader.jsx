@@ -71,7 +71,7 @@ export default function PostHeader({ headerData, postData, index }) {
       setSnackbarMessage(message?.message || "Delete successfully submitted");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-      console.log(index);
+
       setPostsData(prev => prev.filter((_, i) => i !== index));
 
     } catch (err) {

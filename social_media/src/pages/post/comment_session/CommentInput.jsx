@@ -59,7 +59,6 @@ export default function CommentInput({
         setLoading(true);
         try {
             const newComment = await sendComment();
-            console.log("gửi comment: ", newComment);
 
             // nếu API trả về comment mới, thêm vào danh sách (đưa lên đầu)
             if (newComment) {

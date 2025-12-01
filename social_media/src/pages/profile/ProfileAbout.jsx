@@ -30,7 +30,6 @@ export default function ProfileAbout() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(formData.gender);
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 

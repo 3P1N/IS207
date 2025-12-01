@@ -55,7 +55,7 @@ export default function PostCreate() {
         const results = await Promise.all(uploadPromises);
         const urls = results.map(r => r.secure_url);
         setUrlMedia(urls);   // vẫn update state nếu muốn UI
-        // console.log(urls);
+        
         return urls;          // ✅ return để dùng ngay
     };
 

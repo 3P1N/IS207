@@ -14,7 +14,6 @@ export default function CommentReactionsListModal({ postId, commentId, onClose }
         queryKey: ['reactions', 'post', postId, 'comment', commentId], 
         
         queryFn: async () => {
-            console.log(`Fetching reactions for post: ${postId}, comment: ${commentId}`);
             // Đảm bảo đường dẫn API chính xác
             const response = await api.get(`/posts/${postId}/comments/${commentId}/reactions`);
             return response.data;
