@@ -102,6 +102,12 @@ class UserController extends Controller{
                 ->whereDoesntHave('reports', function($query) use ($viewerId) {
                     $query->where('reporter_id', $viewerId);
                 })
+                ->where(function ($q) use ($userId) {
+                    $q->where('user_id', $userId)
+                    ->orWhereHas('shares', function ($sq) use ($userId) {
+                        $sq->where('user_id', $userId);
+                    });
+                })
                 ->withCount(['reactions', 'comments', 'shares'])
                 ->with(['user', 'media'])
                 ->withExists([
@@ -114,7 +120,6 @@ class UserController extends Controller{
                         $q->where('user_id', $viewerId);
                     }
                 ])
-                ->where('user_id',$userId)
                 ->orderBy('created_at', 'desc')
                 ->simplePaginate(10);
 

@@ -18,10 +18,11 @@ export default function PostCard({ postData, index }) {
 
     useEffect(() => {
         if (!postData.user) return;
+        console.log("time: ",postData.created_at);
         setHeaderData({
             author: postData.user.name,
             id: postData.user.id,
-            timeAgo: "2 giờ trước", // tạm placeholder
+            created_at: postData.created_at,
             isOwner: userData.id === postData.user.id,
             avatarUrl: postData.user.avatarUrl
         })

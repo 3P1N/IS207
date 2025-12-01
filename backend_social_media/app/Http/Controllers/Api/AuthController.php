@@ -31,6 +31,10 @@ class AuthController extends Controller
         if (! $user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email not verified'], 403);
         }
+        
+        if($user->is_Violated){
+            return response()->json(['message'=>'Forbidden'], 403);
+        }
 
         // 4️⃣ Tạo token cá nhân (Personal Access Token)
         $plainTextToken  = $user->createToken('api_token')->plainTextToken;

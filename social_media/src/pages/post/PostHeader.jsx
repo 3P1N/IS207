@@ -18,6 +18,19 @@ import EditPostModal from "./EditPostModal";
 import { api } from "../../shared/api";
 import { AuthContext } from "../../router/AuthProvider";
 
+const formatDate = (isoString) => {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  // 'vi-VN' sẽ định dạng theo kiểu Việt Nam
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
 export default function PostHeader({ headerData, postData, index }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -26,6 +39,7 @@ export default function PostHeader({ headerData, postData, index }) {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // success | error
+  const timeString = headerData?.created_at || postData?.created_at;
 
   // open menu
   const handleMenuOpen = (event) => {
@@ -99,7 +113,7 @@ export default function PostHeader({ headerData, postData, index }) {
             {headerData?.author}
           </p>
           <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm">
-            {headerData?.timeAgo}
+            {formatDate(timeString)}
           </p>
         </div>
       </div>

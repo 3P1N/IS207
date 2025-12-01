@@ -110,7 +110,7 @@ export default function CommentItem({ comment, setComments, postId }) {
         setLikesCount(prevLiked ? likesCount - 1 : likesCount + 1);
 
         try {
-            await api.post(`/posts/${postId}/comments/${comment.id}/reaction`);
+            await api.post(`/posts/${postId}/comments/${comment.id}/reactions`);
         } catch (err) {
             console.error("Like error:", err);
             // Rollback
@@ -125,7 +125,7 @@ export default function CommentItem({ comment, setComments, postId }) {
         setReplyLoading(true);
 
         try {
-            const res = await api.post(`/posts/${postId}/comments`, {
+            const res = await api.post(`/posts/${postId}/comments/${comment.id}/replies`, {
                 content: replyContent,
                 parent_comment_id: comment.id, // ID của comment hiện tại làm cha
             });

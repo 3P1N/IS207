@@ -3,12 +3,12 @@ import { Box, Typography, CircularProgress, IconButton, Tooltip, ButtonBase } fr
 import { useParams } from "react-router-dom";
 
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PersonAdd, VideoCall } from "@mui/icons-material";
+import { PersonAdd } from "@mui/icons-material";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
-import { VideoCallContext } from "../../router/VideoCallProvider";
+// import { VideoCallContext } from "../../router/VideoCallProvider"; // Bỏ comment nếu dùng
 
 import ParticipantsModal from "./ParticipantsModal";
 import AddMemberModal from "./AddMemberModal";
@@ -18,18 +18,19 @@ export default function ThreadPage() {
   const { echoInstance, userData } = useContext(AuthContext);
   const meId = userData ? userData.id : null;
   const queryClient = useQueryClient();
-  // const { startCall } = useContext(VideoCallContext);
   const containerRef = useRef(null);
-  // Ref để lưu chiều cao cũ trước khi load thêm tin nhắn
+  
   const prevScrollHeightRef = useRef(0);
-  const isAutoScrollRef = useRef(true); // Cờ kiểm soát việc tự động cuộn xuống đáy
+  const isAutoScrollRef = useRef(true); 
 
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
 
-  // --- 1. FETCH DATA VỚI INFINITE QUERY ---
+  // STATE MỚI: Lưu ID tin nhắn gửi thành công gần nhất của mình
+  const [lastSentMessageId, setLastSentMessageId] = useState(null);
+
+  // --- 1. FETCH DATA ---
   const fetchConversation = async ({ pageParam = 1 }) => {
-    // Laravel paginate tự nhận param ?page=X
     const response = await api.get(`/conversations/${threadId}/messages?page=${pageParam}`);
     return response.data;
   };
@@ -44,9 +45,7 @@ export default function ThreadPage() {
     queryKey: ["messages", threadId],
     queryFn: fetchConversation,
     getNextPageParam: (lastPage) => {
-      // Logic lấy trang tiếp theo dựa trên response của Laravel simplePaginate/paginate
       const msgData = lastPage.messages;
-      // Nếu current_page < last_page (hoặc check next_page_url) thì +1
       if (msgData.next_page_url) {
         return msgData.current_page + 1;
       }
@@ -57,17 +56,12 @@ export default function ThreadPage() {
     refetchOnWindowFocus: false,
   });
 
-  // Flat data từ các pages thành 1 mảng duy nhất
-  // Server trả về: Page 1 (Mới nhất), Page 2 (Cũ hơn)...
-  // Mỗi page chứa list tin nhắn sort DESC (Mới -> Cũ)
-  // => Ta cần gộp lại và ĐẢO NGƯỢC toàn bộ để hiển thị từ Cũ -> Mới (Trên -> Dưới)
-  const conversationInfo = data?.pages?.[0]?.conversation; // Lấy info từ trang đầu
+  const conversationInfo = data?.pages?.[0]?.conversation;
 
+  // Lấy toàn bộ message raw từ cache
   const rawMessages = useMemo(() => {
     if (!data) return [];
-    // Gộp tất cả messages từ các trang lại
-    const allMsgs = data.pages.flatMap((page) => page.messages.data);
-    return allMsgs;
+    return data.pages.flatMap((page) => page.messages.data);
   }, [data]);
 
   const participants = conversationInfo?.participants || [];
@@ -88,107 +82,175 @@ export default function ThreadPage() {
     };
   }, [conversationName, participants, meId]);
 
-  const handleVideoCallClick = () => {
-    // Gọi hàm startCall từ Provider. 
-    // Truyền vào ID cuộc hội thoại và thông tin người nhận (để hiển thị UI "Đang gọi cho A...")
-    startCall(threadId, {
-        name: displayInfo.name,
-        avatar: displayInfo.avatar,
-        id: displayInfo.id
-    });
-  };
-
-  // --- 2. XỬ LÝ SCROLL LOGIC ---
-
-  // Xử lý sự kiện scroll để load thêm
+  // --- 2. SCROLL LOGIC ---
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight } = e.target;
-
-    // Nếu kéo lên đỉnh (scrollTop = 0) và còn trang cũ hơn
     if (scrollTop === 0 && hasNextPage && !isFetchingNextPage) {
-      // Lưu lại chiều cao hiện tại trước khi data mới được chèn vào
       prevScrollHeightRef.current = scrollHeight;
-      isAutoScrollRef.current = false; // Tắt auto scroll bottom
+      isAutoScrollRef.current = false;
       fetchNextPage();
     }
   };
 
-  // UseLayoutEffect để chỉnh lại thanh cuộn ngay sau khi render xong data mới
   useLayoutEffect(() => {
     if (!containerRef.current) return;
 
-    // Case 1: Load thêm tin nhắn cũ (Reverse Scroll)
     if (!isAutoScrollRef.current && prevScrollHeightRef.current > 0) {
       const newScrollHeight = containerRef.current.scrollHeight;
-      // Tính độ chênh lệch và set lại scrollTop để user không bị nhảy view
       const diff = newScrollHeight - prevScrollHeightRef.current;
       containerRef.current.scrollTop = diff;
-
-      // Reset
       prevScrollHeightRef.current = 0;
-    }
-
-    // Case 2: Load lần đầu hoặc gửi tin nhắn mới (Scroll to bottom)
-    else if (isAutoScrollRef.current || (!isFetchingNextPage && !prevScrollHeightRef.current)) {
-      // Chỉ scroll bottom nếu đang ở chế độ auto hoặc lần đầu load
-      // (Thêm logic kiểm tra nếu user đang xem tin nhắn cũ thì không auto scroll khi có tin mới đến nếu muốn)
+    } else if (isAutoScrollRef.current || (!isFetchingNextPage && !prevScrollHeightRef.current)) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
+  }, [rawMessages, isFetchingNextPage]);
 
-  }, [rawMessages, isFetchingNextPage]); // Chạy khi messages thay đổi
-
-  // --- 3. NORMALIZE DATA ---
+  // --- 3. NORMALIZE DATA (XỬ LÝ TRẠNG THÁI HIỂN THỊ) ---
   const normalizedMessages = useMemo(() => {
-    // Đảo ngược mảng tổng để hiển thị theo thời gian: Cũ (trên) -> Mới (dưới)
-    // Lưu ý: data từ server (DESC) -> [MsgMới, MsgCũ]. Flat lại -> [Mới...Cũ]. Reverse -> [Cũ...Mới]
+    // Reverse để hiển thị cũ -> mới
     const reversed = [...rawMessages].reverse();
 
-    // Loại bỏ trùng lặp (đề phòng)
+    // Lọc trùng (quan trọng khi Optimistic UI thay thế ID tạm bằng ID thật)
     const unique = new Map();
     for (const msg of reversed) unique.set(msg.id, msg);
 
-    return Array.from(unique.values()).map((msg) => ({
-      id: msg.id, sender: msg.sender, content: msg.content, mine: msg.sender?.id === meId,
-    }));
-  }, [rawMessages, meId]);
+    return Array.from(unique.values()).map((msg) => {
+      let status = null; // null | 'sending' | 'sent' | 'error'
 
+      if (msg.isSending) {
+        status = "sending"; // Đang hiển thị từ cache onMutate
+      } else if (msg.isError) {
+        status = "error";   // Đánh dấu lỗi từ cache onError
+      } else if (msg.sender?.id === meId && msg.id === lastSentMessageId) {
+        status = "sent";    // Tin nhắn mới nhất đã gửi thành công
+      }
 
-  // --- 4. SEND MESSAGE & REAL-TIME ---
+      return {
+        id: msg.id,
+        sender: msg.sender,
+        content: msg.content,
+        mine: msg.sender?.id === meId,
+        status: status, // Truyền prop này vào MessageBubble
+        errorMessage: msg.errorMessage // Nếu muốn hiển thị chi tiết lỗi
+      };
+    });
+  }, [rawMessages, meId, lastSentMessageId]);
+
+  // --- 4. SEND MESSAGE (OPTIMISTIC UPDATE) ---
   const sendMessageMutation = useMutation({
     mutationFn: async (content) => {
       const response = await api.post(`/conversations/${threadId}/messages`, { content });
       return response.data;
     },
-    // Optimistic update hoặc update cache sau khi gửi thành công
-    onSuccess: (newMessage) => {
-      // Khi gửi tin nhắn của chính mình, bật auto scroll
+    // Chạy TRƯỚC khi gửi request
+    onMutate: async (content) => {
+      await queryClient.cancelQueries(["messages", threadId]);
+
+      const previousData = queryClient.getQueryData(["messages", threadId]);
+      
+      // Tạo ID tạm thời
+      const tempId = `temp-${Date.now()}`;
+      
+      // Tạo tin nhắn giả
+      const optimisticMessage = {
+        id: tempId,
+        content: content,
+        sender: userData, // Giả định gửi từ mình
+        created_at: new Date().toISOString(),
+        isSending: true, // Cờ đánh dấu đang gửi
+        isError: false,
+      };
+
+      // Cập nhật Cache ngay lập tức
+      queryClient.setQueryData(["messages", threadId], (oldData) => {
+        if (!oldData) return oldData;
+        const newPages = [...oldData.pages];
+        const firstPage = { ...newPages[0] };
+        
+        // Thêm vào đầu danh sách (vì API sort DESC)
+        firstPage.messages = {
+          ...firstPage.messages,
+          data: [optimisticMessage, ...firstPage.messages.data]
+        };
+        newPages[0] = firstPage;
+        return { ...oldData, pages: newPages };
+      });
+
+      // Bật scroll xuống đáy
       isAutoScrollRef.current = true;
-      updateMessagesCache(newMessage);
+
+      return { previousData, tempId };
+    },
+    // Chạy khi gửi THÀNH CÔNG
+    onSuccess: (newMessage, variables, context) => {
+      // Tìm tin nhắn tạm (context.tempId) và thay thế bằng tin thật (newMessage)
+      queryClient.setQueryData(["messages", threadId], (oldData) => {
+        if (!oldData) return oldData;
+        const newPages = [...oldData.pages];
+        const firstPage = { ...newPages[0] };
+        
+        firstPage.messages = {
+            ...firstPage.messages,
+            // Map qua để thay thế tin nhắn có ID tạm
+            data: firstPage.messages.data.map(msg => 
+                msg.id === context.tempId ? newMessage : msg
+            )
+        };
+        newPages[0] = firstPage;
+        return { ...oldData, pages: newPages };
+      });
+
+      // Cập nhật state để hiển thị chữ "Đã gửi" cho tin nhắn này
+      setLastSentMessageId(newMessage.id);
+    },
+    // Chạy khi gửi THẤT BẠI
+    onError: (error, variables, context) => {
+      // KHÔNG rollback dữ liệu (để giữ tin nhắn lại)
+      // Thay vào đó, tìm tin nhắn tạm và đánh dấu lỗi
+      queryClient.setQueryData(["messages", threadId], (oldData) => {
+        if (!oldData) return oldData;
+        const newPages = [...oldData.pages];
+        const firstPage = { ...newPages[0] };
+
+        firstPage.messages = {
+            ...firstPage.messages,
+            data: firstPage.messages.data.map(msg => {
+                if (msg.id === context.tempId) {
+                    return { 
+                        ...msg, 
+                        isSending: false, 
+                        isError: true, // Cờ báo lỗi
+                        errorMessage: "Gửi thất bại" 
+                    }; 
+                }
+                return msg;
+            })
+        };
+        newPages[0] = firstPage;
+        return { ...oldData, pages: newPages };
+      });
     },
   });
 
-  // Hàm helper cập nhật cache cho Infinite Query
+  // --- REAL-TIME UPDATES ---
+  // Hàm helper cập nhật tin nhắn realtime từ người KHÁC
   const updateMessagesCache = (newMessage) => {
     queryClient.setQueryData(["messages", threadId], (oldData) => {
       if (!oldData) return oldData;
-
-      // Infinite Query structure: { pages: [ { messages: { data: [...] } }, ... ], pageParams: [...] }
-      // Ta chỉ cần chèn tin nhắn mới vào đầu của Page 0 (Page mới nhất)
-      // Vì Server trả về DESC, nên phần tử đầu tiên của Page 0 là tin mới nhất.
-
+      
       const newPages = [...oldData.pages];
       const firstPage = { ...newPages[0] };
-      const firstPageMsgs = { ...firstPage.messages };
+      
+      // Check trùng: Nếu tin nhắn đã tồn tại (do Optimistic Update đã xử lý tin của mình rồi) thì bỏ qua
+      // Hoặc nếu echo bắn về tin của chính mình -> bỏ qua
+      if (firstPage.messages.data.some(m => m.id === newMessage.id)) return oldData;
 
-      // Kiểm tra trùng
-      if (firstPageMsgs.data.some(m => m.id === newMessage.id)) return oldData;
-
-      // Chèn vào đầu mảng (vì backend sort DESC)
-      firstPageMsgs.data = [newMessage, ...firstPageMsgs.data];
-
-      firstPage.messages = firstPageMsgs;
+      firstPage.messages = {
+          ...firstPage.messages,
+          data: [newMessage, ...firstPage.messages.data]
+      };
+      
       newPages[0] = firstPage;
-
       return { ...oldData, pages: newPages };
     });
   };
@@ -199,13 +261,16 @@ export default function ThreadPage() {
     const channel = echoInstance.private(channelName);
 
     const handler = (newMessage) => {
-      // Nếu user đang ở dưới cùng, cho phép auto scroll. Nếu đang xem lịch sử cũ, không scroll.
       if (containerRef.current) {
         const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
         const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
         isAutoScrollRef.current = isAtBottom;
       }
-      updateMessagesCache(newMessage);
+      // Nếu tin nhắn từ Echo là của mình (check sender id), ta có thể bỏ qua
+      // vì onSuccess đã xử lý việc thay thế ID tạm bằng ID thật rồi.
+      if (newMessage.sender_id !== meId) {
+          updateMessagesCache(newMessage);
+      }
     };
 
     channel.listen(".MessageSent", handler);
@@ -216,20 +281,14 @@ export default function ThreadPage() {
       channel.stopListening("MessageSent");
       echoInstance.leave(`private-${channelName}`);
     };
-  }, [echoInstance, threadId, queryClient]);
+  }, [echoInstance, threadId, queryClient, meId]);
 
-  // --- 5. AUTO-FILL (FIX LỖI MÀN HÌNH LỚN) ---
+  // --- 5. AUTO-FILL ---
   useEffect(() => {
     const container = containerRef.current;
     if (!container || loadingMessage) return;
-
-    // Kiểm tra: Nếu nội dung nhỏ hơn khung nhìn (chưa có thanh cuộn)
-    // VÀ còn trang tiếp theo để load
-    // VÀ không đang trong quá trình load
     const hasNoScrollbar = container.scrollHeight <= container.clientHeight;
-
     if (hasNoScrollbar && hasNextPage && !isFetchingNextPage) {
-      // Tự động load trang tiếp theo để lấp đầy màn hình
       fetchNextPage();
     }
   }, [normalizedMessages, hasNextPage, isFetchingNextPage, loadingMessage]);
@@ -240,9 +299,9 @@ export default function ThreadPage() {
     <>
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", bgcolor: "#fafafa", borderRadius: 2, p: 2 }}>
 
-        {/* --- HEADER --- */}
+        {/* --- HEADER (Giữ nguyên) --- */}
         <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #eee', pb: 1 }}>
-          <ButtonBase onClick={() => setIsParticipantsOpen(true)} sx={{ /* ... style cũ */ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', borderRadius: 1, p: 0.5, px: 1, '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' } }}>
+          <ButtonBase onClick={() => setIsParticipantsOpen(true)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', borderRadius: 1, p: 0.5, px: 1, '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' } }}>
             <Typography variant="h6" sx={{ color: "primary.main", fontWeight: 'bold' }}>
               {displayInfo.name}
             </Typography>
@@ -253,15 +312,6 @@ export default function ThreadPage() {
             )}
           </ButtonBase>
           <Box>
-            {/* <Tooltip title="Gọi Video">
-              <IconButton
-                color="primary"
-                onClick={handleVideoCallClick}
-                sx={{ mr: 1 }}
-              >
-                <VideoCall />
-              </IconButton>
-            </Tooltip> */}
             {displayInfo.isGroup && (
               <Tooltip title="Thêm người vào nhóm">
                 <IconButton color="primary" onClick={() => setIsAddMemberOpen(true)}>
@@ -275,7 +325,7 @@ export default function ThreadPage() {
         {/* --- MESSAGES LIST --- */}
         <Box
           ref={containerRef}
-          onScroll={handleScroll} // Thêm sự kiện scroll
+          onScroll={handleScroll}
           sx={{
             flex: 1,
             overflowY: "auto",
@@ -287,14 +337,12 @@ export default function ThreadPage() {
             "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: 3 }
           }}
         >
-          {/* Hiển thị Loading khi đang fetch trang cũ hơn */}
           {isFetchingNextPage && (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
               <CircularProgress size={20} />
             </Box>
           )}
 
-          {/* Render tin nhắn */}
           {loadingMessage && !data ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
               <CircularProgress size={24} /> <Typography ml={1}>Đang tải tin nhắn...</Typography>
@@ -306,21 +354,24 @@ export default function ThreadPage() {
               </Typography>
             </Box>
           ) : (
-            normalizedMessages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
+            // Truyền msg đã có status (sending/sent/error) vào component
+            normalizedMessages.map((msg) => (
+                <MessageBubble key={msg.id} message={msg} />
+            ))
           )}
-
-
-          {sendMessageMutation.isPending && <Typography variant="body2" sx={{ color: "text.secondary", alignSelf: 'flex-end' }}>Đang gửi...</Typography>}
+          
+          {/* Đã xóa phần "Đang gửi..." ở đây vì nó đã được tích hợp vào MessageBubble */}
         </Box>
 
         {/* --- CHAT INPUT --- */}
-        <ChatInput onSend={handleSend} disabled={sendMessageMutation.isPending} />
+        {/* Disable khi mutation đang pending là không cần thiết nữa vì ta muốn UX mượt, 
+            nhưng nếu muốn chặn spam thì có thể giữ. Ở đây tôi bỏ disabled để trải nghiệm nhanh hơn */}
+        <ChatInput onSend={handleSend} disabled={false} />
       </Box>
 
       {/* --- MODALS --- */}
       <ParticipantsModal open={isParticipantsOpen} onClose={() => setIsParticipantsOpen(false)} participants={participants} />
       <AddMemberModal open={isAddMemberOpen} onClose={() => setIsAddMemberOpen(false)} threadId={threadId} currentMemberIds={currentMemberIds} />
-  
     </>
   );
 }

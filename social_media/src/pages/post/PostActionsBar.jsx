@@ -105,7 +105,7 @@ const [showCommentsModal, setShowCommentsModal] = useState(false);
 
                 <div className="flex items-center gap-4 text-text-light-secondary dark:text-text-dark-secondary text-sm">
                     {/* Click comment thì navigate hoặc mở modal comment tùy bạn */}
-                    <span className="cursor-pointer hover:underline" onClick={() => navigate(`/post/${postId}`)}>
+                    <span className="cursor-pointer hover:underline" onClick={() => setShowCommentsModal(true)}>
                         {comments} Comments
                     </span>
                     <div

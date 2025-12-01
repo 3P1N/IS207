@@ -152,10 +152,10 @@ export default function ProfileAbout() {
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900"
                 >
-                  <option value="">Chọn giới tính</option>
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                  <option value="other">Khác</option>
+                  <option value="">Choose Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
             </div>
@@ -198,7 +198,7 @@ export default function ProfileAbout() {
       </div>
 
       {/* Card quyền riêng tư */}
-      {isOwnProfile && (<div className="rounded-2xl border border-gray-200 bg-white/80 p-4 shadow-sm sm:p-6">
+      {/* {isOwnProfile && (<div className="rounded-2xl border border-gray-200 bg-white/80 p-4 shadow-sm sm:p-6">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
           Quyền riêng tư
         </h3>
@@ -231,7 +231,7 @@ export default function ProfileAbout() {
             ? "Bạn có thể thay đổi chi tiết hiển thị trong phần cài đặt quyền riêng tư."
             : "Thiết lập quyền riêng tư được người dùng này cấu hình."}
         </p>
-      </div>)}
+      </div>)} */}
     </div>
   );
 }
