@@ -1,38 +1,40 @@
 import { Outlet, NavLink, useParams } from "react-router-dom";
 import { useContext, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+  useMutation,
+} from "@tanstack/react-query";
 import { CircularProgress } from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { Snackbar, Alert } from "@mui/material";
 
-// Import các thành phần từ dự án của bạn
 import AvatarUser from "../../shared/components/AvatarUser";
-// import { AuthContext } from "../../router/AuthProvider";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
-// Import ImageViewer
 import ImageViewer from "../../shared/components/ImageViewer";
 
 export default function ProfileLayout() {
   const { userData, setUserData } = useContext(AuthContext);
   const { id } = useParams();
   const queryClient = useQueryClient();
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success", // "success" | "error" | "info" | "warning"
   });
 
-
-  // State loading cho việc upload avatar
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Nếu không có id (vd: /profile) thì dùng id của chính mình
   const profileId = id ?? userData?.id;
 
-  // Xác định có phải đang xem profile của chính mình không
-  const isOwnProfile = String(userData?.id) === String(profileId);
+  // Xác định có phải đang xem profile của chính mình không (FE)
+  const isOwnProfile =
+    String(userData?.id) === String(profileId);
 
+  // --- LOAD PROFILE USER ---
   const {
     data: profileUser,
     isLoading,
@@ -41,12 +43,8 @@ export default function ProfileLayout() {
     queryKey: ["profileUser", profileId],
     enabled: !!profileId,
     queryFn: async () => {
-      // Nếu là trang của chính mình và đã có userData thì ưu tiên dùng userData
-      if (isOwnProfile && userData) {
-        return userData;
-      }
       const res = await api.get(`/users/${profileId}`);
-      return res.data.user || res.data;
+      return res.data.user; // backend trả { user: { ... } }
     },
   });
 
@@ -58,16 +56,14 @@ export default function ProfileLayout() {
     setIsUploadingAvatar(true);
 
     try {
-      // 1. Upload lên Cloudinary
       const formData = new FormData();
       formData.append("file", file);
-      // Sử dụng thông tin config từ file PostCreate mẫu của bạn
       formData.append("upload_preset", "3P1N-PMIT");
       formData.append("cloud_name", "dezlofvj8");
 
       const cloudRes = await fetch(
         import.meta.env.VITE_CLOUDINARY_UPLOAD_URL ||
-        "https://api.cloudinary.com/v1_1/dezlofvj8/auto/upload",
+          "https://api.cloudinary.com/v1_1/dezlofvj8/auto/upload",
         {
           method: "POST",
           body: formData,
@@ -78,17 +74,13 @@ export default function ProfileLayout() {
 
       const cloudData = await cloudRes.json();
       const newAvatarUrl = cloudData.secure_url;
-      console.log(newAvatarUrl);
-      // 2. Gọi API Patch update user
+
       await api.patch(`/userProfile`, {
         avatarUrl: newAvatarUrl,
       });
 
-      // 3. Cập nhật UI
-      // Cập nhật AuthContext
       setUserData((prev) => ({ ...prev, avatarUrl: newAvatarUrl }));
 
-      // Invalidate query để load lại dữ liệu profile
       queryClient.invalidateQueries(["profileUser", profileId]);
 
       setSnackbar({
@@ -105,14 +97,111 @@ export default function ProfileLayout() {
       });
     } finally {
       setIsUploadingAvatar(false);
-      // Reset input value để user có thể chọn lại cùng 1 file nếu muốn
       event.target.value = null;
     }
   };
 
+  // ====== MUTATION: GỬI LỜI MỜI KẾT BẠN ======
+  const addFriendMutation = useMutation({
+    mutationFn: async () => {
+      if (!profileUser?.id) throw new Error("No profile user id");
+      const res = await api.post("/friendships", {
+        addressee_id: profileUser.id,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      // refetch lại profile để cập nhật friend_status & friendship_id
+      queryClient.invalidateQueries(["profileUser", profileId]);
+      setSnackbar({
+        open: true,
+        message: "Đã gửi lời mời kết bạn.",
+        severity: "success",
+      });
+    },
+    onError: (err) => {
+      console.error(err);
+      setSnackbar({
+        open: true,
+        message: "Gửi lời mời kết bạn thất bại.",
+        severity: "error",
+      });
+    },
+  });
+
+  // ====== MUTATION: XÁC NHẬN LỜI MỜI ======
+  const acceptFriendMutation = useMutation({
+    mutationFn: async (friendshipId) => {
+      if (!friendshipId) throw new Error("No friendship id");
+      await api.patch(`/friendships/${friendshipId}`, {
+        status: "accepted",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["profileUser", profileId]);
+      setSnackbar({
+        open: true,
+        message: "Đã chấp nhận lời mời kết bạn.",
+        severity: "success",
+      });
+    },
+    onError: (err) => {
+      console.error(err);
+      setSnackbar({
+        open: true,
+        message: "Không thể chấp nhận lời mời.",
+        severity: "error",
+      });
+    },
+  });
+  const unfriendMutation = useMutation({
+    mutationFn: async (friendshipId) => {
+      if (!friendshipId) throw new Error("No friendship id");
+      await api.delete(`/friendship/${friendshipId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["profileUser", profileId]);
+      setSnackbar({
+        open: true,
+        message: "Đã hủy kết bạn.",
+        severity: "success",
+      });
+    },
+    onError: (err) => {
+      console.error(err);
+      setSnackbar({
+        open: true,
+        message: "Hủy kết bạn thất bại.",
+        severity: "error",
+      });
+    },
+  });
+  // Loading chung cho các hành động friend
+  const isFriendActionLoading =
+    addFriendMutation.isLoading || acceptFriendMutation.isLoading||
+  unfriendMutation.isLoading;
+
+  // --- HANDLERS ĐỂ TRUYỀN XUỐNG BUTTON ---
+  const handleAddFriend = () => {
+    if (!profileUser) return;
+    addFriendMutation.mutate();
+  };
+
+  const handleAcceptFriend = () => {
+    if (!profileUser?.friendship_id) return;
+    acceptFriendMutation.mutate(profileUser.friendship_id);
+  };
+
+  const handleUnfriend = () => {
+    if (!profileUser?.friendship_id) return;
+    unfriendMutation.mutate(profileUser.friendship_id);
+  };
+  // --- RENDER ---
   if (isLoading) {
     return (
-      <div className="p-4 text-sm text-gray-500">Đang tải trang cá nhân...</div>
+      <div className="p-4 text-sm text-gray-500">
+        Đang tải trang cá nhân...
+      </div>
     );
   }
 
@@ -137,15 +226,23 @@ export default function ProfileLayout() {
         isOwnProfile={isOwnProfile}
         onAvatarChange={handleAvatarChange}
         isUploadingAvatar={isUploadingAvatar}
+        onAddFriend={handleAddFriend}
+        onAcceptFriend={handleAcceptFriend}
+        onUnfriend={handleUnfriend}  
+        isFriendActionLoading={isFriendActionLoading}
       />
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        onClose={() =>
+          setSnackbar((prev) => ({ ...prev, open: false }))
+        }
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={() =>
+            setSnackbar((prev) => ({ ...prev, open: false }))
+          }
           severity={snackbar.severity}
           sx={{ width: "100%" }}
         >
@@ -163,10 +260,17 @@ function ProfileShell({
   isOwnProfile,
   onAvatarChange,
   isUploadingAvatar,
+  onAddFriend,
+  onAcceptFriend,
+  onUnfriend, 
+  isFriendActionLoading,
+  
 }) {
-  // State để quản lý việc hiển thị ImageViewer
   const [selectedImage, setSelectedImage] = useState(null);
 
+  const friendStatus = profileUser?.friend_status; // none/self/friends/...
+  const friendshipId = profileUser?.friendship_id;
+  const [showFriendMenu, setShowFriendMenu] = useState(false);
   return (
     <div className="profile-layout">
       <div className="profile-card">
@@ -174,24 +278,21 @@ function ProfileShell({
         <header className="relative">
           {/* Cover */}
           <div className="profile-cover flex justify-center items-end pb-0 relative">
-            {/* Wrapper cho Avatar */}
             <div className="relative group">
-
-              {/* PHẦN 1: Hiển thị Avatar - Click để xem ảnh (ImageViewer) */}
+              {/* AVATAR */}
               <div
                 className={`
-    relative flex items-center justify-center overflow-hidden
-    rounded-full border-4 border-white dark:border-gray-800 transition-opacity cursor-pointer
-    w-32 h-32 md:w-40 md:h-40
-    ${isUploadingAvatar ? "opacity-50" : ""}
-  `}
+                  relative flex items-center justify-center overflow-hidden
+                  rounded-full border-4 border-white dark:border-gray-800 transition-opacity cursor-pointer
+                  w-32 h-32 md:w-40 md:h-40
+                  ${isUploadingAvatar ? "opacity-50" : ""}
+                `}
                 onClick={() => {
                   if (!isUploadingAvatar && profileUser?.avatarUrl) {
                     setSelectedImage(profileUser.avatarUrl);
                   }
                 }}
               >
-                {/* LOGIC MỚI: Kiểm tra có URL ảnh thì render thẻ img trực tiếp */}
                 {profileUser?.avatarUrl ? (
                   <img
                     src={profileUser.avatarUrl}
@@ -199,19 +300,16 @@ function ProfileShell({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  /* Fallback: Nếu không có ảnh thì hiển thị Avatar mặc định/chữ cái */
                   <AvatarUser userData={profileUser} size={150} />
                 )}
               </div>
 
-              {/* Loading Spinner */}
               {isUploadingAvatar && (
                 <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                   <CircularProgress size={30} />
                 </div>
               )}
 
-              {/* PHẦN 2: Nút upload ảnh - Nằm riêng biệt (Separate Button) */}
               {isOwnProfile && !isUploadingAvatar && (
                 <>
                   <input
@@ -226,11 +324,12 @@ function ProfileShell({
                     className="absolute bottom-1 right-1 bg-gray-200 dark:bg-gray-700 p-1.5 rounded-full cursor-pointer hover:bg-gray-300 transition shadow-md flex items-center justify-center z-20 border-2 border-white dark:border-gray-800"
                     title="Đổi ảnh đại diện"
                     onClick={(e) => {
-                      // Ngăn sự kiện click lan ra ngoài (để không kích hoạt ImageViewer của avatar)
                       e.stopPropagation();
                     }}
                   >
-                    <PhotoCamera sx={{ fontSize: 20, color: "#555" }} />
+                    <PhotoCamera
+                      sx={{ fontSize: 20, color: "#555" }}
+                    />
                   </label>
                 </>
               )}
@@ -250,12 +349,71 @@ function ProfileShell({
               </p>
 
               {showAddFriendButton && (
-                <button
-                  type="button"
-                  className="mt-3 inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-800 active:scale-[0.98] transition"
-                >
-                  Thêm bạn bè
-                </button>
+                <>
+                  {friendStatus === "friends" ? (
+                    <div className="relative inline-block mt-3">
+                      {/* Nút chính: Bạn bè */}
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 shadow disabled:opacity-70"
+                        onClick={() => setShowFriendMenu((prev) => !prev)}
+                        disabled={isFriendActionLoading}
+                      >
+                        Bạn bè
+                        <span className="text-xs">▼</span>
+                      </button>
+
+                      {/* Menu popup: Hủy kết bạn */}
+                      {showFriendMenu && (
+                        <div
+                          className="absolute left-1/2 -translate-x-1/2 mt-2 w-40 rounded-xl bg-white shadow-lg ring-1 ring-black/5 z-20 text-sm text-gray-700"
+                        >
+                          <button
+                            type="button"
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-xl disabled:opacity-70"
+                            onClick={() => {
+                              onUnfriend?.();
+                              setShowFriendMenu(false);
+                            }}
+                            disabled={isFriendActionLoading}
+                          >
+                            {isFriendActionLoading ? "Đang hủy..." : "Hủy kết bạn"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : friendStatus === "outgoing_request" ? (
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 shadow"
+                      disabled
+                    >
+                      Đã gửi lời mời
+                    </button>
+                  ) : friendStatus === "incoming_request" ? (
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-500 disabled:opacity-70"
+                      onClick={onAcceptFriend}
+                      disabled={isFriendActionLoading}
+                    >
+                      {isFriendActionLoading
+                        ? "Đang xử lý..."
+                        : "Xác nhận lời mời"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-800 active:scale-[0.98] transition disabled:opacity-70"
+                      onClick={onAddFriend}
+                      disabled={isFriendActionLoading}
+                    >
+                      {isFriendActionLoading
+                        ? "Đang gửi..."
+                        : "Thêm bạn bè"}
+                    </button>
+                  )}
+                </>
               )}
             </div>
 
@@ -317,14 +475,12 @@ function ProfileShell({
         </main>
       </div>
 
-      {/* Hiển thị ImageViewer khi có selectedImage */}
       {selectedImage && (
         <ImageViewer
           src={selectedImage}
           onClose={() => setSelectedImage(null)}
         />
       )}
-
     </div>
   );
 }
