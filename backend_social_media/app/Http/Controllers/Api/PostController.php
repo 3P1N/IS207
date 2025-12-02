@@ -132,7 +132,7 @@ class PostController extends Controller
 
     }
 
-    public function update(Request $request, $id) { // Đổi $index thành $id cho chuẩn Laravel
+    public function update(Request $request, $id) { 
         $user = $request->user();
 
         if (!$user) {
