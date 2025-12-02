@@ -26,13 +26,13 @@ class VerificationController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-             return redirect()->away('https://social-media-0nzo.onrender.com/login?verified=already');
+             return redirect()->away('https://is-207-steel.vercel.app/login?verified=already');
         }
 
         $user->markEmailAsVerified();
         event(new Verified($user));
 
-        return redirect()->away('https://social-media-0nzo.onrender.com/login?verified=success');
+        return redirect()->away('https://is-207-steel.vercel.app/login?verified=success');
     }
     
 }
