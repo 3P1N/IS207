@@ -91,11 +91,11 @@ class PostController extends Controller
                 'message' => 'Unauthorized',
             ], 401);
         }
-        $post = Post::with(['user', 'media', 'comments', 'reactions'])
-            ->whereNull('deleted_at') 
-            ->whereDoesntHave('reports', function($query) use ($userId) {
+        $post = Post:: 
+            whereDoesntHave('reports', function($query) use ($userId) {
                 $query->where('reporter_id', $userId);
             })
+            ->with(['user', 'media'])
             ->withExists([
                     'reactions as is_liked' => function ($q) use ($userId) {
                         $q->where('user_id', $userId);

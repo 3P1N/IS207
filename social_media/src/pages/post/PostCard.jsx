@@ -6,7 +6,7 @@ import { AuthContext } from '../../router/AuthProvider';
 import ImageViewer from '../../shared/components/ImageViewer';
 
 export default function PostCard({ postData, index }) {
-
+    console.log("postData: ", postData);
     const { postsData, setPostsData } = useContext(AuthContext);
     const [selectedImage, setSelectedImage] = useState(null);
     

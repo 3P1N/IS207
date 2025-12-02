@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import PostCard from "./PostCard.jsx";
-import CommentsSection from "./comment_session/CommentsSection.jsx";
+// import CommentsSection from "./comment_session/CommentsSection.jsx";
 import { api } from "../../shared/api.js";
 import NotFoundPage from "../not-found/NotFoundPage.jsx";
 
@@ -34,15 +34,10 @@ export default function PostDetailPage() {
         }
     });
 
-    // --- 3. XỬ LÝ NOT FOUND TỪ DATA ---
-    // Lúc này postData được lấy từ Cache ngay lập tức nếu đã từng load
     if (postData?.isNotFound) {
         return <NotFoundPage />;
     }
 
-    // --- 4. RENDER LOADING ---
-    // Vấn đề 1: Lần đầu tiên truy cập vẫn sẽ hiện Loading (Bắt buộc vì phải chờ server trả lời)
-    // Nhưng các lần sau (Back lại) sẽ không hiện Loading nữa nhờ Cache.
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-[80vh]">
@@ -59,9 +54,8 @@ export default function PostDetailPage() {
     // --- 6. RENDER GIAO DIỆN CHÍNH ---
     return (
         <div className="mt-6 flex flex-col gap-6">
-             <PostCard postData={postData} />
-             {/* Chỉ hiện comment nếu bài viết tồn tại thật */}
-             <CommentsSection postId={postId} />
+             <PostCard postData={postData} postId = {postId}/>
+             
         </div>
     );
 }

@@ -38,6 +38,7 @@ export default function HomePage() {
             console.log("lỗi: ", err);
         } finally {
             setLoading(false);
+            console.log(postsData[1]);
         }
     };
 
@@ -79,12 +80,7 @@ export default function HomePage() {
     }, [nextPageUrl, loading]); // Dependencies giữ nguyên
 
     return (
-        /* 4. Quan trọng về CSS: 
-           - h-[calc(100vh-64px)]: Chiều cao phải cố định. 
-             Ví dụ Navbar cao 64px thì trừ đi 64px để phần này chiếm hết phần còn lại.
-             Nếu Layout cha đã dùng flex-1 thì ở đây chỉ cần h-full.
-           - overflow-y-auto: Để hiện thanh cuộn riêng cho div này.
-        */
+        
         <div 
             ref={scrollContainerRef} 
             className="h-[calc(100vh-64px)] overflow-y-auto w-full flex flex-col items-center gap-4 pb-10"
