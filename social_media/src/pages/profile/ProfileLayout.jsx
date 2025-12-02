@@ -5,15 +5,23 @@ import {
   useQueryClient,
   useMutation,
 } from "@tanstack/react-query";
-import { CircularProgress } from "@mui/material";
+import { 
+    CircularProgress, 
+    Snackbar, 
+    Alert, 
+    Typography, // Import thêm
+    Box,        // Import thêm
+    Button,     // Import thêm Button của MUI để thay thế button thường
+    Menu,       // Import Menu cho dropdown
+    MenuItem    // Import MenuItem
+} from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
-import { Snackbar, Alert } from "@mui/material";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'; // Icon mũi tên
 
 import AvatarUser from "../../shared/components/AvatarUser";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
 import ImageViewer from "../../shared/components/ImageViewer";
-// 1. IMPORT NOT FOUND PAGE
 import NotFoundPage from "../not-found/NotFoundPage";
 
 export default function ProfileLayout() {
@@ -32,7 +40,7 @@ export default function ProfileLayout() {
   const profileId = id ?? userData?.id;
   const isOwnProfile = String(userData?.id) === String(profileId);
 
-  // --- 2. SỬA LOGIC FETCH PROFILE ---
+  // --- LOGIC FETCH PROFILE ---
   const {
     data: profileUser,
     isLoading,
@@ -40,23 +48,19 @@ export default function ProfileLayout() {
   } = useQuery({
     queryKey: ["profileUser", profileId],
     enabled: !!profileId,
-    // Cache kết quả (bao gồm cả kết quả Not Found) trong 5 phút
     staleTime: 5 * 60 * 1000, 
     queryFn: async () => {
       try {
         const res = await api.get(`/users/${profileId}`);
         return res.data.user; 
       } catch (error) {
-        // Nếu 404 -> Trả về data đánh dấu (coi như thành công)
         if (error.response && error.response.status === 404) {
           return { isNotFound: true };
         }
-        // Các lỗi khác thì ném ra để useQuery xử lý isError
         throw error;
       }
     },
     retry: (failureCount, error) => {
-        // Không retry nếu lỗi 404 (dù logic trên đã bắt 404 rồi, thêm vào cho chắc chắn với các edge case)
         if (error.response?.status === 404) return false;
         return failureCount < 3;
     }
@@ -178,14 +182,8 @@ export default function ProfileLayout() {
     unfriendMutation.mutate(profileUser.friendship_id);
   };
 
-  // --- 3. RENDER LOGIC MỚI ---
-  
-  // ƯU TIÊN 1: Kiểm tra Not Found từ Data (để tận dụng Cache)
-  if (profileUser?.isNotFound) {
-    return <NotFoundPage />;
-  }
+  if (profileUser?.isNotFound) return <NotFoundPage />;
 
-  // ƯU TIÊN 2: Loading (chỉ hiện khi lần đầu fetch và chưa có cache)
   if (isLoading) {
     return (
       <div className="p-4 text-sm text-gray-500 flex justify-center pt-10">
@@ -194,7 +192,6 @@ export default function ProfileLayout() {
     );
   }
 
-  // ƯU TIÊN 3: Lỗi thực sự (Mất mạng, 500 Server Error)
   if (isError) {
     return (
       <div className="p-4 text-sm text-red-500 text-center pt-10">
@@ -203,7 +200,6 @@ export default function ProfileLayout() {
     );
   }
 
-  // Nếu code chạy đến đây, chắc chắn profileUser có data hợp lệ
   const showSuggestTab = isOwnProfile;
   const showAddFriendButton = !isOwnProfile;
 
@@ -240,7 +236,6 @@ export default function ProfileLayout() {
   );
 }
 
-// ... (Phần ProfileShell giữ nguyên như cũ, không cần sửa)
 function ProfileShell({
   profileUser,
   showSuggestTab,
@@ -252,11 +247,19 @@ function ProfileShell({
   onAcceptFriend,
   onUnfriend, 
   isFriendActionLoading,
-   
 }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const friendStatus = profileUser?.friend_status; 
-  const [showFriendMenu, setShowFriendMenu] = useState(false);
+  // State cho Menu Dropdown MUI
+  const [anchorEl, setAnchorEl] = useState(null);
+  const showFriendMenu = Boolean(anchorEl);
+
+  const handleFriendMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleFriendMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   return (
     <div className="profile-layout scrollbar-thin">
@@ -323,86 +326,84 @@ function ProfileShell({
             </div>
           </div>
 
-          {/* Info + Nav tab */}
-          <div className="px-4 pt-4 pb-4 sm:px-8 flex flex-col items-center gap-3">
-            <div className="text-center">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {profileUser?.name || "User Name"}
-              </h1>
-              <p className="text-sm text-gray-500">
-                {profileUser?.username
-                  ? `@${profileUser.username}`
-                  : profileUser?.email || "@username"}
-              </p>
+          {/* Info + Nav tab - ĐÃ FIX HIỂN THỊ TÊN */}
+          <div className="px-4 pt-4 pb-4 sm:px-8 flex flex-col items-center gap-2">
+            <Box sx={{ textAlign: 'center' }}>
+              {/* Sử dụng Typography thay vì h1/p để màu sắc tự động theo theme */}
+              <Typography variant="h5" fontWeight="bold" color="text.primary">
+                 {profileUser?.name || "User Name"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                 {profileUser?.username ? `@${profileUser.username}` : profileUser?.email || "@username"}
+              </Typography>
+            </Box>
 
-              {showAddFriendButton && (
-                <>
-                  {friendStatus === "friends" ? (
-                    <div className="relative inline-block mt-3">
-                      {/* Nút chính: Bạn bè */}
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 shadow disabled:opacity-70"
-                        onClick={() => setShowFriendMenu((prev) => !prev)}
+            {showAddFriendButton && (
+              <Box sx={{ mt: 1 }}>
+                {friendStatus === "friends" ? (
+                  <>
+                    {/* Button Bạn bè dùng MUI */}
+                    <Button 
+                        variant="contained" 
+                        color="inherit" 
+                        onClick={handleFriendMenuClick}
                         disabled={isFriendActionLoading}
-                      >
-                        Bạn bè
-                        <span className="text-xs">▼</span>
-                      </button>
+                        endIcon={<ExpandMoreIcon />}
+                        sx={{ textTransform: 'none', borderRadius: 20, bgcolor: 'action.selected' }}
+                    >
+                      Bạn bè
+                    </Button>
 
-                      {/* Menu popup: Hủy kết bạn */}
-                      {showFriendMenu && (
-                        <div
-                          className="absolute left-1/2 -translate-x-1/2 mt-2 w-40 rounded-xl bg-white shadow-lg ring-1 ring-black/5 z-20 text-sm text-gray-700"
-                        >
-                          <button
-                            type="button"
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-xl disabled:opacity-70"
-                            onClick={() => {
-                              onUnfriend?.();
-                              setShowFriendMenu(false);
-                            }}
-                            disabled={isFriendActionLoading}
-                          >
-                            {isFriendActionLoading ? "Đang hủy..." : "Hủy kết bạn"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : friendStatus === "outgoing_request" ? (
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 shadow"
-                      disabled
+                    {/* Menu Popup MUI (Thay thế div menu cũ) */}
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={showFriendMenu}
+                        onClose={handleFriendMenuClose}
                     >
-                      Đã gửi lời mời
-                    </button>
-                  ) : friendStatus === "incoming_request" ? (
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-500 disabled:opacity-70"
-                      onClick={onAcceptFriend}
-                      disabled={isFriendActionLoading}
-                    >
-                      {isFriendActionLoading
-                        ? "Đang xử lý..."
-                        : "Xác nhận lời mời"}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-800 active:scale-[0.98] transition disabled:opacity-70"
-                      onClick={onAddFriend}
-                      disabled={isFriendActionLoading}
-                    >
-                      {isFriendActionLoading
-                        ? "Đang gửi..."
-                        : "Thêm bạn bè"}
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+                        <MenuItem onClick={() => {
+                            onUnfriend?.();
+                            handleFriendMenuClose();
+                        }} sx={{ color: 'error.main' }}>
+                            {isFriendActionLoading ? "Đang xử lý..." : "Hủy kết bạn"}
+                        </MenuItem>
+                    </Menu>
+                  </>
+                ) : friendStatus === "outgoing_request" ? (
+                  <Button 
+                    variant="contained" 
+                    disabled 
+                    sx={{ textTransform: 'none', borderRadius: 20 }}
+                  >
+                    Đã gửi lời mời
+                  </Button>
+                ) : friendStatus === "incoming_request" ? (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={onAcceptFriend}
+                    disabled={isFriendActionLoading}
+                    sx={{ textTransform: 'none', borderRadius: 20 }}
+                  >
+                    {isFriendActionLoading ? "Đang xử lý..." : "Xác nhận lời mời"}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    sx={{ 
+                        textTransform: 'none', 
+                        borderRadius: 20, 
+                        bgcolor: 'text.primary', 
+                        color: 'background.paper',
+                        '&:hover': { bgcolor: 'text.secondary' }
+                    }}
+                    onClick={onAddFriend}
+                    disabled={isFriendActionLoading}
+                  >
+                    {isFriendActionLoading ? "Đang gửi..." : "Thêm bạn bè"}
+                  </Button>
+                )}
+              </Box>
+            )}
 
             {/* Nav tab */}
             <nav className="profile-tabs flex gap-4 border-b border-gray-200 dark:border-gray-700 w-full justify-center mt-4">
