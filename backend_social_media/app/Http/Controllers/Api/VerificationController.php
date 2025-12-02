@@ -26,7 +26,7 @@ class VerificationController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-             return redirect()->away('https://social-media-0nzo.onrender.com//login?verified=already');
+             return redirect()->away('https://social-media-0nzo.onrender.com/login?verified=already');
         }
 
         $user->markEmailAsVerified();
