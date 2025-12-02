@@ -12,7 +12,9 @@ import {
   Divider,
   Stack,
   CircularProgress,
+  Chip
 } from "@mui/material";
+
 import { Feed, Person, Tune } from "@mui/icons-material";
 // 1. Import React Query
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +26,51 @@ import FriendCard from "../profile/FriendCard";
 function useQueryParam() {
   const location = useLocation();
   return new URLSearchParams(location.search);
+}
+
+function MobileFilter({ keyword, currentType }) {
+  const navigate = useNavigate();
+
+  const go = (type) =>
+    navigate(`/search?query=${encodeURIComponent(keyword)}&type=${type}`);
+
+  return (
+    <Stack
+      direction="row"
+      spacing={1}
+      sx={{
+        mb: 2,
+        display: { xs: "flex", md: "none" }, // Chỉ hiện trên Mobile
+        overflowX: "auto", // Cho phép cuộn ngang nếu quá dài
+        pb: 0.5 // Padding bottom để thanh cuộn không dính sát
+      }}
+    >
+      <Chip
+        icon={<Tune />}
+        label="Tất cả"
+        clickable
+        color={currentType === "all" ? "primary" : "default"}
+        variant={currentType === "all" ? "filled" : "outlined"}
+        onClick={() => go("all")}
+      />
+      <Chip
+        icon={<Feed />}
+        label="Bài viết"
+        clickable
+        color={currentType === "posts" ? "primary" : "default"}
+        variant={currentType === "posts" ? "filled" : "outlined"}
+        onClick={() => go("posts")}
+      />
+      <Chip
+        icon={<Person />}
+        label="Mọi người"
+        clickable
+        color={currentType === "people" ? "primary" : "default"}
+        variant={currentType === "people" ? "filled" : "outlined"}
+        onClick={() => go("people")}
+      />
+    </Stack>
+  );
 }
 
 // Giữ lại helper này nếu bạn muốn highlight từ khóa sau này
@@ -45,7 +92,7 @@ const highlight = (text, kw) => {
 function FilterSidebar({ keyword }) {
   const navigate = useNavigate();
   const query = useQueryParam();
-  
+
   // Hàm chuyển hướng giữ nguyên logic
   const go = (type) =>
     navigate(`/search?query=${encodeURIComponent(keyword)}&type=${type}`);
@@ -94,7 +141,7 @@ function PeopleSection({ keyword }) {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["search", "people", keyword], // Key phụ thuộc vào keyword
     queryFn: async () => {
-     
+
       const response = await api.get(`/users?search=${keyword}`);
       return response.data;
     },
@@ -105,16 +152,16 @@ function PeopleSection({ keyword }) {
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 3 }}>
-         <CircularProgress size={20} /> <Typography>Đang tìm người dùng...</Typography>
+        <CircularProgress size={20} /> <Typography>Đang tìm người dùng...</Typography>
       </Box>
     );
   }
 
   if (!users.length) {
     return (
-        <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-            <Typography color="text.secondary">Không tìm thấy người dùng nào phù hợp.</Typography>
-        </Box>
+      <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+        <Typography color="text.secondary">Không tìm thấy người dùng nào phù hợp.</Typography>
+      </Box>
     );
   }
 
@@ -149,11 +196,11 @@ function PostsSection({ keyword }) {
   const { data: postData = [], isLoading } = useQuery({
     queryKey: ["search", "posts", keyword],
     queryFn: async () => {
-   
+
       const response = await api.get(`/posts?search=${keyword}`);
       // Lưu ý: API của bạn trả về response.data.data trong code cũ
       // Nếu API trả về trực tiếp mảng thì bỏ .data cuối đi nhé
-      return response.data.data || response.data; 
+      return response.data.data || response.data;
     },
     enabled: !!keyword,
     staleTime: 300 * 1000,
@@ -161,17 +208,17 @@ function PostsSection({ keyword }) {
 
   if (isLoading) {
     return (
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 3 }}>
-           <CircularProgress size={20} /> <Typography>Đang tìm bài viết...</Typography>
-        </Box>
-      );
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 3 }}>
+        <CircularProgress size={20} /> <Typography>Đang tìm bài viết...</Typography>
+      </Box>
+    );
   }
 
   if (!postData.length) {
     return (
-        <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-            <Typography color="text.secondary">Không tìm thấy bài viết nào.</Typography>
-        </Box>
+      <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+        <Typography color="text.secondary">Không tìm thấy bài viết nào.</Typography>
+      </Box>
     );
   }
 
@@ -202,6 +249,7 @@ export default function SearchResultPage() {
       <Typography variant="h5" fontWeight="bold" sx={{ mb: 1.5 }}>
         Kết quả tìm kiếm cho: "{keyword}"
       </Typography>
+      <MobileFilter keyword={keyword} currentType={type} />
 
       <Grid container spacing={2}>
         {/* Sidebar bộ lọc */}
@@ -220,15 +268,15 @@ export default function SearchResultPage() {
           {(type === "all" || type === "people") && (
             <PeopleSection keyword={keyword} />
           )}
-          
+
           {(type === "all" || type === "people") && (type === "all" || type === "posts") && (
-             <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2 }} />
           )}
 
           {(type === "all" || type === "posts") && (
             <PostsSection keyword={keyword} />
           )}
-          
+
           <Divider sx={{ my: 2 }} />
         </Grid>
 

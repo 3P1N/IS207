@@ -24,8 +24,7 @@ import {
     AddCircle,
     AdminPanelSettings,
     Menu as MenuIcon,
-    Close as CloseIcon,
-    Person
+    Close as CloseIcon
 } from "@mui/icons-material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AvatarUser from "./AvatarUser";
@@ -40,13 +39,11 @@ export default function Navbar() {
     const { userData } = useContext(AuthContext);
     
     const theme = useTheme();
-    // Mobile = màn hình nhỏ hơn 'md' (900px)
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
     const handleKeyPress = (e) => {
         if (e.key === "Enter" && keyword.trim() !== "") {
             navigate(`/search?query=${encodeURIComponent(keyword.trim())}`);
-            // Không cần đóng menu vì search bar nằm ngoài
         }
     };
 
@@ -54,7 +51,6 @@ export default function Navbar() {
         setMobileOpen(!mobileOpen);
     };
 
-    // --- NỘI DUNG MENU MOBILE (Chỉ chứa Nav Links & User Info) ---
     const drawerContent = (
         <Box sx={{ width: 280, p: 2 }} role="presentation">
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -66,7 +62,6 @@ export default function Navbar() {
                 </IconButton>
             </Box>
 
-            {/* Info User */}
             <Box 
                 sx={{ 
                     display: "flex", alignItems: "center", gap: 1.5, mb: 2, p: 1.5, 
@@ -92,7 +87,6 @@ export default function Navbar() {
             
             <Divider sx={{ mb: 2 }} />
 
-            {/* Navigation List */}
             <List>
                 <ListItem disablePadding>
                     <ListItemButton component={RouterLink} to="/" onClick={handleDrawerToggle}>
@@ -100,21 +94,18 @@ export default function Navbar() {
                         <ListItemText primary="Trang chủ" />
                     </ListItemButton>
                 </ListItem>
-
                 <ListItem disablePadding>
                     <ListItemButton component={RouterLink} to="/message" onClick={handleDrawerToggle}>
                         <ListItemIcon><Message color="primary" /></ListItemIcon>
                         <ListItemText primary="Tin nhắn" />
                     </ListItemButton>
                 </ListItem>
-
                 <ListItem disablePadding>
                     <ListItemButton component={RouterLink} to="/create-post" onClick={handleDrawerToggle}>
                         <ListItemIcon><AddCircle color="primary" /></ListItemIcon>
                         <ListItemText primary="Tạo bài viết" />
                     </ListItemButton>
                 </ListItem>
-
                 {userData?.role === "admin" && (
                     <ListItem disablePadding>
                         <ListItemButton component={RouterLink} to="/admin" onClick={handleDrawerToggle}>
@@ -127,7 +118,6 @@ export default function Navbar() {
             
             <Divider sx={{ my: 2 }} />
             
-            {/* Settings */}
              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                  <SettingDropdown />
             </Box>
@@ -136,14 +126,12 @@ export default function Navbar() {
 
     return (
         <AppBar position="sticky" color="default" elevation={1} sx={{ bgcolor: 'background.paper' }}>
-            <Toolbar sx={{ display: 'flex', gap: 1 }}>
+            {/* Thêm justifyContent: 'space-between' để đảm bảo Logo và Nút luôn ở 2 đầu nếu ở giữa rỗng */}
+            <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
                 
-                {/* 1. LOGO */}
-                {/* Trên màn hình siêu nhỏ (xs), có thể ẩn chữ Social Media đi để nhường chỗ cho Search nếu cần. 
-                    Ở đây tôi dùng display: { xs: 'none', sm: 'block' } cho text. */}
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {/* 1. LOGO (Bên trái) */}
+                <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 'fit-content' }}>
                     <IconButton component={RouterLink} to="/" color="primary" sx={{ p: 0, mr: 1 }}>
-                        {/* Nếu bạn có Logo dạng ảnh/icon thì đặt ở đây */}
                         <Home fontSize="large" /> 
                     </IconButton>
                     <Typography
@@ -154,7 +142,7 @@ export default function Navbar() {
                             textDecoration: "none",
                             color: "primary.main",
                             fontWeight: "bold",
-                            display: { xs: 'none', sm: 'block' }, // Ẩn chữ trên mobile để search bar dài ra
+                            display: { xs: 'none', sm: 'block' },
                             whiteSpace: 'nowrap'
                         }}
                     >
@@ -162,70 +150,73 @@ export default function Navbar() {
                     </Typography>
                 </Box>
 
-                {/* 2. SEARCH BAR - LUÔN HIỆN VÀ CO GIÃN (FLEX 1) */}
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : '#f0f2f5',
-                        borderRadius: 5,
-                        px: 1.5,
-                        py: 0.5,
-                        flex: 1, // Quan trọng: Chiếm hết khoảng trống còn lại
-                        maxWidth: '600px', // Giới hạn chiều rộng tối đa trên desktop
-                        mx: { xs: 1, md: 4 } // Margin trái phải tùy màn hình
-                    }}
-                >
-                    <Search sx={{ color: "text.secondary", mr: 1 }} />
-                    <InputBase
-                        placeholder={isMobile ? "Tìm kiếm..." : "Tìm kiếm bạn bè hoặc bài viết..."}
-                        value={keyword}
-                        onChange={(e) => setKeyword(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        sx={{ flex: 1 }}
-                    />
+                {/* 2. SEARCH BAR WRAPPER (Ở giữa) */}
+                {/* Box này có flex: 1 để chiếm hết khoảng trống, đẩy Nav Buttons về sát phải */}
+                <Box sx={{ 
+                    flex: 1, 
+                    display: 'flex', 
+                    justifyContent: 'center', // Canh giữa thanh tìm kiếm trong khoảng trống này
+                    px: { xs: 1, md: 4 }      // Padding ngang để không dính vào Logo/Icon
+                }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : '#f0f2f5',
+                            borderRadius: 5,
+                            px: 1.5,
+                            py: 0.5,
+                            width: "100%",        // Chiếm hết chiều rộng của Wrapper
+                            maxWidth: '600px',    // Nhưng không quá 600px
+                        }}
+                    >
+                        <Search sx={{ color: "text.secondary", mr: 1 }} />
+                        <InputBase
+                            placeholder={isMobile ? "Tìm kiếm..." : "Tìm kiếm bạn bè hoặc bài viết..."}
+                            value={keyword}
+                            onChange={(e) => setKeyword(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            sx={{ flex: 1 }}
+                        />
+                    </Box>
                 </Box>
 
-                {/* 3. NAVIGATION BUTTONS */}
-                {/* Desktop: Hiện full icon */}
-                {!isMobile && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <IconButton component={RouterLink} to="/" color="primary">
-                            <Home />
-                        </IconButton>
-
-                        <IconButton component={RouterLink} to="/message" color="primary">
-                            <Message />
-                        </IconButton>
-                        <IconButton component={RouterLink} to="/create-post" color="primary">
-                            <AddCircle />
-                        </IconButton>
-                        {userData?.role === "admin" && (
-                            <IconButton component={RouterLink} to="/admin" color="primary">
-                                <AdminPanelSettings />
+                {/* 3. NAVIGATION BUTTONS (Bên phải) */}
+                {/* Box này sẽ tự động nằm sát phải nhờ flex:1 của Box ở giữa */}
+                <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 'fit-content' }}>
+                    {!isMobile ? (
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <IconButton component={RouterLink} to="/" color="primary">
+                                <Home />
                             </IconButton>
-                        )}
 
-                        <SettingDropdown />
-                        <AvatarUser userData={userData} />
-                    </Box>
-                )}
+                            <IconButton component={RouterLink} to="/message" color="primary">
+                                <Message />
+                            </IconButton>
+                            <IconButton component={RouterLink} to="/create-post" color="primary">
+                                <AddCircle />
+                            </IconButton>
+                            {userData?.role === "admin" && (
+                                <IconButton component={RouterLink} to="/admin" color="primary">
+                                    <AdminPanelSettings />
+                                </IconButton>
+                            )}
 
-                {/* Mobile: Hiện Hamburger Menu */}
-                {isMobile && (
-                    <IconButton
-                        color="inherit"
-                        edge="end"
-                        onClick={handleDrawerToggle}
-                    >
-                        {/* Có thể dùng Avatar của User làm nút mở menu thay vì icon 3 gạch */}
-                        {/* <AvatarUser userData={userData} /> */} 
-                        <MenuIcon />
-                    </IconButton>
-                )}
+                            <SettingDropdown />
+                            <AvatarUser userData={userData} />
+                        </Box>
+                    ) : (
+                        <IconButton
+                            color="inherit"
+                            edge="end"
+                            onClick={handleDrawerToggle}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    )}
+                </Box>
             </Toolbar>
 
-            {/* DRAWER */}
             <Drawer
                 anchor="right"
                 open={mobileOpen}
