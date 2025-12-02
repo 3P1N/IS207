@@ -6,7 +6,7 @@ window.Pusher = Pusher;
 
 // 🟢 Bật log ra console để debug (giống đoạn script HTML mẫu)
 // Bạn nên comment dòng này lại khi lên production
-Pusher.logToConsole = true;
+// Pusher.logToConsole = true;
 
 export function createEcho() {
   const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
