@@ -55,7 +55,7 @@ export default function PostCreate() {
         const results = await Promise.all(uploadPromises);
         const urls = results.map(r => r.secure_url);
         setUrlMedia(urls);   // vẫn update state nếu muốn UI
-        
+
         return urls;          // ✅ return để dùng ngay
     };
 
@@ -86,8 +86,9 @@ export default function PostCreate() {
         setMediaFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
     };
     // Hàm xử lý việc gửi bài viết (trong thực tế sẽ là API call)
+    // Hàm xử lý việc gửi bài viết
     const handlePost = async () => {
-        if (!postContent.trim()) {
+        if (!postContent.trim() ) {
             alert("Vui lòng nhập nội dung");
             return;
         }
@@ -95,12 +96,19 @@ export default function PostCreate() {
         setLoadingPost(true);
 
         try {
-            // upload file, nhận array URL đầy đủ
-            const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
+            let uploadedUrls = []; // Mặc định là mảng rỗng
 
-            // gửi post cùng array URL
+            // CHỈ UPLOAD NẾU CÓ FILE TRONG LIST
+            if (mediaFiles.length > 0) {
+                uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
+            }
+
+            // Gửi post: nếu không có file, uploadedUrls sẽ gửi lên là []
+            // Backend của bạn nên handle trường hợp media_url là mảng rỗng
             const newPost = await uploadPost(uploadedUrls);
-            setPostsData(prev => [newPost,...postsData]);
+
+            setPostsData(prev => [newPost, ...postsData]);
+
             // reset form
             setPostContent('');
             setMediaFiles([]);
@@ -170,7 +178,7 @@ export default function PostCreate() {
                         <div className="flex items-start gap-4 pt-4">
                             <div>
                                 <AvatarUser userData={userData} />
-                                 <p className="font-bold text-[#1C1E21] dark:text-white">{userData.name}</p>
+                                <p className="font-bold text-[#1C1E21] dark:text-white">{userData.name}</p>
                             </div>
                         </div>
 
@@ -219,21 +227,33 @@ export default function PostCreate() {
                         </div>
 
                         {/* Media Preview */}
+                        {/* Media Preview */}
                         {mediaFiles.length > 0 && (
                             <div className={`mt-4 grid gap-2 ${mediaFiles.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                 {mediaFiles.map((media, index) => (
-                                    <div key={index} className="relative group">
-                                        {/* Hiển thị dựa trên loại file (Chỉ xử lý ảnh ở đây, video cần tag <video>) */}
-                                        <div
-                                            className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg"
-                                            data-alt={media.alt}
-                                            style={{ backgroundImage: `url("${media.url}")` }}
-                                        />
+                                    <div key={index} className="relative group w-full aspect-video bg-black rounded-lg overflow-hidden">
+
+                                        {/* Logic hiển thị Ảnh hoặc Video */}
+                                        {media.type === 'video' ? (
+                                            <video
+                                                src={media.url}
+                                                className="w-full h-full object-cover"
+                                                controls
+                                            />
+                                        ) : (
+                                            <img
+                                                src={media.url}
+                                                alt={media.alt}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )}
+
+                                        {/* Nút xóa */}
                                         <button
-                                            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 z-10"
                                             onClick={() => handleRemoveMedia(index)}
                                         >
-                                            <span className="material-symbols-outlined text-base">close</span>
+                                            <span className="material-symbols-outlined text-base block">close</span>
                                         </button>
                                     </div>
                                 ))}

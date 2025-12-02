@@ -59,26 +59,44 @@ class PostController extends Controller
 
     public function store(Request $request){
         $user = $request->user();
+
         if (!$user) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
+
+        // 1. Validate dữ liệu
         $validated = $request->validate([
-            'content' => 'required|string', // bắt buộc, phải là chuỗi
-            'media_url' => 'sometimes|string|nullable'
+            'content'   => 'nullable|string',        // Cho phép null (nếu chỉ đăng ảnh)
+            'media_url' => 'nullable|array',         // Phải là mảng (vì frontend gửi mảng urls)
+            'media_url.*' => 'string',               // Các phần tử trong mảng phải là chuỗi (URL)
         ]);
 
+        // 2. Kiểm tra logic: Phải có ít nhất Content HOẶC Media
+        // Nếu cả 2 đều trống thì báo lỗi
+        $hasContent = !empty($request->input('content'));
+        $hasMedia   = !empty($request->input('media_url')) && count($request->input('media_url')) > 0;
+
+        if (!$hasContent && !$hasMedia) {
+            return response()->json([
+                'message' => 'Bạn phải nhập nội dung hoặc chọn ảnh/video'
+            ], 422);
+        }
+
+        // 3. Tạo Post
         $post = Post::create([
             'user_id' => $user->id,
-            'content' => $request->input('content'),
-            
+            'content' => $request->input('content'), // Nếu null thì lưu null (DB cột content phải allow NULL)
         ]);
 
-        if ($request->has('media_url') && !empty($request->input('media_url'))){
+        // 4. Lưu Media (Gọi sang MediaController nếu có dữ liệu)
+        // Frontend gửi mảng rỗng [] thì $hasMedia sẽ là false -> không chạy vào đây -> không lỗi
+        if ($hasMedia) {
+            // Lưu ý: Đảm bảo hàm store bên MediaController xử lý được mảng media_url từ $request
             (new MediaController)->store($request, $post->id);
         }
-        $post->load('media','user');
+
+        // 5. Load quan hệ để trả về frontend hiển thị ngay
+        $post->load('media', 'user');
 
         return response()->json($post, 201);
     }
