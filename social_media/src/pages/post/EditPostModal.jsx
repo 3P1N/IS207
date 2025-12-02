@@ -16,25 +16,36 @@ import {
 } from "@mui/material";
 
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
-import CloseIcon from '@mui/icons-material/Close'; // Import icon đóng cho ảnh
+import CloseIcon from '@mui/icons-material/Close'; 
 import { AuthContext } from '../../router/AuthProvider';
 import { api } from '../../shared/api';
 import AvatarUser from '../../shared/components/AvatarUser';
 
 export default function EditPostModal({ postData, postIndex, onClose }) {
-    const { userData } = useContext(AuthContext);
-    const theme = useTheme(); // Hook lấy theme để xử lý màu sắc động
+    // 1. Thêm setPostsData vào useContext
+    const { userData, setPostsData } = useContext(AuthContext);
+    const theme = useTheme(); 
 
     const [postContent, setPostContent] = useState(postData.content || '');
-    const [mediaFiles, setMediaFiles] = useState(postData.media?.map(url => ({ file: null, url: url.media_url, type: 'image' })) || []);
-    const [urlMedia, setUrlMedia] = useState([]); // Biến này có vẻ chưa dùng tới trong render, nhưng giữ nguyên logic cũ
+    // Logic map media cũ
+    const [mediaFiles, setMediaFiles] = useState(postData.media?.map(url => ({ 
+        file: null, 
+        url: url.media_url, 
+        type: url.media_url.includes('.mp4') ? 'video' : 'image' // Check đơn giản đuôi file hoặc logic backend trả về type
+    })) || []);
+    
+    const [urlMedia, setUrlMedia] = useState([]); 
     const [loading, setLoading] = useState(false);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
 
     useEffect(() => {
         setPostContent(postData.content || '');
-        setMediaFiles(postData.media?.map(url => ({ file: null, url: url.media_url, type: 'image' })) || []);
+        setMediaFiles(postData.media?.map(url => ({ 
+            file: null, 
+            url: url.media_url, 
+            type: 'image' 
+        })) || []);
     }, [postData]);
 
     const handleClose = () => {
@@ -43,7 +54,7 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
     const uploadMultipleFilesParallel = async (files) => {
         const uploadPromises = files
-            .filter(f => f.file) // chỉ upload file mới
+            .filter(f => f.file) 
             .map(file => {
                 const formData = new FormData();
                 formData.append('file', file.file);
@@ -57,9 +68,10 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
         const results = await Promise.all(uploadPromises);
         const newUrls = results.map(r => r.secure_url);
+        // Lọc lấy url của các ảnh cũ (không có file object)
         const existingUrls = files.filter(f => !f.file).map(f => f.url);
-        const urls = [...existingUrls, ...newUrls];
-        setUrlMedia(urls);
+        const urls = [...existingUrls, ...newUrls]; // Ghép ảnh cũ + ảnh mới
+        
         return urls;
     };
 
@@ -84,7 +96,6 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
     const handleSave = async () => {
         if (!postContent.trim() && mediaFiles.length === 0) {
-            // Thay alert bằng snackbar cho đẹp
             setSnackbarMessage("Vui lòng nhập nội dung hoặc thêm ảnh/video.");
             setSnackbarOpen(true);
             return;
@@ -94,10 +105,31 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
         try {
             const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
-            // const response = 
-            await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls });
-            // const editPost = response.data.post; 
             
+            // 2. Gọi API update
+            const response = await api.put(`/posts/${postData.id}`, { 
+                content: postContent, 
+                media_url: uploadedUrls 
+            });
+            
+            // 3. Lấy dữ liệu post mới từ response (Backend trả về { message, post })
+            const updatedPost = response.data.post;
+
+            // 4. Cập nhật ngay lập tức vào Context để UI render lại
+            setPostsData(prevPosts => {
+                const newPosts = [...prevPosts];
+                // Cập nhật đúng vị trí index đang sửa
+                if (newPosts[postIndex]) {
+                    newPosts[postIndex] = {
+                        ...newPosts[postIndex], // Giữ các props cũ nếu cần
+                        ...updatedPost,          // Ghi đè bằng data mới từ server
+                        // Đảm bảo user object không bị mất nếu backend không trả về full user relation
+                        user: newPosts[postIndex].user 
+                    };
+                }
+                return newPosts;
+            });
+
             setSnackbarMessage("Cập nhật bài viết thành công!");
             setSnackbarOpen(true);
             
@@ -116,22 +148,23 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
     const isSaveDisabled = !postContent.trim() && mediaFiles.length === 0;
 
     return (
+        // ... (Giữ nguyên phần return UI như cũ)
         <>
             <Dialog 
                 open={true} 
                 onClose={handleClose} 
                 fullWidth 
                 maxWidth="sm"
-                // PaperProps giúp Dialog tự động đổi màu nền theo Theme (Light/Dark)
                 PaperProps={{
-                    sx: { backgroundImage: 'none' } // Tắt gradient mặc định nếu ở dark mode (tuỳ chọn)
+                    sx: { backgroundImage: 'none' } 
                 }}
             >
+                {/* ... UI code ... */}
                 {loading && (
                     <Box sx={{
                         position: 'absolute', inset: 0, zIndex: 50,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        bgcolor: 'rgba(0, 0, 0, 0.3)' // Thay class bg-black/30 bằng rgba an toàn
+                        bgcolor: 'rgba(0, 0, 0, 0.3)' 
                     }}>
                         <CircularProgress color="primary" />
                     </Box>
@@ -140,17 +173,16 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                 <DialogTitle>Edit Post</DialogTitle>
                 
                 <DialogContent dividers>
-                    {/* Header User */}
+                   {/* ... UI code ... */}
+                   {/* Header User */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                         <AvatarUser userData={userData} />
-                        {/* Thay thế class text-[#1C1E21] dark:text-white bằng color="text.primary" */}
                         <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
                             {userData.name}
                         </Typography>
                     </Box>
 
                     {/* Textarea */}
-                    {/* Thay thẻ <textarea> thường bằng Box component="textarea" để dùng được sx prop */}
                     <Box
                         component="textarea"
                         placeholder={`What's on your mind, ${userData.name}?`}
@@ -163,7 +195,6 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                             border: 'none',
                             outline: 'none',
                             bgcolor: 'transparent',
-                            // --- FIX MÀU CHỮ Ở ĐÂY ---
                             color: 'text.primary', 
                             fontSize: '1rem',
                             fontFamily: 'inherit',
@@ -174,7 +205,7 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                         }}
                     />
 
-                    {/* Media Upload Button */}
+                    {/* Media Upload & Preview */}
                     <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                         <input
                             type="file"
@@ -191,35 +222,40 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                         </Tooltip>
                     </Box>
 
-                    {/* Media Preview Grid */}
                     {mediaFiles.length > 0 && (
                         <Box sx={{ mt: 2, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
                             {mediaFiles.map((media, index) => (
                                 <Box key={index} sx={{ position: 'relative', '&:hover .delete-btn': { opacity: 1 } }}>
-                                    <Box
-                                        sx={{
-                                            width: '100%',
-                                            aspectRatio: '16/9',
-                                            borderRadius: 2,
-                                            backgroundSize: 'cover',
-                                            backgroundPosition: 'center',
-                                            backgroundImage: `url("${media.url}")`,
-                                            border: '1px solid',
-                                            borderColor: 'divider'
-                                        }}
-                                    />
+                                    {/* Handle Video Preview if needed */}
+                                    {media.type === 'video' ? (
+                                        <video 
+                                            src={media.url} 
+                                            className="w-full aspect-video object-cover rounded-lg border border-divider"
+                                            controls={false} // Preview thumbnail thôi
+                                        />
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                width: '100%',
+                                                aspectRatio: '16/9',
+                                                borderRadius: 2,
+                                                backgroundSize: 'cover',
+                                                backgroundPosition: 'center',
+                                                backgroundImage: `url("${media.url}")`,
+                                                border: '1px solid',
+                                                borderColor: 'divider'
+                                            }}
+                                        />
+                                    )}
+                                    
                                     <IconButton
                                         className="delete-btn"
                                         size="small"
                                         onClick={() => handleRemoveMedia(index)}
                                         sx={{
-                                            position: 'absolute',
-                                            top: 8,
-                                            right: 8,
-                                            bgcolor: 'rgba(0,0,0,0.6)',
-                                            color: 'white',
-                                            opacity: 0,
-                                            transition: 'opacity 0.2s',
+                                            position: 'absolute', top: 8, right: 8,
+                                            bgcolor: 'rgba(0,0,0,0.6)', color: 'white',
+                                            opacity: 0, transition: 'opacity 0.2s',
                                             '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' }
                                         }}
                                     >
@@ -233,12 +269,11 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
                 <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
                     <Button onClick={handleClose} color="inherit">Cancel</Button>
-                    {/* Thay class Tailwind bg-blue-600 bằng variant="contained" của MUI */}
                     <Button
                         variant="contained"
                         disabled={isSaveDisabled}
                         onClick={handleSave}
-                        color="primary" // Tự động dùng màu xanh của theme
+                        color="primary"
                     >
                         Save
                     </Button>
