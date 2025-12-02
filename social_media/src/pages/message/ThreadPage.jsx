@@ -7,11 +7,13 @@ import { PersonAdd } from "@mui/icons-material";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import { AuthContext } from "../../router/AuthProvider";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../shared/api";
 // import { VideoCallContext } from "../../router/VideoCallProvider"; 
 import NotFoundPage from "../not-found/NotFoundPage";
 import ParticipantsModal from "./ParticipantsModal";
 import AddMemberModal from "./AddMemberModal";
+import { ArrowBack } from "@mui/icons-material";
 
 export default function ThreadPage() {
   const { threadId } = useParams();
@@ -19,6 +21,7 @@ export default function ThreadPage() {
   const meId = userData ? userData.id : null;
   const queryClient = useQueryClient();
   const containerRef = useRef(null);
+  const navigate = useNavigate();
 
   const prevScrollHeightRef = useRef(0);
   const isAutoScrollRef = useRef(true);
@@ -81,8 +84,8 @@ export default function ThreadPage() {
     if (!data) return [];
     // Lọc bỏ trang lỗi nếu có
     return data.pages
-        .filter(page => !page.isAccessDenied)
-        .flatMap((page) => page.messages.data);
+      .filter(page => !page.isAccessDenied)
+      .flatMap((page) => page.messages.data);
   }, [data]);
 
   const participants = conversationInfo?.participants || [];
@@ -214,7 +217,7 @@ export default function ThreadPage() {
     queryClient.setQueryData(["messages", threadId], (oldData) => {
       if (!oldData) return oldData;
       const newPages = [...oldData.pages];
-      if(newPages[0].isAccessDenied) return oldData; 
+      if (newPages[0].isAccessDenied) return oldData;
       const firstPage = { ...newPages[0] };
       if (firstPage.messages.data.some(m => m.id === newMessage.id)) return oldData;
       firstPage.messages = { ...firstPage.messages, data: [newMessage, ...firstPage.messages.data] };
@@ -259,12 +262,12 @@ export default function ThreadPage() {
 
 
   // --- SỬA LỖI 3: CHUYỂN LOGIC RETURN XUỐNG DƯỚI CÙNG ---
-  
+
   // Kiểm tra Access Denied
   if (firstPageData?.isAccessDenied) {
     return <NotFoundPage />;
   }
-  
+
   // Kiểm tra Error (500, network...)
   if (isError) {
     return (
@@ -276,11 +279,11 @@ export default function ThreadPage() {
 
   // Kiểm tra Loading Lần đầu (quan trọng để tránh render UI khi chưa có data)
   if (loadingMessage && !data) {
-     return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <CircularProgress /> <Typography ml={2}>Đang tải cuộc trò chuyện...</Typography>
-        </Box>
-     )
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress /> <Typography ml={2}>Đang tải cuộc trò chuyện...</Typography>
+      </Box>
+    )
   }
 
   // --- RENDER MAIN UI ---
@@ -289,6 +292,12 @@ export default function ThreadPage() {
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", bgcolor: "#fafafa", borderRadius: 2, p: 2 }}>
         {/* HEADER */}
         <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #eee', pb: 1 }}>
+          <IconButton
+            onClick={() => navigate('/message')} // Quay về trang danh sách
+            sx={{ display: { xs: 'flex', md: 'none' } }} // Ẩn trên desktop
+          >
+            <ArrowBack />
+          </IconButton>
           <ButtonBase onClick={() => setIsParticipantsOpen(true)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', borderRadius: 1, p: 0.5, px: 1, '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' } }}>
             <Typography variant="h6" sx={{ color: "primary.main", fontWeight: 'bold' }}>
               {displayInfo.name}
