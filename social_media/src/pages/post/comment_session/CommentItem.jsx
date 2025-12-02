@@ -20,6 +20,7 @@ import SendIcon from "@mui/icons-material/Send";
 import CommentReactionsListModal from "../reaction/CommentReactionsListModal";
 import { api } from "../../../shared/api";
 import { AuthContext } from "../../../router/AuthProvider";
+import AvatarUser from "../../../shared/components/AvatarUser";
 
 export default function CommentItem({ comment, setComments, postId }) {
     const { userData } = useContext(AuthContext);
@@ -134,11 +135,31 @@ export default function CommentItem({ comment, setComments, postId }) {
 
     return (
         <Box sx={{ display: "flex", gap: 1.5, mb: 2, width: "100%" }}>
-            <Avatar
-                src={comment.user?.avatarUrl || "/default-avatar.png"}
-                alt={comment.user?.name}
-                sx={{ width: 32, height: 32 }}
-            />
+            <Box
+                sx={{
+                    // 1. Định vị kích thước container ngoài cùng
+                    width: 32,
+                    height: 32,
+
+                    // 2. Can thiệp sâu (deep selector) vào IconButton của AvatarUser
+                    // Vì AvatarUser trả về IconButton, ta cần loại bỏ padding để nó không bị to ra
+                    "& .MuiIconButton-root": {
+                        p: 0,           // Xóa padding mặc định của IconButton
+                        width: 32,      // Ép kích thước nút bấm
+                        height: 32,
+                    },
+
+                    // 3. Can thiệp vào Avatar bên trong IconButton
+                    "& .MuiAvatar-root": {
+                        width: 32,      // Ép kích thước ảnh
+                        height: 32,
+                        fontSize: "0.8rem" // Chỉnh font chữ nếu avatar hiển thị ký tự thay vì ảnh
+                    }
+                }}
+            >
+                {/* Truyền prop đúng theo yêu cầu của AvatarUser */}
+                <AvatarUser userData={comment.user || {}} />
+            </Box>
 
             <Box sx={{ flex: 1 }}>
                 {/* --- KHỐI BONG BÓNG CHAT ĐÃ FIX --- */}
@@ -171,9 +192,9 @@ export default function CommentItem({ comment, setComments, postId }) {
                                     size="small"
                                     value={editContent}
                                     onChange={(e) => setEditContent(e.target.value)}
-                                    sx={{ 
+                                    sx={{
                                         bgcolor: "background.paper",
-                                        "& .MuiInputBase-root": { fontSize: "0.95rem" } 
+                                        "& .MuiInputBase-root": { fontSize: "0.95rem" }
                                     }}
                                 />
                                 <Box sx={{ mt: 1, display: "flex", gap: 1, justifyContent: "flex-end" }}>
@@ -259,7 +280,8 @@ export default function CommentItem({ comment, setComments, postId }) {
                 {/* --- FORM REPLY --- */}
                 {isReplying && (
                     <Box sx={{ mt: 1.5, display: "flex", gap: 1, alignItems: "flex-start" }}>
-                        <Avatar src={userData?.avatarUrl} sx={{ width: 24, height: 24 }} />
+                        {/* <Avatar src={userData?.avatarUrl} sx={{ width: 24, height: 24 }} /> */}
+                        <AvatarUser userData={userData} />
                         <TextField
                             fullWidth
                             size="small"
@@ -304,7 +326,7 @@ export default function CommentItem({ comment, setComments, postId }) {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
-            
+
             {showReactionsModal && (
                 <CommentReactionsListModal
                     postId={postId}
