@@ -1,20 +1,33 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Tooltip, CircularProgress, Snackbar, Alert } from "@mui/material";
+import { 
+    Dialog, 
+    DialogTitle, 
+    DialogContent, 
+    DialogActions, 
+    Button, 
+    IconButton, 
+    Tooltip, 
+    CircularProgress, 
+    Snackbar, 
+    Alert, 
+    Box, 
+    Typography,
+    useTheme 
+} from "@mui/material";
 
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import CloseIcon from '@mui/icons-material/Close'; // Import icon đóng cho ảnh
 import { AuthContext } from '../../router/AuthProvider';
 import { api } from '../../shared/api';
 import AvatarUser from '../../shared/components/AvatarUser';
 
-
-import { EditTwoTone } from '@mui/icons-material';
-
 export default function EditPostModal({ postData, postIndex, onClose }) {
-    const { userData, postsData, setPostsData } = useContext(AuthContext);
-    // const [open, setOpen] = useState(false);
+    const { userData } = useContext(AuthContext);
+    const theme = useTheme(); // Hook lấy theme để xử lý màu sắc động
+
     const [postContent, setPostContent] = useState(postData.content || '');
-    const [mediaFiles, setMediaFiles] = useState(postData.media?.map(url => ({ file: null, url, type: 'image' })) || []);
-    const [urlMedia, setUrlMedia] = useState([]);
+    const [mediaFiles, setMediaFiles] = useState(postData.media?.map(url => ({ file: null, url: url.media_url, type: 'image' })) || []);
+    const [urlMedia, setUrlMedia] = useState([]); // Biến này có vẻ chưa dùng tới trong render, nhưng giữ nguyên logic cũ
     const [loading, setLoading] = useState(false);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -25,9 +38,9 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
     }, [postData]);
 
     const handleClose = () => {
-        // Gọi hàm onClose được truyền từ PostHeader để unmount component
         if (onClose) onClose();
     };
+
     const uploadMultipleFilesParallel = async (files) => {
         const uploadPromises = files
             .filter(f => f.file) // chỉ upload file mới
@@ -63,25 +76,27 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
     };
 
     const handleRemoveMedia = (index) => {
-        URL.revokeObjectURL(mediaFiles[index].url);
+        if (mediaFiles[index].file) {
+             URL.revokeObjectURL(mediaFiles[index].url);
+        }
         setMediaFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSave = async () => {
         if (!postContent.trim() && mediaFiles.length === 0) {
-            alert("Vui lòng nhập nội dung hoặc thêm ảnh/video.");
+            // Thay alert bằng snackbar cho đẹp
+            setSnackbarMessage("Vui lòng nhập nội dung hoặc thêm ảnh/video.");
+            setSnackbarOpen(true);
             return;
         }
 
         setLoading(true);
 
         try {
-
-
             const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
-            
-            const response = await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls });
-            const editPost = response.data.post;
+            // const response = 
+            await api.put(`/posts/${postData.id}`, { content: postContent, media_url: uploadedUrls });
+            // const editPost = response.data.post; 
             
             setSnackbarMessage("Cập nhật bài viết thành công!");
             setSnackbarOpen(true);
@@ -102,27 +117,65 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
     return (
         <>
-            {/* <Button onClick={handleOpen} startIcon={<EditIcon />}>Edit</Button> */}
-
-            <Dialog open={true} onClose={handleClose} fullWidth maxWidth="sm">
+            <Dialog 
+                open={true} 
+                onClose={handleClose} 
+                fullWidth 
+                maxWidth="sm"
+                // PaperProps giúp Dialog tự động đổi màu nền theo Theme (Light/Dark)
+                PaperProps={{
+                    sx: { backgroundImage: 'none' } // Tắt gradient mặc định nếu ở dark mode (tuỳ chọn)
+                }}
+            >
                 {loading && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30">
+                    <Box sx={{
+                        position: 'absolute', inset: 0, zIndex: 50,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        bgcolor: 'rgba(0, 0, 0, 0.3)' // Thay class bg-black/30 bằng rgba an toàn
+                    }}>
                         <CircularProgress color="primary" />
-                    </div>
+                    </Box>
                 )}
+                
                 <DialogTitle>Edit Post</DialogTitle>
+                
                 <DialogContent dividers>
-                    <div className="flex items-start gap-4 mb-4">
+                    {/* Header User */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                         <AvatarUser userData={userData} />
-                        <p className="font-bold text-[#1C1E21] dark:text-white">{userData.name}</p>
-                    </div>
-                    <textarea
-                        className="post-textarea w-full min-h-[120px] resize-none border-none outline-none focus:ring-0 bg-transparent p-0 text-base leading-relaxed caret-current cursor-text text-[#1C1E21] dark:text-white"
+                        {/* Thay thế class text-[#1C1E21] dark:text-white bằng color="text.primary" */}
+                        <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
+                            {userData.name}
+                        </Typography>
+                    </Box>
+
+                    {/* Textarea */}
+                    {/* Thay thẻ <textarea> thường bằng Box component="textarea" để dùng được sx prop */}
+                    <Box
+                        component="textarea"
                         placeholder={`What's on your mind, ${userData.name}?`}
                         value={postContent}
                         onChange={(e) => setPostContent(e.target.value)}
+                        sx={{
+                            width: '100%',
+                            minHeight: '120px',
+                            resize: 'none',
+                            border: 'none',
+                            outline: 'none',
+                            bgcolor: 'transparent',
+                            // --- FIX MÀU CHỮ Ở ĐÂY ---
+                            color: 'text.primary', 
+                            fontSize: '1rem',
+                            fontFamily: 'inherit',
+                            '&::placeholder': {
+                                color: 'text.secondary',
+                                opacity: 1
+                            }
+                        }}
                     />
-                    <div className="flex items-center gap-2 mt-2">
+
+                    {/* Media Upload Button */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                         <input
                             type="file"
                             id="media-upload-edit"
@@ -136,33 +189,56 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                                 <PhotoCamera />
                             </IconButton>
                         </Tooltip>
-                    </div>
+                    </Box>
+
+                    {/* Media Preview Grid */}
                     {mediaFiles.length > 0 && (
-                        <div className="mt-4 grid gap-2 grid-cols-2">
+                        <Box sx={{ mt: 2, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
                             {mediaFiles.map((media, index) => (
-                                <div key={index} className="relative group">
-                                    <div
-                                        className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg"
-                                        style={{ backgroundImage: `url("${media.url}")` }}
+                                <Box key={index} sx={{ position: 'relative', '&:hover .delete-btn': { opacity: 1 } }}>
+                                    <Box
+                                        sx={{
+                                            width: '100%',
+                                            aspectRatio: '16/9',
+                                            borderRadius: 2,
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                            backgroundImage: `url("${media.url}")`,
+                                            border: '1px solid',
+                                            borderColor: 'divider'
+                                        }}
                                     />
-                                    <button
-                                        className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    <IconButton
+                                        className="delete-btn"
+                                        size="small"
                                         onClick={() => handleRemoveMedia(index)}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 8,
+                                            right: 8,
+                                            bgcolor: 'rgba(0,0,0,0.6)',
+                                            color: 'white',
+                                            opacity: 0,
+                                            transition: 'opacity 0.2s',
+                                            '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' }
+                                        }}
                                     >
-                                        <span className="material-symbols-outlined text-base">close</span>
-                                    </button>
-                                </div>
+                                        <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                </Box>
                             ))}
-                        </div>
+                        </Box>
                     )}
                 </DialogContent>
-                <DialogActions className="flex justify-between p-3">
-                    <Button onClick={handleClose}>Cancel</Button>
+
+                <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                    <Button onClick={handleClose} color="inherit">Cancel</Button>
+                    {/* Thay class Tailwind bg-blue-600 bằng variant="contained" của MUI */}
                     <Button
                         variant="contained"
                         disabled={isSaveDisabled}
                         onClick={handleSave}
-                        className={`${isSaveDisabled ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
+                        color="primary" // Tự động dùng màu xanh của theme
                     >
                         Save
                     </Button>
@@ -177,8 +253,9 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
             >
                 <Alert
                     onClose={() => setSnackbarOpen(false)}
-                    severity="success"
+                    severity={snackbarMessage.includes("thất bại") ? "error" : "success"}
                     sx={{ width: "100%" }}
+                    variant="filled"
                 >
                     {snackbarMessage}
                 </Alert>
