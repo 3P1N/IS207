@@ -88,8 +88,7 @@ class PostController extends Controller
             'content' => $request->input('content'), // Nếu null thì lưu null (DB cột content phải allow NULL)
         ]);
 
-        // 4. Lưu Media (Gọi sang MediaController nếu có dữ liệu)
-        // Frontend gửi mảng rỗng [] thì $hasMedia sẽ là false -> không chạy vào đây -> không lỗi
+       
         if ($hasMedia) {
             // Lưu ý: Đảm bảo hàm store bên MediaController xử lý được mảng media_url từ $request
             (new MediaController)->store($request, $post->id);
@@ -133,47 +132,78 @@ class PostController extends Controller
 
     }
 
-    public function update(Request $request, $index){
+    public function update(Request $request, $id) { // Đổi $index thành $id cho chuẩn Laravel
         $user = $request->user();
+
         if (!$user) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $post = Post::with(['user', 'media', 'comments', 'reactions'])
-            ->find($index);
+        // 1. Tìm bài viết
+        $post = Post::find($id);
+
         if (!$post) {
             return response()->json(['message' => 'Post not found'], 404);
         }
 
-        // Check quyền chỉnh sửa
-        if ($post->user->id !== $user->id) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
+        // 2. Check quyền chỉnh sửa
+        if ($post->user_id !== $user->id) { // Dùng user_id so sánh nhanh hơn gọi quan hệ $post->user->id
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // Cập nhật nội dung nếu có
+        // 3. Validate dữ liệu
+        $request->validate([
+            'content' => 'nullable|string',
+            'media_url' => 'nullable|array',
+            'media_url.*' => 'string',
+        ]);
+
+        // 4. KIỂM TRA LOGIC: KHÔNG ĐƯỢC ĐỂ POST RỖNG
+        // Lấy nội dung dự kiến sau khi update
+        // Nếu request có gửi content thì lấy content mới, không thì lấy content cũ
+        $newContent = $request->has('content') ? $request->input('content') : $post->content;
+        
+        // Nếu request có gửi media_url thì đếm số lượng mới, không thì đếm số lượng cũ
+        $newMediaCount = 0;
+        if ($request->has('media_url')) {
+            $dataMedia = $request->input('media_url');
+            $newMediaCount = is_array($dataMedia) ? count($dataMedia) : 0;
+        } else {
+            $newMediaCount = $post->media()->count();
+        }
+
+        // Nếu cả content rỗng VÀ media rỗng -> Báo lỗi
+        if (empty($newContent) && $newMediaCount === 0) {
+            return response()->json([
+                'message' => 'Bài viết không được để trống hoàn toàn (cần có nội dung hoặc ảnh/video).'
+            ], 422);
+        }
+
+        // 5. Cập nhật nội dung
         if ($request->has('content')) {
             $post->content = $request->input('content');
         }
-
+        
         $post->save();
 
-        // Xử lý media mới (nếu gửi media mới)
-       if ($request->has('media_url') && !empty($request->input('media_url'))) {
-        // Xóa media cũ
-            foreach ($post->media as $media) {
+        // 6. Xử lý Media
+        // Chỉ xử lý khi key 'media_url' tồn tại trong request (kể cả mảng rỗng)
+        if ($request->has('media_url')) {
+            // B1: Xóa toàn bộ media cũ của post này
+            // Dùng each->delete() để đảm bảo kích hoạt event xóa file (nếu bạn có cài đặt trong Model Media)
+            $post->media()->each(function($media) {
                 $media->delete();
-            }
+            });
 
-            // Thêm media mới
-            (new MediaController)->store($request, $post->id);
+            // B2: Thêm media mới (nếu mảng không rỗng)
+            $newMediaUrls = $request->input('media_url');
+            if (!empty($newMediaUrls) && is_array($newMediaUrls)) {
+                (new MediaController)->store($request, $post->id);
+            }
         }
 
-        // Load lại quan hệ để trả về
-        $post->load(['media', 'comments', 'reactions', 'user']);
+        // 7. Load lại quan hệ để trả về frontend cập nhật UI ngay lập tức
+        $post->load(['media', 'user', 'comments', 'reactions']);
 
         return response()->json([
             'message' => 'Post updated successfully',
