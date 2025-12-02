@@ -15,7 +15,7 @@ import {
     useTheme,
     useMediaQuery,
     Divider,
-    Avatar
+    CircularProgress // Import thêm loading
 } from "@mui/material";
 import {
     Home,
@@ -24,7 +24,9 @@ import {
     AddCircle,
     AdminPanelSettings,
     Menu as MenuIcon,
-    Close as CloseIcon
+    Close as CloseIcon,
+    Lock as LockIcon,     // Import icon khóa
+    Logout as LogoutIcon  // Import icon đăng xuất
 } from "@mui/icons-material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AvatarUser from "./AvatarUser";
@@ -34,9 +36,12 @@ import SettingDropdown from "./SettingDropDown";
 export default function Navbar() {
     const [keyword, setKeyword] = useState("");
     const [mobileOpen, setMobileOpen] = useState(false);
+    // State loading cho nút Logout trong Drawer
+    const [logoutLoading, setLogoutLoading] = useState(false); 
     
     const navigate = useNavigate();
-    const { userData } = useContext(AuthContext);
+    // Lấy thêm hàm logout từ Context
+    const { userData, logout } = useContext(AuthContext); 
     
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -51,8 +56,23 @@ export default function Navbar() {
         setMobileOpen(!mobileOpen);
     };
 
+    // --- XỬ LÝ LOGOUT TRÊN MOBILE ---
+    const handleMobileLogout = async () => {
+        setLogoutLoading(true);
+        try {
+            await logout();
+            handleDrawerToggle(); // Đóng menu sau khi logout
+        } catch (err) {
+            console.error("Lỗi đăng xuất:", err);
+        } finally {
+            setLogoutLoading(false);
+        }
+    };
+
+    // --- NỘI DUNG MENU MOBILE ---
     const drawerContent = (
         <Box sx={{ width: 280, p: 2 }} role="presentation">
+            {/* Header Drawer */}
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Typography variant="h6" color="primary.main" fontWeight="bold">
                     Menu
@@ -62,6 +82,7 @@ export default function Navbar() {
                 </IconButton>
             </Box>
 
+            {/* Info User */}
             <Box 
                 sx={{ 
                     display: "flex", alignItems: "center", gap: 1.5, mb: 2, p: 1.5, 
@@ -85,9 +106,10 @@ export default function Navbar() {
                 </Box>
             </Box>
             
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 1 }} />
 
             <List>
+                {/* Các menu chính */}
                 <ListItem disablePadding>
                     <ListItemButton component={RouterLink} to="/" onClick={handleDrawerToggle}>
                         <ListItemIcon><Home color="primary" /></ListItemIcon>
@@ -114,22 +136,46 @@ export default function Navbar() {
                         </ListItemButton>
                     </ListItem>
                 )}
+
+                <Divider sx={{ my: 1 }} />
+
+                {/* --- PHẦN THAY ĐỔI: SETTING TRỰC TIẾP --- */}
+                
+                {/* 1. Nút Đổi mật khẩu */}
+                <ListItem disablePadding>
+                    <ListItemButton 
+                        onClick={() => {
+                            navigate("/change-password");
+                            handleDrawerToggle();
+                        }}
+                    >
+                        <ListItemIcon><LockIcon color="action" /></ListItemIcon>
+                        <ListItemText primary="Đổi mật khẩu" />
+                    </ListItemButton>
+                </ListItem>
+
+                {/* 2. Nút Đăng xuất */}
+                <ListItem disablePadding>
+                    <ListItemButton onClick={handleMobileLogout}>
+                        <ListItemIcon>
+                            {logoutLoading ? <CircularProgress size={20} /> : <LogoutIcon color="error" />}
+                        </ListItemIcon>
+                        <ListItemText 
+                            primary="Đăng xuất" 
+                            primaryTypographyProps={{ color: 'error.main' }} // Chữ đỏ cho nút đăng xuất
+                        />
+                    </ListItemButton>
+                </ListItem>
+
             </List>
-            
-            <Divider sx={{ my: 2 }} />
-            
-             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                 <SettingDropdown />
-            </Box>
         </Box>
     );
 
     return (
         <AppBar position="sticky" color="default" elevation={1} sx={{ bgcolor: 'background.paper' }}>
-            {/* Thêm justifyContent: 'space-between' để đảm bảo Logo và Nút luôn ở 2 đầu nếu ở giữa rỗng */}
             <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
                 
-                {/* 1. LOGO (Bên trái) */}
+                {/* 1. LOGO */}
                 <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 'fit-content' }}>
                     <IconButton component={RouterLink} to="/" color="primary" sx={{ p: 0, mr: 1 }}>
                         <Home fontSize="large" /> 
@@ -150,13 +196,12 @@ export default function Navbar() {
                     </Typography>
                 </Box>
 
-                {/* 2. SEARCH BAR WRAPPER (Ở giữa) */}
-                {/* Box này có flex: 1 để chiếm hết khoảng trống, đẩy Nav Buttons về sát phải */}
+                {/* 2. SEARCH BAR WRAPPER */}
                 <Box sx={{ 
                     flex: 1, 
                     display: 'flex', 
-                    justifyContent: 'center', // Canh giữa thanh tìm kiếm trong khoảng trống này
-                    px: { xs: 1, md: 4 }      // Padding ngang để không dính vào Logo/Icon
+                    justifyContent: 'center',
+                    px: { xs: 1, md: 4 }
                 }}>
                     <Box
                         sx={{
@@ -166,8 +211,8 @@ export default function Navbar() {
                             borderRadius: 5,
                             px: 1.5,
                             py: 0.5,
-                            width: "100%",        // Chiếm hết chiều rộng của Wrapper
-                            maxWidth: '600px',    // Nhưng không quá 600px
+                            width: "100%",
+                            maxWidth: '600px',
                         }}
                     >
                         <Search sx={{ color: "text.secondary", mr: 1 }} />
@@ -181,8 +226,7 @@ export default function Navbar() {
                     </Box>
                 </Box>
 
-                {/* 3. NAVIGATION BUTTONS (Bên phải) */}
-                {/* Box này sẽ tự động nằm sát phải nhờ flex:1 của Box ở giữa */}
+                {/* 3. NAVIGATION BUTTONS */}
                 <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 'fit-content' }}>
                     {!isMobile ? (
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -202,6 +246,7 @@ export default function Navbar() {
                                 </IconButton>
                             )}
 
+                            {/* Desktop vẫn giữ Dropdown */}
                             <SettingDropdown />
                             <AvatarUser userData={userData} />
                         </Box>
