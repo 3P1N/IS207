@@ -75,7 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
     Route::patch('/users/{user}', [App\Http\Controllers\Api\UserController::class, 'update']);
 
-    Route::post('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'store']);
+    Route::middleware('throttle:10,1')->post('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'store']);
     Route::get('/posts/{post}/comments', [App\Http\Controllers\Api\CommentController::class, 'index']);
     Route::delete('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'destroy']);
     Route::patch('/posts/{post}/comments/{comment}', [App\Http\Controllers\Api\CommentController::class, 'update']);
