@@ -211,7 +211,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $token = Password::createToken($this);
 
-        $resetUrl = "https://social-media-0nzo.onrender.com//reset-password?token={$token}&email={$this->email}";
+        $resetUrl = "https://is-207-steel.vercel.app/reset-password?token={$token}&email={$this->email}";
 
         \Mail::send('emails.reset-password',['url' => $resetUrl, 'user' => $this], function ($message) {
             $message->to($this->email)

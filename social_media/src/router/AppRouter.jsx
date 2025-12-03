@@ -26,7 +26,8 @@ import SearchResultPage from "../pages/search/SearchResultPage";
 import RoleRoute from "./RoleRoute";
 import PostCreate from "../pages/post/PostCreate";
 import ProfileSuggest from "../pages/profile/ProfileSuggest";
-import ResetPasswordForm from "../pages/auth/reset-password-form";
+import ResetPasswordForm from "../pages/auth/forgot-password-form";
+import ForgotPasswordForm from "../pages/auth/forgot-password-form";
 import ChangePasswordForm from "../pages/changepassword/ChangePasswordForm";
 import VideoCallProvider from "./VideoCallProvider";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
@@ -43,8 +44,8 @@ export default function AppRouter() {
                             <Route element={<AuthLayout />} >
                                 <Route path="login" element={<LoginForm />} />
                                 <Route path="signup" element={<SignupForm />} />
+                                <Route path="forgot-password" element={<ForgotPasswordForm />} />
                                 <Route path="reset-password" element={<ResetPasswordForm />} />
-
                             </Route>
                         </Route>
                         <Route element={<ProtectedRoute />}>

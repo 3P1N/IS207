@@ -107,7 +107,7 @@ export default function ProfileAbout() {
         {(!isOwnProfile || activeTab === "view") && (
           <dl className="space-y-3 text-sm text-gray-700">
             <InfoRow label="Tên hiển thị" value={formData.name} />
-            <InfoRow label="Email" value={formData.email} />
+            {/* <InfoRow label="Email" value={formData.email} /> */}
             <InfoRow
               label="Giới tính"
               value={formData.gender || "Chưa cập nhật"}

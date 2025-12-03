@@ -319,6 +319,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
                   onReply={handleReply}
                   postId={postId}
                   setComments={handleSetComments}
+                  level={0}
                 />
               ))
             )}
