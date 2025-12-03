@@ -169,9 +169,9 @@ export default function PostCreate() {
                         {/* Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
                             <h2 className="text-xl font-bold text-[#1C1E21] dark:text-white">Create Post</h2>
-                            <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-[#65676B] dark:text-gray-400">
+                            {/* <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-[#65676B] dark:text-gray-400">
                                 <span className="material-symbols-outlined">close</span>
-                            </button>
+                            </button> */}
                         </div>
 
                         {/* User Info & Visibility (Giữ nguyên) */}

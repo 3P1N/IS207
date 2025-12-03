@@ -5,10 +5,9 @@ import {
   Box, Alert, InputAdornment, IconButton, CircularProgress, Avatar
 } from "@mui/material";
 import { Visibility, VisibilityOff, LockReset } from "@mui/icons-material";
-// import { api } from "../../shared/api"; // Uncomment khi chạy thực tế
+import { api } from "../../shared/api";
+// --- MOCK API (Để test lỗi) ---
 
-// Giả lập api để demo giao diện (Bạn xóa dòng này khi dùng thật)
-const api = { post: () => new Promise(r => setTimeout(r, 1500)) };
 
 export default function ChangePasswordForm() {
   const [formData, setFormData] = useState({
@@ -16,10 +15,15 @@ export default function ChangePasswordForm() {
     password: "",
     password_confirmation: ""
   });
-  const [errors, setErrors] = useState({});
+  
+  // State lưu lỗi validate frontend (từng field)
+  const [fieldErrors, setFieldErrors] = useState({});
+  
+  // State lưu lỗi trả về từ server (Alert chung)
+  const [serverError, setServerError] = useState(null);
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -32,40 +36,85 @@ export default function ChangePasswordForm() {
   const lilyPadLight = "#f1f8e9";
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: "" });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Xóa lỗi của field đó ngay khi người dùng nhập lại (UX tốt hơn)
+    if (fieldErrors[name]) {
+      setFieldErrors({ ...fieldErrors, [name]: "" });
+    }
   };
 
+  // --- FRONTEND VALIDATION ---
   const validate = () => {
     const newErrors = {};
-    if (!formData.current_password) newErrors.current_password = "Current Password is required";
-    if (!formData.password) newErrors.password = "New Password is required";
-    if (!formData.password_confirmation) newErrors.password_confirmation = "Confirm Password is required";
-    if (formData.password && formData.password_confirmation && formData.password !== formData.password_confirmation) {
-      newErrors.password_confirmation = "Passwords do not match";
+    let isValid = true;
+
+    // 1. Kiểm tra Current Password
+    if (!formData.current_password.trim()) {
+      newErrors.current_password = "Vui lòng nhập mật khẩu hiện tại.";
+      isValid = false;
     }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    // 2. Kiểm tra New Password
+    if (!formData.password) {
+      newErrors.password = "Vui lòng nhập mật khẩu mới.";
+      isValid = false;
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Mật khẩu mới phải có ít nhất 6 ký tự.";
+      isValid = false;
+    }
+
+    // 3. Kiểm tra Confirm Password
+    if (!formData.password_confirmation) {
+      newErrors.password_confirmation = "Vui lòng xác nhận mật khẩu.";
+      isValid = false;
+    } else if (formData.password !== formData.password_confirmation) {
+      newErrors.password_confirmation = "Mật khẩu xác nhận không khớp.";
+      isValid = false;
+    }
+
+    setFieldErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setServerError(null);
     setSuccess(null);
-    if (!validate()) return;
+
+    // Bước 1: Validate Frontend
+    if (!validate()) {
+      return; // Dừng nếu có lỗi frontend
+    }
 
     setLoading(true);
     try {
+      // Gọi API
       await api.post("/auth/change-password", {
         current_password: formData.current_password,
         new_password: formData.password,
         new_password_confirmation: formData.password_confirmation
       });
-      setSuccess("Ribbit! Password reset successfully. 🐸");
+
+      setSuccess("Ribbit! Đổi mật khẩu thành công. 🐸");
+      setFormData({ current_password: "", password: "", password_confirmation: "" }); // Reset form
       setTimeout(() => navigate("/login"), 2000);
+
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || "Reset password failed";
-      setError(msg);
+      // Bước 2: Xử lý lỗi từ Server trả về
+      console.error(err);
+      
+      let msg = "Đổi mật khẩu thất bại. Vui lòng thử lại.";
+      
+      // Ưu tiên lấy message từ response của backend
+      if (err.response && err.response.data && err.response.data.message) {
+        msg = err.response.data.message;
+      } else if (err.message) {
+        msg = err.message;
+      }
+
+      setServerError(msg);
     } finally {
       setLoading(false);
     }
@@ -75,96 +124,70 @@ export default function ChangePasswordForm() {
     <Box
       sx={{
         minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        // Background gradient kiểu hồ nước và lá cây
+        display: "flex", alignItems: "center", justifyContent: "center",
         background: `linear-gradient(135deg, ${pondWater} 0%, #c8e6c9 100%)`,
-        p: 2,
-        position: "relative",
-        overflow: "hidden"
+        p: 2, position: "relative", overflow: "hidden"
       }}
     >
-      {/* Trang trí nền (Lá súng mờ) */}
-      <Box sx={{
-        position: "absolute", top: -50, left: -50, width: 200, height: 200,
-        bgcolor: "#a5d6a7", borderRadius: "50%", opacity: 0.3, zIndex: 0
-      }} />
-      <Box sx={{
-        position: "absolute", bottom: -30, right: -30, width: 150, height: 150,
-        bgcolor: "#81c784", borderRadius: "50%", opacity: 0.3, zIndex: 0
-      }} />
+      {/* Trang trí nền */}
+      <Box sx={{ position: "absolute", top: -50, left: -50, width: 200, height: 200, bgcolor: "#a5d6a7", borderRadius: "50%", opacity: 0.3, zIndex: 0 }} />
+      <Box sx={{ position: "absolute", bottom: -30, right: -30, width: 150, height: 150, bgcolor: "#81c784", borderRadius: "50%", opacity: 0.3, zIndex: 0 }} />
 
       <Card
         elevation={6}
         sx={{
-          width: "100%",
-          maxWidth: 420,
-          // Bo góc lớn để tạo cảm giác mềm mại
-          borderRadius: "24px",
-          bgcolor: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(10px)",
-          border: `2px solid ${frogGreen}`,
-          zIndex: 1,
+          width: "100%", maxWidth: 420, borderRadius: "24px",
+          bgcolor: "rgba(255, 255, 255, 0.95)", backdropFilter: "blur(10px)",
+          border: `2px solid ${frogGreen}`, zIndex: 1,
           transition: "transform 0.3s",
-          "&:hover": {
-            boxShadow: "0 8px 24px rgba(76, 175, 80, 0.25)",
-          }
+          "&:hover": { boxShadow: "0 8px 24px rgba(76, 175, 80, 0.25)" }
         }}
       >
         <CardContent sx={{ px: 4, py: 5 }}>
           
-          {/* Header với Icon/Hình ếch */}
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-            <Avatar
-              sx={{
-                width: 70, height: 70,
-                bgcolor: lilyPadLight,
-                border: `2px solid ${frogGreen}`,
-                mb: 1
-              }}
-            >
+            <Avatar sx={{ width: 70, height: 70, bgcolor: lilyPadLight, border: `2px solid ${frogGreen}`, mb: 1 }}>
               <span style={{ fontSize: "40px" }} role="img" aria-label="frog">🐸</span>
             </Avatar>
             <Typography variant="h5" sx={{ color: darkFrogGreen, fontWeight: "bold", fontFamily: "'Comic Sans MS', sans-serif" }}>
               Change Password
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Secure your lily pad
-            </Typography>
+            <Typography variant="body2" color="text.secondary">Secure your lily pad</Typography>
           </Box>
 
-          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
+          {/* Hiển thị lỗi từ Server (Alert ở trên cùng) */}
+          {serverError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{serverError}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{success}</Alert>}
 
           <form onSubmit={handleSubmit} noValidate>
             <TextField
               label="Current Password"
               name="current_password"
-              fullWidth
-              margin="normal"
-              type="password"
+              fullWidth margin="normal" type="password"
               value={formData.current_password}
               onChange={handleChange}
-              error={!!errors.current_password}
-              helperText={errors.current_password}
-              color="success" // Màu xanh lá khi focus
-              sx={{
-                "& .MuiOutlinedInput-root": { borderRadius: "12px" }
-              }}
+              color="success"
+              
+              // Hiển thị lỗi frontend cho từng field
+              error={!!fieldErrors.current_password}
+              helperText={fieldErrors.current_password}
+
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
             />
-            
+             
             <TextField
               label="New Password"
               name="password"
               type={showPassword ? "text" : "password"}
-              fullWidth
-              margin="normal"
+              fullWidth margin="normal"
               value={formData.password}
               onChange={handleChange}
-              error={!!errors.password}
-              helperText={errors.password}
               color="success"
+              
+              // Hiển thị lỗi frontend
+              error={!!fieldErrors.password}
+              helperText={fieldErrors.password}
+
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               InputProps={{
                 endAdornment: (
@@ -181,13 +204,15 @@ export default function ChangePasswordForm() {
               label="Confirm Password"
               name="password_confirmation"
               type={showConfirm ? "text" : "password"}
-              fullWidth
-              margin="normal"
+              fullWidth margin="normal"
               value={formData.password_confirmation}
               onChange={handleChange}
-              error={!!errors.password_confirmation}
-              helperText={errors.password_confirmation}
               color="success"
+              
+              // Hiển thị lỗi frontend
+              error={!!fieldErrors.password_confirmation}
+              helperText={fieldErrors.password_confirmation}
+
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               InputProps={{
                 endAdornment: (
@@ -201,31 +226,16 @@ export default function ChangePasswordForm() {
             />
 
             <Button
-              variant="contained"
-              type="submit"
-              fullWidth
+              variant="contained" type="submit" fullWidth
               disabled={loading}
               startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LockReset />}
               sx={{
-                mt: 3,
-                mb: 1,
-                py: 1.5,
-                borderRadius: "50px", // Hình viên thuốc
-                bgcolor: frogGreen,
-                fontWeight: "bold",
-                fontSize: "1rem",
-                textTransform: "none",
-                boxShadow: "0 4px 0 #2e7d32", // Tạo hiệu ứng 3D nhẹ
+                mt: 3, mb: 1, py: 1.5, borderRadius: "50px",
+                bgcolor: frogGreen, fontWeight: "bold", fontSize: "1rem", textTransform: "none",
+                boxShadow: "0 4px 0 #2e7d32",
                 transition: "all 0.1s ease-in-out",
-                "&:hover": {
-                  bgcolor: "#43a047",
-                  transform: "translateY(-2px)", // Nhảy lên nhẹ
-                  boxShadow: "0 6px 0 #2e7d32",
-                },
-                "&:active": {
-                  transform: "translateY(2px)", // Nhún xuống khi click
-                  boxShadow: "0 0 0 #2e7d32",
-                }
+                "&:hover": { bgcolor: "#43a047", transform: "translateY(-2px)", boxShadow: "0 6px 0 #2e7d32" },
+                "&:active": { transform: "translateY(2px)", boxShadow: "0 0 0 #2e7d32" }
               }}
             >
               {loading ? "Hopping to it..." : "Update Password"}

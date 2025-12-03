@@ -106,6 +106,8 @@ export default function PostCard({ postData, index }) {
         if (currentImageIndex > 0) setCurrentImageIndex(prev => prev - 1);
     };
 
+    const isSingleImage = mediaList.length === 1;
+
     return (
         <>
             <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm overflow-hidden mb-4">
@@ -114,29 +116,43 @@ export default function PostCard({ postData, index }) {
                 <p className="text-base px-4 py-2 whitespace-pre-line">{postData.content}</p>
 
                 {/* Media Slider */}
+                {/* Media Slider */}
                 {mediaList.length > 0 && (
                     <div
-                        className="relative group touch-pan-y" // Thêm touch-pan-y để không chặn cuộn dọc trang
+                        // LOGIC CSS:
+                        // - Nếu nhiều ảnh: dùng 'aspect-square' (vuông cố định) + 'bg-black' để làm nền.
+                        // - Nếu 1 ảnh: dùng 'h-auto' (chiều cao tự động) và giới hạn max-h để không quá dài.
+                        className={`relative group touch-pan-y flex items-center justify-center overflow-hidden
+            ${mediaList.length > 1
+                                ? 'w-full aspect-square bg-black'
+                                : 'w-full h-auto max-h-[650px] bg-gray-100 dark:bg-gray-900'
+                            }
+        `}
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
+                        // Thêm click để mở xem ảnh full
+                        onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
                     >
-                        <div
-                            className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden select-none"
-                            onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
-                        >
-                            <img
-                                src={mediaList[currentImageIndex].media_url}
-                                alt={`Slide ${currentImageIndex}`}
-                                className="w-full h-full object-cover transition-transform duration-300 pointer-events-none" // pointer-events-none để tránh conflict drag ảnh
-                            />
-                        </div>
+                        {/* Container ảnh */}
+                        <img
+                            src={mediaList[currentImageIndex].media_url}
+                            alt={`Slide ${currentImageIndex}`}
+                            // LOGIC CSS ẢNH:
+                            // - Nhiều ảnh: 'object-contain' + 'h-full' để nằm gọn trong khung vuông.
+                            // - 1 ảnh: 'object-contain' (hoặc cover tùy ý) + 'max-h...' để hiển thị tự nhiên.
+                            className={`transition-transform duration-300 pointer-events-none
+                ${mediaList.length > 1
+                                    ? 'w-full h-full object-contain'
+                                    : 'w-full h-auto max-h-[650px] object-contain'
+                                }
+            `}
+                        />
 
-                        {/* Nút Previous */}
+                        {/* Nút Previous - Chỉ hiện khi index > 0 */}
                         {currentImageIndex > 0 && (
                             <button
                                 onClick={prevImage}
-                                // FIX 2: Ngăn sự kiện chạm lan ra cha (để cha không tính là đang vuốt)
                                 onTouchStart={(e) => e.stopPropagation()}
                                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                             >
@@ -144,11 +160,10 @@ export default function PostCard({ postData, index }) {
                             </button>
                         )}
 
-                        {/* Nút Next */}
+                        {/* Nút Next - Chỉ hiện khi chưa đến ảnh cuối */}
                         {currentImageIndex < mediaList.length - 1 && (
                             <button
                                 onClick={nextImage}
-                                // FIX 2: Ngăn sự kiện chạm lan ra cha
                                 onTouchStart={(e) => e.stopPropagation()}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                             >
@@ -156,22 +171,22 @@ export default function PostCard({ postData, index }) {
                             </button>
                         )}
 
-                        {/* Pagination Dots */}
+                        {/* Pagination Dots - Chỉ hiện khi có nhiều ảnh */}
                         {mediaList.length > 1 && (
                             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
                                 {mediaList.map((_, idx) => (
                                     <div
                                         key={idx}
                                         className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex
-                                                ? 'bg-blue-500 scale-110'
-                                                : 'bg-white/60'
+                                            ? 'bg-blue-500 scale-110'
+                                            : 'bg-white/60'
                                             }`}
                                     />
                                 ))}
                             </div>
                         )}
 
-                        {/* Số lượng ảnh */}
+                        {/* Số lượng ảnh - Chỉ hiện khi có nhiều ảnh */}
                         {mediaList.length > 1 && (
                             <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full pointer-events-none">
                                 {currentImageIndex + 1}/{mediaList.length}

@@ -48,7 +48,8 @@ export default function PostActionsBar({ likes, comments, shares, isShared, isLi
         const response = await api.post(`/posts/${postId}/share`);
         return response.data;
     }
-    const handleShare = async () => {        
+    const handleShare = async () => {
+        if (loadingShare) return;        
         const newStatus = !isShared;
         setLoadingShared(true);
 

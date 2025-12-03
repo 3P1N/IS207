@@ -6,28 +6,91 @@ import {
 import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material";
 import { AuthContext } from "../../router/AuthProvider";
 
-
 export default function LoginForm() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
+  
+  // State quản lý lỗi từng trường (email, password)
+  const [fieldErrors, setFieldErrors] = useState({});
+  
+  // State quản lý lỗi chung từ server
+  const [error, setError] = useState(null);
+  
+  const [loading, setLoading] = useState(false);
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  // --- VALIDATION ---
+  const validateForm = () => {
+    let tempErrors = {};
+    let isValid = true;
+
+    // Validate Email
+    if (!formData.email.trim()) {
+      tempErrors.email = "Vui lòng nhập email.";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      tempErrors.email = "Email không hợp lệ.";
+      isValid = false;
+    }
+
+    // Validate Password
+    if (!formData.password) {
+      tempErrors.password = "Vui lòng nhập mật khẩu.";
+      isValid = false;
+    } else if (formData.password.length < 6) {
+        // Tùy chỉnh độ dài nếu cần
+        tempErrors.password = "Mật khẩu phải có ít nhất 6 ký tự.";
+        isValid = false;
+    }
+
+    setFieldErrors(tempErrors);
+    return isValid;
+  };
 
   // --- HANDLERS ---
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Xóa lỗi của trường đó khi người dùng bắt đầu nhập lại
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors({ ...fieldErrors, [e.target.name]: null });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    // Bước 1: Validate Client-side trước
+    if (!validateForm()) {
+        return; // Dừng lại nếu form chưa hợp lệ
+    }
+
     setLoading(true);
     try {
        await auth.login(formData); 
        navigate("/", { replace: true });
     } catch (err) {
-       setError("Đăng nhập thất bại");
+       console.error("Login Error:", err);
+       
+       // Bước 2: Xử lý lỗi từ Server trả về
+       // Giả sử server trả về JSON dạng: { message: "Sai mật khẩu", errors: {...} }
+       let serverMessage = "Đăng nhập thất bại. Vui lòng thử lại.";
+
+       if (err.response && err.response.data) {
+           // Ưu tiên lấy message từ server
+           if (err.response.data.message) {
+               serverMessage = err.response.data.message;
+           } 
+           // Hoặc nếu server trả về chuỗi lỗi trực tiếp
+           else if (typeof err.response.data === 'string') {
+               serverMessage = err.response.data;
+           }
+       } else if (err.message) {
+           serverMessage = err.message;
+       }
+
+       setError(serverMessage);
     } finally {
        setLoading(false);
     }
@@ -35,8 +98,6 @@ export default function LoginForm() {
 
   return (
     <Box sx={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
- 
-
       <Paper 
         elevation={6}
         sx={{ 
@@ -52,21 +113,30 @@ export default function LoginForm() {
           Hãy đăng nhập để tiếp tục.
         </Typography>
 
+        {/* Hiển thị lỗi chung từ Server (Alert) */}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         <form onSubmit={handleSubmit}>
           <TextField
             label="Email" name="email" fullWidth margin="normal"
             value={formData.email} onChange={handleChange}
-            onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField(null)}
+            
+            // Hiển thị lỗi validation cho Email
+            error={!!fieldErrors.email}
+            helperText={fieldErrors.email}
+
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
           />
-          
+           
           <TextField
             label="Password" name="password" type={showPassword ? "text" : "password"}
             fullWidth margin="normal"
             value={formData.password} onChange={handleChange}
-            onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField(null)}
+            
+            // Hiển thị lỗi validation cho Password
+            error={!!fieldErrors.password}
+            helperText={fieldErrors.password}
+
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
             InputProps={{
               endAdornment: (

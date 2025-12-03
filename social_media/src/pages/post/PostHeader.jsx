@@ -126,7 +126,7 @@ export default function PostHeader({ headerData, postData, index }) {
 
       {/* Right: Options (menu) */}
       <IconButton onClick={handleMenuOpen} size="small" disabled={loading}>
-        {loading ? <CircularProgress size={20} /> : <MoreVertIcon />}
+        <MoreVertIcon />
       </IconButton>
 
       {/* Dropdown menu */}

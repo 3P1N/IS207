@@ -42,7 +42,7 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
   // State Reply
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState("");
-  
+
   // State chung
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
@@ -53,6 +53,10 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
     }
   }, [comment.children_recursive]);
 
+  useEffect(() => {
+    setLikesCount(comment.reactions_count);
+    setIsLiked(comment.is_liked);
+  }, [comment.reactions_count, comment.is_liked]);
   // --- ACTIONS ---
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -68,12 +72,12 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
       }
       setSnackbar({ open: true, message: "Đã xóa", severity: "success" });
     } catch (err) {
-        // --- XỬ LÝ 429 ---
-        if (err.response && err.response.status === 429) {
-            setSnackbar({ open: true, message: "Thao tác quá nhanh, thử lại sau.", severity: "warning" });
-        } else {
-            setSnackbar({ open: true, message: "Lỗi xóa", severity: "error" });
-        }
+      // --- XỬ LÝ 429 ---
+      if (err.response && err.response.status === 429) {
+        setSnackbar({ open: true, message: "Thao tác quá nhanh, thử lại sau.", severity: "warning" });
+      } else {
+        setSnackbar({ open: true, message: "Lỗi xóa", severity: "error" });
+      }
     } finally {
       setLoading(false);
     }
@@ -89,9 +93,9 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
     } catch (err) {
       // --- XỬ LÝ 429 ---
       if (err.response && err.response.status === 429) {
-          setSnackbar({ open: true, message: "Bạn sửa quá nhanh, từ từ thôi!", severity: "warning" });
+        setSnackbar({ open: true, message: "Bạn sửa quá nhanh, từ từ thôi!", severity: "warning" });
       } else {
-          setSnackbar({ open: true, message: "Lỗi sửa", severity: "error" });
+        setSnackbar({ open: true, message: "Lỗi sửa", severity: "error" });
       }
     } finally {
       setLoading(false);
@@ -113,14 +117,14 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
 
       // --- XỬ LÝ 429 CHO LIKE ---
       if (err.response && err.response.status === 429) {
-        setSnackbar({ 
-            open: true, 
-            message: "Bạn thả like quá nhanh! Vui lòng chờ.", 
-            severity: "warning" 
+        setSnackbar({
+          open: true,
+          message: "Bạn thả like quá nhanh! Vui lòng chờ.",
+          severity: "warning"
         });
       } else {
-         // Các lỗi khác có thể không cần báo để tránh spam UI, hoặc báo nhẹ nhàng
-         console.error("Like error", err);
+        // Các lỗi khác có thể không cần báo để tránh spam UI, hoặc báo nhẹ nhàng
+        console.error("Like error", err);
       }
     }
   };
@@ -130,8 +134,8 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
     if (!replyContent.trim()) return;
 
     // 1. UI LẠC QUAN
-    const tempId = Date.now(); 
-    
+    const tempId = Date.now();
+
     const optimisticComment = {
       id: tempId,
       content: replyContent,
@@ -159,11 +163,11 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
       setChildComments((prev) =>
         prev.map((c) => {
           if (c.id === tempId) {
-            return { 
-                ...res.data, 
-                user: res.data.user || userData, 
-                children_recursive: [],
-                isSending: false 
+            return {
+              ...res.data,
+              user: res.data.user || userData,
+              children_recursive: [],
+              isSending: false
             };
           }
           return c;
@@ -176,13 +180,13 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
 
       // --- XỬ LÝ 429 CHO REPLY ---
       if (err.response && err.response.status === 429) {
-          setSnackbar({ 
-              open: true, 
-              message: "Bạn phản hồi quá nhanh. Vui lòng chậm lại!", 
-              severity: "warning" 
-          });
+        setSnackbar({
+          open: true,
+          message: "Bạn phản hồi quá nhanh. Vui lòng chậm lại!",
+          severity: "warning"
+        });
       } else {
-          setSnackbar({ open: true, message: "Gửi phản hồi thất bại", severity: "error" });
+        setSnackbar({ open: true, message: "Gửi phản hồi thất bại", severity: "error" });
       }
     }
   };
@@ -192,10 +196,10 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
   return (
     <Box sx={{ width: "100%", mb: 1.5 }}>
       {/* ... (Phần hiển thị Comment Chính giữ nguyên) ... */}
-      <Box sx={{ display: "flex", gap: 3 }}> 
-        
+      <Box sx={{ display: "flex", gap: 3 }}>
+
         <Box sx={{ width: 32, height: 32, flexShrink: 0 }}>
-             <AvatarUser userData={comment.user || {}} />
+          <AvatarUser userData={comment.user || {}} />
         </Box>
 
         <Box sx={{ flex: 1 }}>
@@ -207,6 +211,7 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
                 width: "fit-content",
                 minWidth: "150px",
                 position: "relative",
+                zIndex: 2,
                 bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
                 color: 'text.primary',
                 border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'transparent'}`
@@ -217,7 +222,10 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
               </Typography>
 
               {isEditing ? (
-                <Box sx={{ mt: 1, minWidth: "200px" }}>
+                <Box sx={{
+                  display: "flex", alignItems: "center", gap: 2, ml: 1.5, mt: 0.5,
+                  position: 'relative', zIndex: 1 // <--- THÊM DÒNG NÀY
+                }}>
                   <TextField
                     fullWidth multiline size="small"
                     value={editContent}
@@ -268,10 +276,10 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, ml: 1.5, mt: 0.5 }}>
               {comment.isSending ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CircularProgress size={10} thickness={5} />
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
-                        Đang gửi...
-                    </Typography>
+                  <CircularProgress size={10} thickness={5} />
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                    Đang gửi...
+                  </Typography>
                 </Box>
               ) : (
                 <>
@@ -298,9 +306,9 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
           {/* Form Reply */}
           {isReplying && (
             <Box sx={{ mt: 1.5, display: "flex", gap: 4, alignItems: "flex-start" }}>
-               <Box sx={{ width: 24, height: 24, mt: 0.5 }}>
-                  <AvatarUser userData={userData} />
-               </Box>
+              <Box sx={{ width: 24, height: 24, mt: 0.5 }}>
+                <AvatarUser userData={userData} />
+              </Box>
               <TextField
                 fullWidth size="small"
                 placeholder={`Phản hồi ${comment.user?.name}...`}
@@ -310,10 +318,10 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
                 multiline
                 maxRows={4}
                 onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleReplySubmit();
-                    }
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleReplySubmit();
+                  }
                 }}
                 InputProps={{
                   sx: { borderRadius: 3, fontSize: '0.9rem', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50' },
@@ -333,9 +341,9 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
 
       {/* Render Con */}
       {childComments && childComments.length > 0 && (
-        <Box sx={{ 
-            mt: 0.5, 
-            pl: level === 0 ? '48px' : 0 
+        <Box sx={{
+          mt: 0.5,
+          pl: level === 0 ? '48px' : 0
         }}>
           {childComments.map((child) => (
             <CommentItem

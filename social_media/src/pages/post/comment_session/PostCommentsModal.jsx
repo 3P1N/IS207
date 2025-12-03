@@ -101,27 +101,27 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
     // --- XỬ LÝ LỖI (Bao gồm 429) ---
     onError: (err, newComment, context) => {
       console.error("Lỗi gửi comment:", err);
-      
+
       // Rollback dữ liệu cũ
       if (context?.previousComments) {
         queryClient.setQueryData(["comments", postId], context.previousComments);
       }
-      
+
       // Khôi phục nội dung input để user không phải gõ lại
       setInputContent(newComment.content);
 
       // --- CHECK 429 HERE ---
       if (err.response && err.response.status === 429) {
-        setSnackbar({ 
-          open: true, 
-          message: "Bạn đang bình luận quá nhanh. Vui lòng đợi giây lát!", 
-          severity: "warning" 
+        setSnackbar({
+          open: true,
+          message: "Bạn đang bình luận quá nhanh. Vui lòng đợi giây lát!",
+          severity: "warning"
         });
       } else {
-        setSnackbar({ 
-          open: true, 
-          message: "Gửi bình luận thất bại. Vui lòng thử lại.", 
-          severity: "error" 
+        setSnackbar({
+          open: true,
+          message: "Gửi bình luận thất bại. Vui lòng thử lại.",
+          severity: "error"
         });
       }
     },
@@ -242,63 +242,63 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
 
             {/* Media Slider Code cũ giữ nguyên */}
             {mediaList.length > 0 && (
-               <Box sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}>
-               <div 
-                 className="relative group touch-pan-y" 
-                 onTouchStart={handleTouchStart} 
-                 onTouchMove={handleTouchMove} 
-                 onTouchEnd={handleTouchEnd}
-               >
-                 <div
-                   className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden select-none"
-                   onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
-                 >
-                   <img
-                     src={mediaList[currentImageIndex].media_url}
-                     alt={`Slide ${currentImageIndex}`}
-                     className="w-full h-full object-cover transition-transform duration-300 pointer-events-none"
-                   />
-                 </div>
+              <Box sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}>
+                <div
+                  className="relative group touch-pan-y"
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  <div
+                    className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden select-none"
+                    onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
+                  >
+                    <img
+                      src={mediaList[currentImageIndex].media_url}
+                      alt={`Slide ${currentImageIndex}`}
+                      className="w-full h-full object-contain transition-transform duration-300 pointer-events-none"
+                    />
+                  </div>
 
-                 {currentImageIndex > 0 && (
-                   <button
-                     onClick={prevImage}
-                     className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
-                   >
-                     <ChevronLeft />
-                   </button>
-                 )}
+                  {currentImageIndex > 0 && (
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
+                    >
+                      <ChevronLeft />
+                    </button>
+                  )}
 
-                 {currentImageIndex < mediaList.length - 1 && (
-                   <button
-                     onClick={nextImage}
-                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
-                   >
-                     <ChevronRight />
-                   </button>
-                 )}
+                  {currentImageIndex < mediaList.length - 1 && (
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
+                    >
+                      <ChevronRight />
+                    </button>
+                  )}
 
-                 {mediaList.length > 1 && (
-                   <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
-                     {mediaList.map((_, idx) => (
-                       <div
-                         key={idx}
-                         className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex
-                           ? 'bg-blue-500 scale-110'
-                           : 'bg-white/60'
-                           }`}
-                       />
-                     ))}
-                   </div>
-                 )}
+                  {mediaList.length > 1 && (
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
+                      {mediaList.map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex
+                            ? 'bg-blue-500 scale-110'
+                            : 'bg-white/60'
+                            }`}
+                        />
+                      ))}
+                    </div>
+                  )}
 
-                 {mediaList.length > 1 && (
-                   <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10 pointer-events-none">
-                     {currentImageIndex + 1}/{mediaList.length}
-                   </div>
-                 )}
-               </div>
-             </Box>
+                  {mediaList.length > 1 && (
+                    <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10 pointer-events-none">
+                      {currentImageIndex + 1}/{mediaList.length}
+                    </div>
+                  )}
+                </div>
+              </Box>
             )}
           </Box>
 
@@ -392,9 +392,9 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
       )}
 
       {/* --- SNACKBAR HIỂN THỊ LỖI 429 --- */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
