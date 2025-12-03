@@ -134,7 +134,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
     }
   };
 
-  // --- Logic chuyển ảnh ---
+  // --- Logic chuyển ảnh (Button Click) ---
   const nextImage = (e) => {
     e.stopPropagation();
     if (currentImageIndex < mediaList.length - 1) {
@@ -148,6 +148,39 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
       setCurrentImageIndex(prev => prev - 1);
     }
   };
+
+  // --- Logic Vuốt (Swipe) ---
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!mediaList || mediaList.length === 0) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50; // Khoảng cách tối thiểu để tính là vuốt
+
+    // Vuốt sang trái (Next)
+    if (distance > minSwipeDistance) {
+      if (currentImageIndex < mediaList.length - 1) {
+        setCurrentImageIndex((prev) => prev + 1);
+      }
+    }
+    // Vuốt sang phải (Prev)
+    if (distance < -minSwipeDistance) {
+      if (currentImageIndex > 0) {
+        setCurrentImageIndex((prev) => prev - 1);
+      }
+    }
+  };
+  // ---------------------------
 
   const headerData = postData?.user
     ? {
@@ -171,7 +204,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
           sx: { height: '100%', maxHeight: '90vh' }
         }}
       >
-        {/* --- 1. HEADER (CỐ ĐỊNH) --- */}
+        {/* --- 1. HEADER --- */}
         <DialogTitle sx={{ p: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Typography component="span" sx={{ flex: 1, textAlign: "center", fontWeight: "bold", fontSize: '1.25rem' }}>
             Bài viết của {headerData?.author}
@@ -183,7 +216,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
 
         <div className="border-b border-gray-200 dark:border-gray-700"></div>
 
-        {/* --- 2. SCROLLABLE CONTENT (NỘI DUNG CUỘN CHUNG) --- */}
+        {/* --- 2. CONTENT --- */}
         <DialogContent dividers={false} sx={{ p: 0 }}>
 
           {/* A. Phần Post Content + Media */}
@@ -191,19 +224,24 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
             {headerData && <PostHeader headerData={headerData} postData={postData} />}
             <Typography sx={{ px: 2, mt: 1, whiteSpace: 'pre-line' }}>{postData?.content}</Typography>
 
-            {/* Media Slider (Instagram Style) */}
+            {/* Media Slider */}
             {mediaList.length > 0 && (
               <Box sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}>
-                <div className="relative group">
+                <div 
+                  className="relative group touch-pan-y" // Thêm touch-pan-y
+                  onTouchStart={handleTouchStart} // Thêm Touch Events
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                >
                   {/* Ảnh hiển thị */}
                   <div
-                    className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden"
+                    className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden select-none"
                     onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
                   >
                     <img
                       src={mediaList[currentImageIndex].media_url}
                       alt={`Slide ${currentImageIndex}`}
-                      className="w-full h-full object-cover transition-transform duration-300"
+                      className="w-full h-full object-cover transition-transform duration-300 pointer-events-none" // pointer-events-none
                     />
                   </div>
 
@@ -211,7 +249,8 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
                   {currentImageIndex > 0 && (
                     <button
                       onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 z-10"
+                      // Sửa CSS để hiện trên mobile
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                     >
                       <ChevronLeft />
                     </button>
@@ -221,7 +260,8 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
                   {currentImageIndex < mediaList.length - 1 && (
                     <button
                       onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 z-10"
+                      // Sửa CSS để hiện trên mobile
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                     >
                       <ChevronRight />
                     </button>
@@ -229,22 +269,22 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
 
                   {/* Pagination Dots */}
                   {mediaList.length > 1 && (
-                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
                       {mediaList.map((_, idx) => (
                         <div
                           key={idx}
                           className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex
-                              ? 'bg-blue-500 scale-110'
-                              : 'bg-white/60 hover:bg-white/90'
+                            ? 'bg-blue-500 scale-110'
+                            : 'bg-white/60'
                             }`}
                         />
                       ))}
                     </div>
                   )}
 
-                  {/* Số lượng ảnh (Góc trên phải) */}
+                  {/* Số lượng ảnh */}
                   {mediaList.length > 1 && (
-                    <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10">
+                    <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10 pointer-events-none">
                       {currentImageIndex + 1}/{mediaList.length}
                     </div>
                   )}
@@ -255,7 +295,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
 
           <div className="border-b border-gray-100 dark:border-gray-800 w-full mb-2"></div>
 
-          {/* B. Phần Danh Sách Comment */}
+          {/* B. Phần Danh Sách Comment (Giữ nguyên) */}
           <Box sx={{ px: 2, py: 1 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold", opacity: 0.8 }}>
               Bình luận
@@ -285,7 +325,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
           </Box>
         </DialogContent>
 
-        {/* --- 3. FOOTER INPUT (CỐ ĐỊNH Ở ĐÁY) --- */}
+        {/* --- 3. FOOTER INPUT --- */}
         <Box sx={{ p: 2, borderTop: "1px solid #eee", bgcolor: "background.paper", zIndex: 10 }}>
           {replyTo && (
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1, bgcolor: "#f5f5f5", p: 1, borderRadius: 1 }}>

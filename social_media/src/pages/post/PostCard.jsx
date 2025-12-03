@@ -1,11 +1,11 @@
 // src/components/Post/PostCard.jsx
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react'; // Import thêm useRef
 import PostHeader from './PostHeader';
 import PostActionsBar from './PostActionsBar';
 import { AuthContext } from '../../router/AuthProvider';
 import ImageViewer from '../../shared/components/ImageViewer';
 
-// Icon mũi tên (Bạn có thể dùng Lucide-react hoặc FontAwesome, ở đây mình dùng SVG đơn giản)
+// ... (Giữ nguyên phần icon ChevronLeft, ChevronRight) ...
 const ChevronLeft = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -20,27 +20,52 @@ const ChevronRight = () => (
 export default function PostCard({ postData, index }) {
     const { userData } = useContext(AuthContext);
     const [selectedImage, setSelectedImage] = useState(null);
-    
-    // --- State mới cho Carousel ảnh ---
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    // ----------------------------------
+
+    // --- Xử lý vuốt (Swipe) ---
+    const touchStartX = useRef(0);
+    const touchEndX = useRef(0);
+
+    const handleTouchStart = (e) => {
+        touchStartX.current = e.targetTouches[0].clientX;
+    };
+
+    const handleTouchMove = (e) => {
+        touchEndX.current = e.targetTouches[0].clientX;
+    };
+
+    const handleTouchEnd = () => {
+        if (!postData?.media) return;
+        
+        const distance = touchStartX.current - touchEndX.current;
+        const minSwipeDistance = 50; // Khoảng cách tối thiểu để tính là vuốt
+
+        // Nếu vuốt sang trái (next)
+        if (distance > minSwipeDistance) {
+            if (currentImageIndex < postData.media.length - 1) {
+                setCurrentImageIndex(prev => prev + 1);
+            }
+        }
+        // Nếu vuốt sang phải (prev)
+        if (distance < -minSwipeDistance) {
+            if (currentImageIndex > 0) {
+                setCurrentImageIndex(prev => prev - 1);
+            }
+        }
+    };
+    // ---------------------------
 
     if (!postData) return null;
 
+    // ... (Giữ nguyên phần useState headerData, localPostData và useEffect) ...
     const [headerData, setHeaderData] = useState(null);
     const [localPostData, setLocalPostData] = useState({
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        isLiked: false,
-        isShared: false,
-        ...postData
+        likes: 0, comments: 0, shares: 0, isLiked: false, isShared: false, ...postData
     });
-
-    const mediaList = postData.media || []; // Lấy danh sách ảnh
+    const mediaList = postData.media || [];
 
     useEffect(() => {
-        if (!postData) return;
+         if (!postData) return;
         setLocalPostData({
             likes: postData.reactions_count,
             comments: postData.comments_count,
@@ -57,121 +82,103 @@ export default function PostCard({ postData, index }) {
             isOwner: userData?.id === postData.user.id,
             avatarUrl: postData.user.avatarUrl
         });
-        
-        // Reset index ảnh khi postData thay đổi (trường hợp tái sử dụng component)
         setCurrentImageIndex(0); 
     }, [postData, userData?.id]);
 
+    // ... (Giữ nguyên các hàm handleLike, Comment, Share) ...
     const handleLikeUpdate = (isLikedNow) => {
-        setLocalPostData(prev => ({
-            ...prev,
-            isLiked: isLikedNow,
-            likes: isLikedNow ? prev.likes + 1 : prev.likes - 1
-        }));
+        setLocalPostData(prev => ({ ...prev, isLiked: isLikedNow, likes: isLikedNow ? prev.likes + 1 : prev.likes - 1 }));
     };
-
-    const handleCommentUpdate = () => {
-        setLocalPostData(prev => ({ ...prev, comments: prev.comments + 1 }));
-    };
-
+    const handleCommentUpdate = () => setLocalPostData(prev => ({ ...prev, comments: prev.comments + 1 }));
     const handleShareUpdate = (isSharedNow) => {
-        setLocalPostData(prev => ({
-            ...prev,
-            isShared: isSharedNow,
-            shares: isSharedNow ? prev.shares + 1 : prev.shares - 1
-        }));
+        setLocalPostData(prev => ({ ...prev, isShared: isSharedNow, shares: isSharedNow ? prev.shares + 1 : prev.shares - 1 }));
     };
 
-    // --- Hàm xử lý chuyển ảnh ---
     const nextImage = (e) => {
-        e.stopPropagation(); // Ngăn click vào ảnh mở ImageViewer
-        if (currentImageIndex < mediaList.length - 1) {
-            setCurrentImageIndex(prev => prev + 1);
-        }
+        e.stopPropagation();
+        if (currentImageIndex < mediaList.length - 1) setCurrentImageIndex(prev => prev + 1);
     };
 
     const prevImage = (e) => {
         e.stopPropagation();
-        if (currentImageIndex > 0) {
-            setCurrentImageIndex(prev => prev - 1);
-        }
+        if (currentImageIndex > 0) setCurrentImageIndex(prev => prev - 1);
     };
-    // ----------------------------
 
     return (
         <>
             <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm overflow-hidden mb-4">
-                
-                {/* Header */}
                 <PostHeader headerData={headerData} postData={postData} index={index} />
+                
+                <p className="text-base px-4 py-2 whitespace-pre-line">{postData.content}</p>
 
-                {/* Content */}
-                <p className="text-base px-4 py-2 whitespace-pre-line">
-                    {postData.content}
-                </p>
-
-                {/* Media - Instagram Style Slider */}
+                {/* Media Slider */}
                 {mediaList.length > 0 && (
-                    <div className="relative group">
-                        {/* Ảnh hiển thị */}
+                    <div 
+                        className="relative group touch-pan-y" // Thêm touch-pan-y để không chặn cuộn dọc trang
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                    >
                         <div 
-                            className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden"
+                            className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden select-none"
                             onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
                         >
                             <img 
                                 src={mediaList[currentImageIndex].media_url} 
                                 alt={`Slide ${currentImageIndex}`}
-                                className="w-full h-full object-cover transition-transform duration-300"
+                                className="w-full h-full object-cover transition-transform duration-300 pointer-events-none" // pointer-events-none để tránh conflict drag ảnh
                             />
                         </div>
 
-                        {/* Nút Previous (chỉ hiện khi không phải ảnh đầu) */}
+                        {/* Nút Previous */}
                         {currentImageIndex > 0 && (
                             <button 
                                 onClick={prevImage}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100"
+                                // SỬA CSS: opacity-100 (hiện luôn trên mobile) md:opacity-0 (ẩn trên pc)
+                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                             >
                                 <ChevronLeft />
                             </button>
                         )}
 
-                        {/* Nút Next (chỉ hiện khi không phải ảnh cuối) */}
+                        {/* Nút Next */}
                         {currentImageIndex < mediaList.length - 1 && (
                             <button 
                                 onClick={nextImage}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100"
+                                // SỬA CSS TƯƠNG TỰ
+                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                             >
                                 <ChevronRight />
                             </button>
                         )}
 
-                        {/* Pagination Dots (Dấu chấm tròn ở dưới) */}
+                        {/* Pagination Dots */}
                         {mediaList.length > 1 && (
-                            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
                                 {mediaList.map((_, idx) => (
                                     <div 
                                         key={idx}
                                         className={`w-2 h-2 rounded-full transition-all shadow-sm ${
                                             idx === currentImageIndex 
                                                 ? 'bg-blue-500 scale-110' 
-                                                : 'bg-white/60 hover:bg-white/90'
+                                                : 'bg-white/60'
                                         }`}
                                     />
                                 ))}
                             </div>
                         )}
                         
-                        {/* Số lượng ảnh góc trên phải (Optional - giống Instagram cũ) */}
+                        {/* Số lượng ảnh */}
                         {mediaList.length > 1 && (
-                            <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                            <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full pointer-events-none">
                                 {currentImageIndex + 1}/{mediaList.length}
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Action Bar */}
                 <PostActionsBar
+                    // ... props ...
                     likes={localPostData.likes}
                     comments={localPostData.comments}
                     shares={localPostData.shares}
@@ -185,7 +192,6 @@ export default function PostCard({ postData, index }) {
                 />
             </div>
 
-            {/* Full Screen Image Viewer */}
             {selectedImage && (
                 <ImageViewer
                     src={selectedImage}
