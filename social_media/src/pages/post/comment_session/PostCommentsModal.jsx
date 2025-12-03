@@ -1,5 +1,4 @@
-// src/components/Post/comment/PostCommentsModal.jsx
-import React, { useState, useContext, useRef, useMemo } from "react";
+import React, { useState, useContext, useRef, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +19,18 @@ import CommentItem from "./CommentItem";
 import ImageViewer from "../../../shared/components/ImageViewer";
 import { AuthContext } from "../../../router/AuthProvider";
 
+// --- Icons Mũi tên ---
+const ChevronLeft = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+  </svg>
+);
+const ChevronRight = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+  </svg>
+);
+
 export default function PostCommentsModal({ open, onClose, postId, postData, onCommentSuccess }) {
   const queryClient = useQueryClient();
   const [inputContent, setInputContent] = useState("");
@@ -27,6 +38,15 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
   const [selectedImage, setSelectedImage] = useState(null);
   const inputRef = useRef(null);
   const { userData } = useContext(AuthContext);
+
+  // --- State cho Carousel ảnh ---
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const mediaList = postData?.media || [];
+
+  // Reset index khi mở modal khác hoặc postData thay đổi
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [postId]);
 
   // --- FETCH COMMENTS ---
   const { data: allComments = [], isLoading } = useQuery({
@@ -51,53 +71,38 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
     mutationFn: async (payload) => {
       return await api.post(`/posts/${postId}/comments`, payload);
     },
-    // 1. Khi bắt đầu mutate (chưa gọi API xong)
     onMutate: async (newCommentPayload) => {
-      // Hủy các query đang chạy liên quan để tránh ghi đè dữ liệu
       await queryClient.cancelQueries({ queryKey: ["comments", postId] });
-
-      // Lưu lại dữ liệu cũ để rollback nếu lỗi
       const previousComments = queryClient.getQueryData(["comments", postId]);
 
-      // Tạo object comment "giả"
       const optimisticComment = {
-        id: Date.now(), // ID tạm thời
+        id: Date.now(),
         content: newCommentPayload.content,
         parent_comment_id: newCommentPayload.parent_comment_id,
-        user: userData, // Lấy thông tin user hiện tại để hiển thị avatar/tên ngay
+        user: userData,
         created_at: new Date().toISOString(),
-        isSending: true, // <--- Cờ đánh dấu đang gửi
+        isSending: true,
       };
 
-      // Cập nhật cache ngay lập tức
       queryClient.setQueryData(["comments", postId], (oldData) => {
         const currentComments = Array.isArray(oldData) ? oldData : [];
-        // Thêm comment mới vào cuối danh sách (hoặc đầu tùy logic sắp xếp của bạn)
         return [...currentComments, optimisticComment];
       });
 
-      // Reset input ngay lập tức để tạo cảm giác mượt mà
       setInputContent("");
       setReplyTo(null);
 
-      // Trả về context để dùng cho onError
       return { previousComments };
     },
-    // 2. Nếu có lỗi
     onError: (err, newComment, context) => {
       console.error("Lỗi gửi comment:", err);
-      // Rollback về dữ liệu cũ
       if (context?.previousComments) {
         queryClient.setQueryData(["comments", postId], context.previousComments);
       }
-      // Khôi phục lại nội dung input nếu muốn (optional)
       setInputContent(newComment.content);
     },
-    // 3. Khi xong (dù lỗi hay thành công) - hoặc dùng onSuccess
     onSettled: () => {
-      // Invalidate để fetch lại dữ liệu thật từ server (để lấy ID thật và time chuẩn)
       queryClient.invalidateQueries({ queryKey: ["comments", postId] });
-
       if (onCommentSuccess) {
         onCommentSuccess();
       }
@@ -129,6 +134,21 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
     }
   };
 
+  // --- Logic chuyển ảnh ---
+  const nextImage = (e) => {
+    e.stopPropagation();
+    if (currentImageIndex < mediaList.length - 1) {
+      setCurrentImageIndex(prev => prev + 1);
+    }
+  };
+
+  const prevImage = (e) => {
+    e.stopPropagation();
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(prev => prev - 1);
+    }
+  };
+
   const headerData = postData?.user
     ? {
       author: postData.user.name,
@@ -146,8 +166,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
         onClose={onClose}
         fullWidth
         maxWidth="sm"
-        scroll="paper" // Cho phép cuộn nội dung trong Paper
-        // Thiết lập chiều cao cố định (ví dụ 80-90% màn hình) để thanh cuộn hoạt động tốt
+        scroll="paper"
         PaperProps={{
           sx: { height: '100%', maxHeight: '90vh' }
         }}
@@ -162,39 +181,73 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
           </IconButton>
         </DialogTitle>
 
-
         <div className="border-b border-gray-200 dark:border-gray-700"></div>
 
         {/* --- 2. SCROLLABLE CONTENT (NỘI DUNG CUỘN CHUNG) --- */}
-        {/* DialogContent tự động có overflow-y: auto. Ta bỏ display flex column đi để nó flow tự nhiên */}
         <DialogContent dividers={false} sx={{ p: 0 }}>
 
           {/* A. Phần Post Content + Media */}
           <Box sx={{ p: 2 }}>
             {headerData && <PostHeader headerData={headerData} postData={postData} />}
-            <Typography sx={{ px: 2, mt: 1 }}>{postData?.content}</Typography>
+            <Typography sx={{ px: 2, mt: 1, whiteSpace: 'pre-line' }}>{postData?.content}</Typography>
 
-            {/* Media Grid */}
-            {postData?.media && postData.media.length > 0 && (
+            {/* Media Slider (Instagram Style) */}
+            {mediaList.length > 0 && (
               <Box sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}>
-                <div className={`grid gap-1 ${postData.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                  {postData.media.map((item, index) => (
-                    <div
-                      key={index}
-                      className={`
-                             relative overflow-hidden cursor-pointer bg-gray-100 group
-                             ${postData.media.length === 1 ? 'aspect-video' : 'aspect-square'} 
-                          `}
-                      onClick={() => setSelectedImage(item.media_url)}
+                <div className="relative group">
+                  {/* Ảnh hiển thị */}
+                  <div
+                    className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden"
+                    onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
+                  >
+                    <img
+                      src={mediaList[currentImageIndex].media_url}
+                      alt={`Slide ${currentImageIndex}`}
+                      className="w-full h-full object-cover transition-transform duration-300"
+                    />
+                  </div>
+
+                  {/* Nút Previous */}
+                  {currentImageIndex > 0 && (
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 z-10"
                     >
-                      <img
-                        src={item.media_url}
-                        alt={`media-${index}`}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                      />
+                      <ChevronLeft />
+                    </button>
+                  )}
+
+                  {/* Nút Next */}
+                  {currentImageIndex < mediaList.length - 1 && (
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 z-10"
+                    >
+                      <ChevronRight />
+                    </button>
+                  )}
+
+                  {/* Pagination Dots */}
+                  {mediaList.length > 1 && (
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+                      {mediaList.map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex
+                              ? 'bg-blue-500 scale-110'
+                              : 'bg-white/60 hover:bg-white/90'
+                            }`}
+                        />
+                      ))}
                     </div>
-                  ))}
+                  )}
+
+                  {/* Số lượng ảnh (Góc trên phải) */}
+                  {mediaList.length > 1 && (
+                    <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10">
+                      {currentImageIndex + 1}/{mediaList.length}
+                    </div>
+                  )}
                 </div>
               </Box>
             )}
@@ -233,7 +286,6 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
         </DialogContent>
 
         {/* --- 3. FOOTER INPUT (CỐ ĐỊNH Ở ĐÁY) --- */}
-        {/* Đặt Box này ra ngoài DialogContent để nó luôn hiển thị ở dưới cùng mà không bị cuộn theo nội dung */}
         <Box sx={{ p: 2, borderTop: "1px solid #eee", bgcolor: "background.paper", zIndex: 10 }}>
           {replyTo && (
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1, bgcolor: "#f5f5f5", p: 1, borderRadius: 1 }}>
@@ -273,7 +325,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
                     color="primary"
                     disabled={!inputContent.trim()}
                   >
-                     <SendIcon />
+                    <SendIcon />
                   </IconButton>
                 </InputAdornment>
               ),

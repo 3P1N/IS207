@@ -74,7 +74,7 @@ export default function UsersAdminPage() {
             Quản lý người dùng
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Xem danh sách, tìm kiếm và chặn/mở chặn tài khoản.
+            Xem danh sách, tìm kiếm và vô hiệu/kích hoạt tài khoản.
           </Typography>
         </Box>
       </Box>
@@ -144,7 +144,7 @@ export default function UsersAdminPage() {
 
                         <TableCell>
                           <Chip
-                            label={user.is_Violated ? "Đã chặn" : "Đang hoạt động"}
+                            label={user.is_Violated ? "Đã vô hiệu" : "Đang hoạt động"}
                             color={user.is_Violated ? "error" : "success"}
                             size="small"
                           />
@@ -158,7 +158,7 @@ export default function UsersAdminPage() {
                             onClick={() => toggleUserViolated(user.id)}
                             disabled={isLoadingThis}
                           >
-                            {isLoadingThis ? <CircularProgress size={16} color="inherit" /> : (user.is_Violated ? "Mở chặn" : "Chặn")}
+                            {isLoadingThis ? <CircularProgress size={16} color="inherit" /> : (user.is_Violated ? "Kích hoạt lại" : "Vô hiệu")}
                           </Button>
                         </TableCell>
                       </TableRow>
