@@ -1,6 +1,7 @@
 // src/components/Post/PostCard.jsx
 import { useContext, useEffect, useState, useRef } from 'react'; // Import thêm useRef
 import PostHeader from './PostHeader';
+import { Box } from '@mui/material';
 import PostActionsBar from './PostActionsBar';
 import { AuthContext } from '../../router/AuthProvider';
 import ImageViewer from '../../shared/components/ImageViewer';
@@ -21,6 +22,7 @@ export default function PostCard({ postData, index }) {
     const { userData } = useContext(AuthContext);
     const [selectedImage, setSelectedImage] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // --- Xử lý vuốt (Swipe) ---
     const touchStartX = useRef(0);
@@ -106,93 +108,96 @@ export default function PostCard({ postData, index }) {
         if (currentImageIndex > 0) setCurrentImageIndex(prev => prev - 1);
     };
 
-    const isSingleImage = mediaList.length === 1;
+    // Xử lý nội dung dài
+    const MAX_LENGTH = 150;
+    const content = postData.content || '';
+    const shouldTruncate = content.length > MAX_LENGTH;
+    const displayContent = shouldTruncate && !isExpanded
+        ? content.slice(0, MAX_LENGTH) + '...'
+        : content;
 
     return (
         <>
             <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm overflow-hidden mb-4">
                 <PostHeader headerData={headerData} postData={postData} index={index} />
 
-                <p className="text-base px-4 py-2 whitespace-pre-line">{postData.content}</p>
+                <div className="px-4 py-2">
+                    <p className="text-base whitespace-pre-line inline">{displayContent}</p>
+                    {shouldTruncate && (
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="cursor-pointer text-blue-500 hover:text-blue-600 ml-1 font-medium"
+                        >
+                            {isExpanded ? 'Ẩn bớt' : 'Xem thêm'}
+                        </button>
+                    )}
+                </div>
 
-                {/* Media Slider */}
                 {/* Media Slider */}
                 {mediaList.length > 0 && (
-                    <div
-                        // LOGIC CSS:
-                        // - Nếu nhiều ảnh: dùng 'aspect-square' (vuông cố định) + 'bg-black' để làm nền.
-                        // - Nếu 1 ảnh: dùng 'h-auto' (chiều cao tự động) và giới hạn max-h để không quá dài.
-                        className={`relative group touch-pan-y flex items-center justify-center overflow-hidden
-            ${mediaList.length > 1
-                                ? 'w-full aspect-square bg-black'
-                                : 'w-full h-auto max-h-[650px] bg-gray-100 dark:bg-gray-900'
-                            }
-        `}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                        // Thêm click để mở xem ảnh full
-                        onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
-                    >
-                        {/* Container ảnh */}
-                        <img
-                            src={mediaList[currentImageIndex].media_url}
-                            alt={`Slide ${currentImageIndex}`}
-                            // LOGIC CSS ẢNH:
-                            // - Nhiều ảnh: 'object-contain' + 'h-full' để nằm gọn trong khung vuông.
-                            // - 1 ảnh: 'object-contain' (hoặc cover tùy ý) + 'max-h...' để hiển thị tự nhiên.
-                            className={`transition-transform duration-300 pointer-events-none
-                ${mediaList.length > 1
-                                    ? 'w-full h-full object-contain'
-                                    : 'w-full h-auto max-h-[650px] object-contain'
+                    <Box sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}>
+                        <div
+                            className={`relative group touch-pan-y flex items-center justify-center overflow-hidden cursor-pointer
+                    ${mediaList.length > 1
+                                    ? 'w-full aspect-square bg-black'
+                                    : 'w-full bg-gray-100 dark:bg-gray-900'
                                 }
-            `}
-                        />
+                  `}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                            onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
+                        >
+                            <img
+                                src={mediaList[currentImageIndex].media_url}
+                                alt={`Slide ${currentImageIndex}`}
+                                className={`transition-transform duration-300 pointer-events-none
+                      ${mediaList.length > 1
+                                        ? 'w-full h-full object-contain'
+                                        : 'w-full h-auto'
+                                    }
+                    `}
+                            />
 
-                        {/* Nút Previous - Chỉ hiện khi index > 0 */}
-                        {currentImageIndex > 0 && (
-                            <button
-                                onClick={prevImage}
-                                onTouchStart={(e) => e.stopPropagation()}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
-                            >
-                                <ChevronLeft />
-                            </button>
-                        )}
+                            {mediaList.length > 1 && currentImageIndex > 0 && (
+                                <button
+                                    onClick={prevImage}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
+                                >
+                                    <ChevronLeft />
+                                </button>
+                            )}
 
-                        {/* Nút Next - Chỉ hiện khi chưa đến ảnh cuối */}
-                        {currentImageIndex < mediaList.length - 1 && (
-                            <button
-                                onClick={nextImage}
-                                onTouchStart={(e) => e.stopPropagation()}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
-                            >
-                                <ChevronRight />
-                            </button>
-                        )}
+                            {mediaList.length > 1 && currentImageIndex < mediaList.length - 1 && (
+                                <button
+                                    onClick={nextImage}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
+                                >
+                                    <ChevronRight />
+                                </button>
+                            )}
 
-                        {/* Pagination Dots - Chỉ hiện khi có nhiều ảnh */}
-                        {mediaList.length > 1 && (
-                            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
-                                {mediaList.map((_, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex
-                                            ? 'bg-blue-500 scale-110'
-                                            : 'bg-white/60'
-                                            }`}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                            {mediaList.length > 1 && (
+                                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
+                                    {mediaList.map((_, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex
+                                                ? 'bg-blue-500 scale-110'
+                                                : 'bg-white/60'
+                                                }`}
+                                        />
+                                    ))}
+                                </div>
+                            )}
 
-                        {/* Số lượng ảnh - Chỉ hiện khi có nhiều ảnh */}
-                        {mediaList.length > 1 && (
-                            <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full pointer-events-none">
-                                {currentImageIndex + 1}/{mediaList.length}
-                            </div>
-                        )}
-                    </div>
+                            {mediaList.length > 1 && (
+                                <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10 pointer-events-none">
+                                    {currentImageIndex + 1}/{mediaList.length}
+                                </div>
+                            )}
+                        </div>
+                    </Box>
                 )}
 
                 <PostActionsBar

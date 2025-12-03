@@ -9,16 +9,17 @@ import { AuthContext } from "../../router/AuthProvider";
 export default function LoginForm() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // State quản lý lỗi từng trường (email, password)
   const [fieldErrors, setFieldErrors] = useState({});
-  
+
   // State quản lý lỗi chung từ server
   const [error, setError] = useState(null);
-  
+
   const [loading, setLoading] = useState(false);
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
+  
 
   // --- VALIDATION ---
   const validateForm = () => {
@@ -39,9 +40,9 @@ export default function LoginForm() {
       tempErrors.password = "Vui lòng nhập mật khẩu.";
       isValid = false;
     } else if (formData.password.length < 6) {
-        // Tùy chỉnh độ dài nếu cần
-        tempErrors.password = "Mật khẩu phải có ít nhất 6 ký tự.";
-        isValid = false;
+      // Tùy chỉnh độ dài nếu cần
+      tempErrors.password = "Mật khẩu phải có ít nhất 6 ký tự.";
+      isValid = false;
     }
 
     setFieldErrors(tempErrors);
@@ -63,44 +64,44 @@ export default function LoginForm() {
 
     // Bước 1: Validate Client-side trước
     if (!validateForm()) {
-        return; // Dừng lại nếu form chưa hợp lệ
+      return; // Dừng lại nếu form chưa hợp lệ
     }
 
     setLoading(true);
     try {
-       await auth.login(formData); 
-       navigate("/", { replace: true });
+      await auth.login(formData);
+      navigate("/", { replace: true });
     } catch (err) {
-       console.error("Login Error:", err);
-       
-       // Bước 2: Xử lý lỗi từ Server trả về
-       // Giả sử server trả về JSON dạng: { message: "Sai mật khẩu", errors: {...} }
-       let serverMessage = "Đăng nhập thất bại. Vui lòng thử lại.";
+      console.error("Login Error:", err);
 
-       if (err.response && err.response.data) {
-           // Ưu tiên lấy message từ server
-           if (err.response.data.message) {
-               serverMessage = err.response.data.message;
-           } 
-           // Hoặc nếu server trả về chuỗi lỗi trực tiếp
-           else if (typeof err.response.data === 'string') {
-               serverMessage = err.response.data;
-           }
-       } else if (err.message) {
-           serverMessage = err.message;
-       }
+      // Bước 2: Xử lý lỗi từ Server trả về
+      // Giả sử server trả về JSON dạng: { message: "Sai mật khẩu", errors: {...} }
+      let serverMessage = "Đăng nhập thất bại. Vui lòng thử lại.";
 
-       setError(serverMessage);
+      if (err.response && err.response.data) {
+        // Ưu tiên lấy message từ server
+        if (err.response.data.message) {
+          serverMessage = err.response.data.message;
+        }
+        // Hoặc nếu server trả về chuỗi lỗi trực tiếp
+        else if (typeof err.response.data === 'string') {
+          serverMessage = err.response.data;
+        }
+      } else if (err.message) {
+        serverMessage = err.message;
+      }
+
+      setError(serverMessage);
     } finally {
-       setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
     <Box sx={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <Paper 
+      <Paper
         elevation={6}
-        sx={{ 
+        sx={{
           width: '100%', p: 4, borderRadius: 4, position: 'relative', zIndex: 20,
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(10px)'
@@ -118,37 +119,42 @@ export default function LoginForm() {
 
         <form onSubmit={handleSubmit}>
           <TextField
-            label="Email" name="email" fullWidth margin="normal"
-            value={formData.email} onChange={handleChange}
-            
-            // Hiển thị lỗi validation cho Email
+            label="Email"
+            name="email"
+            fullWidth
+            margin="normal"
+            value={formData.email}
+            onChange={handleChange}
             error={!!fieldErrors.email}
             helperText={fieldErrors.email}
-
+            inputProps={{ autoComplete: "username" }}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
           />
-           
+
           <TextField
-            label="Password" name="password" type={showPassword ? "text" : "password"}
-            fullWidth margin="normal"
-            value={formData.password} onChange={handleChange}
-            
-            // Hiển thị lỗi validation cho Password
+            label="Password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            fullWidth
+            margin="normal"
+            value={formData.password}
+            onChange={handleChange}
             error={!!fieldErrors.password}
             helperText={fieldErrors.password}
-
+            inputProps={{ autoComplete: "current-password" }}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: showPassword ? '#16a34a' : 'inherit' }}>
+                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 </InputAdornment>
               ),
             }}
           />
-            
+
+
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
             <Button component={RouterLink} to="/forgot-password" size="small" sx={{ textTransform: 'none', color: '#16a34a' }}>
               Quên mật khẩu?
@@ -170,12 +176,12 @@ export default function LoginForm() {
           </Button>
 
           <Box sx={{ mt: 2, textAlign: 'center', pt: 2, borderTop: '1px solid #eee' }}>
-             <Typography variant="body2" color="text.secondary">
-               Chưa có tài khoản?{' '}
-               <Button component={RouterLink} to="/signup" sx={{ fontWeight: 'bold', textTransform: 'none', color: '#166534' }}>
-                  Đăng ký ngay
-               </Button>
-             </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Chưa có tài khoản?{' '}
+              <Button component={RouterLink} to="/signup" sx={{ fontWeight: 'bold', textTransform: 'none', color: '#166534' }}>
+                Đăng ký ngay
+              </Button>
+            </Typography>
           </Box>
         </form>
       </Paper>

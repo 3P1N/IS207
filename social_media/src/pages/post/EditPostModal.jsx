@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { 
     Dialog, 
     DialogTitle, 
@@ -11,8 +11,7 @@ import {
     Snackbar, 
     Alert, 
     Box, 
-    Typography,
-    useTheme 
+    Typography
 } from "@mui/material";
 
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
@@ -24,7 +23,6 @@ import AvatarUser from '../../shared/components/AvatarUser';
 export default function EditPostModal({ postData, postIndex, onClose }) {
     // 1. Thêm setPostsData vào useContext
     const { userData, setPostsData } = useContext(AuthContext);
-    const theme = useTheme(); 
 
     const [postContent, setPostContent] = useState(postData.content || '');
     // Logic map media cũ
@@ -34,7 +32,6 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
         type: url.media_url.includes('.mp4') ? 'video' : 'image' // Check đơn giản đuôi file hoặc logic backend trả về type
     })) || []);
     
-    const [urlMedia, setUrlMedia] = useState([]); 
     const [loading, setLoading] = useState(false);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -107,13 +104,14 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
             const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
             
             // 2. Gọi API update
-            const response = await api.put(`/posts/${postData.id}`, { 
+            await api.put(`/posts/${postData.id}`, { 
                 content: postContent, 
                 media_url: uploadedUrls 
             });
             
-            // 3. Lấy dữ liệu post mới từ response (Backend trả về { message, post })
-            const updatedPost = response.data.post;
+            // 3. Fetch lại post để lấy dữ liệu mới nhất từ server
+            const postResponse = await api.get(`/posts/${postData.id}`);
+            const updatedPost = postResponse.data;
 
             // 4. Cập nhật ngay lập tức vào Context để UI render lại
             setPostsData(prevPosts => {
@@ -121,10 +119,11 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                 // Cập nhật đúng vị trí index đang sửa
                 if (newPosts[postIndex]) {
                     newPosts[postIndex] = {
-                        ...newPosts[postIndex], // Giữ các props cũ nếu cần
-                        ...updatedPost,          // Ghi đè bằng data mới từ server
-                        // Đảm bảo user object không bị mất nếu backend không trả về full user relation
-                        user: newPosts[postIndex].user 
+                        ...newPosts[postIndex],  // Giữ các props cũ
+                        ...updatedPost,           // Ghi đè bằng data mới từ server
+                        user: newPosts[postIndex].user, // Đảm bảo user object không bị mất
+                        // Đảm bảo media được format đúng
+                        media: updatedPost.media || []
                     };
                 }
                 return newPosts;
@@ -155,8 +154,10 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                 onClose={handleClose} 
                 fullWidth 
                 maxWidth="sm"
-                PaperProps={{
-                    sx: { backgroundImage: 'none' } 
+                slotProps={{
+                    paper: {
+                        sx: { backgroundImage: 'none' }
+                    }
                 }}
             >
                 {/* ... UI code ... */}

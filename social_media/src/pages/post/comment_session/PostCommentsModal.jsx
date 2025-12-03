@@ -40,6 +40,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
   const [selectedImage, setSelectedImage] = useState(null);
   const inputRef = useRef(null);
   const { userData } = useContext(AuthContext);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // --- State thông báo lỗi ---
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" }); // <--- THÊM STATE
@@ -63,6 +64,12 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
+  const MAX_LENGTH = 150;
+  const content = postData.content || '';
+  const shouldTruncate = content.length > MAX_LENGTH;
+  const displayContent = shouldTruncate && !isExpanded
+    ? content.slice(0, MAX_LENGTH) + '...'
+    : content;
 
   const rootComments = useMemo(() => {
     return Array.isArray(allComments)
@@ -238,29 +245,42 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
         <DialogContent dividers={false} sx={{ p: 0 }}>
           <Box sx={{ p: 2 }}>
             {headerData && <PostHeader headerData={headerData} postData={postData} />}
-            <Typography sx={{ px: 2, mt: 1, whiteSpace: 'pre-line' }}>{postData?.content}</Typography>
-
-            {/* Media Slider Code cũ giữ nguyên */}
+            <p className="text-base whitespace-pre-line inline">{displayContent}</p>
+            {shouldTruncate && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-blue-500 hover:text-blue-600 ml-1 font-medium cursor-pointer"
+              >
+                {isExpanded ? 'Ẩn bớt' : 'Xem thêm'}
+              </button>
+            )}
+            {/* Media Slider */}
             {mediaList.length > 0 && (
               <Box sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}>
                 <div
-                  className="relative group touch-pan-y"
+                  className={`relative group touch-pan-y flex items-center justify-center overflow-hidden cursor-pointer
+                    ${mediaList.length > 1
+                      ? 'w-full aspect-square bg-black'
+                      : 'w-full bg-gray-100 dark:bg-gray-900'
+                    }
+                  `}
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
+                  onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
                 >
-                  <div
-                    className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden select-none"
-                    onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
-                  >
-                    <img
-                      src={mediaList[currentImageIndex].media_url}
-                      alt={`Slide ${currentImageIndex}`}
-                      className="w-full h-full object-contain transition-transform duration-300 pointer-events-none"
-                    />
-                  </div>
+                  <img
+                    src={mediaList[currentImageIndex].media_url}
+                    alt={`Slide ${currentImageIndex}`}
+                    className={`transition-transform duration-300 pointer-events-none
+                      ${mediaList.length > 1
+                        ? 'w-full h-full object-contain'
+                        : 'w-full h-auto'
+                      }
+                    `}
+                  />
 
-                  {currentImageIndex > 0 && (
+                  {mediaList.length > 1 && currentImageIndex > 0 && (
                     <button
                       onClick={prevImage}
                       className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
@@ -269,7 +289,7 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
                     </button>
                   )}
 
-                  {currentImageIndex < mediaList.length - 1 && (
+                  {mediaList.length > 1 && currentImageIndex < mediaList.length - 1 && (
                     <button
                       onClick={nextImage}
                       className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"

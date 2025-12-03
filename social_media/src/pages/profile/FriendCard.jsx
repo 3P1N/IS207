@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Box, Stack, Typography, Button, Chip } from "@mui/material";
 import AvatarUser from "../../shared/components/AvatarUser";
 import { api } from "../../shared/api";
 
@@ -101,87 +102,131 @@ export default function FriendCard({
 
   const renderActions = () => {
     if (friendStatus === "self") {
-      return <span className="friend-badge">Đây là bạn</span>;
+      return <Chip label="Đây là bạn" size="small" color="default" />;
     }
 
     if (friendStatus === "accepted") {
       return (
-        <button
-          type="button"
-          className="btn-unfriend"
+        <Button
+          variant="outlined"
+          size="small"
           disabled={loading}
           onClick={handleUnfriendOrCancel}
+          sx={{ minWidth: 100 }}
         >
           Unfriend
-        </button>
+        </Button>
       );
     }
 
     if (friendStatus === "pending" && user_id!==id) {
       return (
-        <>
-          <button type="button" className="btn-pending" 
+        <Button
+          variant="outlined"
+          size="small"
+          disabled={loading}
           onClick={handleUnfriendOrCancel}
-          >
-            Chờ phản hồi
-          </button>
-        </>
+          sx={{ minWidth: 100 }}
+        >
+          Chờ phản hồi
+        </Button>
       );
     }
 
-    if (friendStatus === "pending"&& user_id===id  ) {
+    if (friendStatus === "pending"&& user_id===id) {
       return (
-        <>
-          <button
-            type="button"
-            className="btn-accept"
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            size="small"
             disabled={loading}
             onClick={handleAccept}
+            sx={{ minWidth: 80 }}
           >
             Chấp nhận
-          </button>
-          <button
-            type="button"
-            className="btn-reject"
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            color="error"
             disabled={loading}
             onClick={handleUnfriendOrCancel}
+            sx={{ minWidth: 80 }}
           >
             Từ chối
-          </button>
-        </>
+          </Button>
+        </Stack>
       );
     }
 
     // none
     return (
-      <button
-        type="button"
-        className="btn-add-friend"
+      <Button
+        variant="contained"
+        size="small"
         disabled={loading}
         onClick={handleAddFriend}
+        sx={{ minWidth: 100 }}
       >
         Add friend
-      </button>
+      </Button>
     );
   };
 
   return (
-    <div className="friend-card">
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        p: 2,
+        minHeight: 80,
+        width: '100%'
+      }}
+    >
       {/* Avatar */}
-      <div className="friend-avatar-wrapper">
+      <Box sx={{ position: 'relative', flexShrink: 0 }}>
         <AvatarUser userData={friend} />
-        {friendStatus === "friends" && <span className="friend-status-dot" />}
-      </div>
+        {friendStatus === "friends" && (
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 12,
+              height: 12,
+              bgcolor: 'success.main',
+              borderRadius: '50%',
+              border: '2px solid white'
+            }}
+          />
+        )}
+      </Box>
 
       {/* Info */}
-      <div className="friend-info">
-        <p className="friend-name">{name}</p>
-        {/* <p className="friend-gender">{ gender || "@username"}</p> */}
-        <p className="friend-mutual">0 bạn chung</p>
-      </div>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography 
+          variant="subtitle2" 
+          fontWeight={600}
+          sx={{ 
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {name}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          0 bạn chung
+        </Typography>
+      </Box>
 
       {/* Actions */}
-      {isOwnProfile && <div className="friend-actions">{renderActions()}</div> }
-    </div>
+      {isOwnProfile && (
+        <Box sx={{ flexShrink: 0 }}>
+          {renderActions()}
+        </Box>
+      )}
+    </Box>
   );
 }

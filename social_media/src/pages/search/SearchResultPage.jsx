@@ -1,22 +1,26 @@
-import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
-  Grid,
   Typography,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Card,
   Divider,
   Stack,
   CircularProgress,
-  Chip
+  Chip,
+  Avatar,
+  Paper,
+  alpha,
+  useTheme,
+  Container
 } from "@mui/material";
 
-import { Feed, Person, Tune } from "@mui/icons-material";
-// 1. Import React Query
+import {
+  Feed,
+  Person,
+  Tune,
+  Search as SearchIcon,
+  Group
+} from "@mui/icons-material";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../shared/api";
 import PostCard from "../post/PostCard";
@@ -28,178 +32,192 @@ function useQueryParam() {
   return new URLSearchParams(location.search);
 }
 
-function MobileFilter({ keyword, currentType }) {
-  const navigate = useNavigate();
-
-  const go = (type) =>
-    navigate(`/search?query=${encodeURIComponent(keyword)}&type=${type}`);
-
-  return (
-    <Stack
-      direction="row"
-      spacing={1}
-      sx={{
-        mb: 2,
-        display: { xs: "flex", md: "none" }, // Chỉ hiện trên Mobile
-        overflowX: "auto", // Cho phép cuộn ngang nếu quá dài
-        pb: 0.5 // Padding bottom để thanh cuộn không dính sát
-      }}
-    >
-      <Chip
-        icon={<Tune />}
-        label="Tất cả"
-        clickable
-        color={currentType === "all" ? "primary" : "default"}
-        variant={currentType === "all" ? "filled" : "outlined"}
-        onClick={() => go("all")}
-      />
-      <Chip
-        icon={<Feed />}
-        label="Bài viết"
-        clickable
-        color={currentType === "posts" ? "primary" : "default"}
-        variant={currentType === "posts" ? "filled" : "outlined"}
-        onClick={() => go("posts")}
-      />
-      <Chip
-        icon={<Person />}
-        label="Mọi người"
-        clickable
-        color={currentType === "people" ? "primary" : "default"}
-        variant={currentType === "people" ? "filled" : "outlined"}
-        onClick={() => go("people")}
-      />
-    </Stack>
-  );
-}
-
-// Giữ lại helper này nếu bạn muốn highlight từ khóa sau này
-const highlight = (text, kw) => {
-  if (!kw) return text;
-  const parts = text.split(new RegExp(`(${kw})`, "ig"));
-  return parts.map((p, i) =>
-    p.toLowerCase() === kw.toLowerCase() ? (
-      <mark key={i} style={{ padding: 0, background: "#fff59d" }}>
-        {p}
-      </mark>
-    ) : (
-      <React.Fragment key={i}>{p}</React.Fragment>
-    )
-  );
-};
-
 /* -------------------- components -------------------- */
-function FilterSidebar({ keyword }) {
+function FilterTabs({ keyword, currentType }) {
   const navigate = useNavigate();
-  const query = useQueryParam();
+  const theme = useTheme();
 
-  // Hàm chuyển hướng giữ nguyên logic
   const go = (type) =>
     navigate(`/search?query=${encodeURIComponent(keyword)}&type=${type}`);
 
-  const type = query.get("type") || "all";
+  const tabs = [
+    { value: "all", label: "Tất cả", icon: <Tune /> },
+    { value: "posts", label: "Bài viết", icon: <Feed /> },
+    { value: "people", label: "Mọi người", icon: <Person /> }
+  ];
 
   return (
-    <Box
+    <Paper
+      elevation={0}
       sx={{
-        position: "sticky",
-        top: 72,
-        alignSelf: "flex-start",
-        p: 2,
-        borderRight: { md: "1px solid #eee" },
+        mb: 3,
+        borderRadius: 2,
+        overflow: 'hidden',
+        border: `1px solid ${theme.palette.divider}`
       }}
     >
-      <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.5 }}>
-        Bộ lọc
-      </Typography>
-      <List dense sx={{ width: 260, maxWidth: "100%" }}>
-        <ListItemButton selected={type === "all"} onClick={() => go("all")}>
-          <ListItemIcon>
-            <Tune />
-          </ListItemIcon>
-          <ListItemText primary="Tất cả" />
-        </ListItemButton>
-        <ListItemButton selected={type === "posts"} onClick={() => go("posts")}>
-          <ListItemIcon>
-            <Feed />
-          </ListItemIcon>
-          <ListItemText primary="Bài viết" />
-        </ListItemButton>
-        <ListItemButton selected={type === "people"} onClick={() => go("people")}>
-          <ListItemIcon>
-            <Person />
-          </ListItemIcon>
-          <ListItemText primary="Mọi người" />
-        </ListItemButton>
-      </List>
-    </Box>
+      <Stack
+        direction="row"
+        sx={{
+          overflowX: "auto",
+          '&::-webkit-scrollbar': { height: 6 },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: alpha(theme.palette.primary.main, 0.2),
+            borderRadius: 3
+          }
+        }}
+      >
+        {tabs.map((tab) => (
+          <Box
+            key={tab.value}
+            onClick={() => go(tab.value)}
+            sx={{
+              flex: { xs: 1, sm: 'none' },
+              minWidth: { xs: 'auto', sm: 140 },
+              px: 3,
+              py: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1,
+              cursor: 'pointer',
+              borderBottom: currentType === tab.value
+                ? `3px solid ${theme.palette.primary.main}`
+                : '3px solid transparent',
+              backgroundColor: currentType === tab.value
+                ? alpha(theme.palette.primary.main, 0.08)
+                : 'transparent',
+              color: currentType === tab.value
+                ? theme.palette.primary.main
+                : theme.palette.text.secondary,
+              fontWeight: currentType === tab.value ? 600 : 400,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                color: theme.palette.primary.main
+              }
+            }}
+          >
+            {tab.icon}
+            <Typography variant="body2" fontWeight="inherit">
+              {tab.label}
+            </Typography>
+          </Box>
+        ))}
+      </Stack>
+    </Paper>
   );
 }
 
 function PeopleSection({ keyword }) {
-  // --- REACT QUERY CHO PEOPLE ---
+  const theme = useTheme();
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ["search", "people", keyword], // Key phụ thuộc vào keyword
+    queryKey: ["search", "people", keyword],
     queryFn: async () => {
-
       const response = await api.get(`/users?search=${keyword}`);
       return response.data;
     },
-    enabled: !!keyword, // Chỉ search khi có keyword
-    staleTime: 300 * 1000, // Cache 1 phút
+    enabled: !!keyword,
+    staleTime: 300 * 1000,
   });
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 3 }}>
-        <CircularProgress size={20} /> <Typography>Đang tìm người dùng...</Typography>
-      </Box>
+      <Card
+        elevation={0}
+        sx={{
+          mb: 3,
+          p: 3,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2
+        }}
+      >
+        <Stack direction="row" spacing={2} alignItems="center">
+          <CircularProgress size={24} />
+          <Typography color="text.secondary">Đang tìm người dùng...</Typography>
+        </Stack>
+      </Card>
     );
   }
 
   if (!users.length) {
     return (
-      <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-        <Typography color="text.secondary">Không tìm thấy người dùng nào phù hợp.</Typography>
-      </Box>
+      <Card
+        elevation={0}
+        sx={{
+          mb: 3,
+          p: 4,
+          textAlign: 'center',
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+          bgcolor: alpha(theme.palette.info.main, 0.02)
+        }}
+      >
+        <Person sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+        <Typography color="text.secondary">
+          Không tìm thấy người dùng nào phù hợp
+        </Typography>
+      </Card>
     );
   }
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-        Mọi người
-      </Typography>
-      <Stack spacing={1.5}>
-        {users.map((u) => (
-          <Box
-            key={u.id}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              p: 1,
-              borderRadius: 2,
-              "&:hover": { backgroundColor: "#f7f7f7" },
-            }}
-          >
-            <FriendCard friend={u} defaultStatus="friends" />
-          </Box>
-        ))}
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+        <Group color="primary" />
+        <Typography variant="h6" fontWeight={600}>
+          Mọi người
+        </Typography>
+        <Chip
+          label={users.length}
+          size="small"
+          color="primary"
+          variant="outlined"
+        />
       </Stack>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '16px',
+          width: '100%'
+        }}
+      >
+        {users.map((u) => (
+          <div key={u.id}>
+            <Card
+              elevation={0}
+              sx={{
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 2,
+                transition: 'all 0.2s ease',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                '&:hover': {
+                  boxShadow: theme.shadows[2],
+                  borderColor: theme.palette.primary.main
+                }
+              }}
+            >
+              <Box sx={{ width: '100%', p: 1 }}>
+                <FriendCard friend={u} defaultStatus="friends" />
+              </Box>
+            </Card>
+          </div>
+        ))}
+      </div>
     </Box>
   );
 }
 
 function PostsSection({ keyword }) {
-  // --- REACT QUERY CHO POSTS ---
+  const theme = useTheme();
   const { data: postData = [], isLoading } = useQuery({
     queryKey: ["search", "posts", keyword],
     queryFn: async () => {
-
       const response = await api.get(`/posts?search=${keyword}`);
-      // Lưu ý: API của bạn trả về response.data.data trong code cũ
-      // Nếu API trả về trực tiếp mảng thì bỏ .data cuối đi nhé
       return response.data.data || response.data;
     },
     enabled: !!keyword,
@@ -208,97 +226,142 @@ function PostsSection({ keyword }) {
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 3 }}>
-        <CircularProgress size={20} /> <Typography>Đang tìm bài viết...</Typography>
+      <Box
+        sx={{
+          mb: 3,
+          p: 3,
+          textAlign: 'center'
+        }}
+      >
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
+          <CircularProgress size={24} />
+          <Typography color="text.secondary">Đang tìm bài viết...</Typography>
+        </Stack>
       </Box>
     );
   }
 
   if (!postData.length) {
     return (
-      <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-        <Typography color="text.secondary">Không tìm thấy bài viết nào.</Typography>
+      <Box
+        sx={{
+          mb: 3,
+          p: 4,
+          textAlign: 'center',
+          borderRadius: 2,
+          bgcolor: alpha(theme.palette.info.main, 0.02)
+        }}
+      >
+        <Feed sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+        <Typography color="text.secondary">
+          Không tìm thấy bài viết nào
+        </Typography>
       </Box>
     );
   }
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-        Bài viết
-      </Typography>
-      <Stack spacing={2}>
-        {postData.map((p) => (
-          <Card key={p.id} variant="outlined">
-            <PostCard postData={p} />
-          </Card>
-        ))}
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+        <Feed color="primary" />
+        <Typography variant="h6" fontWeight={600}>
+          Bài viết
+        </Typography>
+        <Chip
+          label={postData.length}
+          size="small"
+          color="primary"
+          variant="outlined"
+        />
       </Stack>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        {postData.map((p, index) => (
+          <Box key={p.id} sx={{ width: '100%', maxWidth: '672px' }}>
+            <PostCard postData={p} index={index} />
+          </Box>
+        ))}
+      </Box>
     </Box>
   );
 }
+
 
 /* -------------------- page -------------------- */
 export default function SearchResultPage() {
   const query = useQueryParam();
   const keyword = query.get("query") || "";
   const type = query.get("type") || "all";
+  const theme = useTheme();
 
   return (
-    <Box sx={{ p: { xs: 1.5, md: 3 } }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 1.5 }}>
-        Kết quả tìm kiếm cho: "{keyword}"
-      </Typography>
-      <MobileFilter keyword={keyword} currentType={type} />
-
-      <Grid container spacing={2}>
-        {/* Sidebar bộ lọc */}
-        <Grid
-          item
-          xs={12}
-          md={3}
-          lg={2}
-          sx={{ display: { xs: "none", md: "block" } }}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: alpha(theme.palette.background.default, 0.5),
+        py: { xs: 2, md: 3 }
+      }}
+    >
+      <Container maxWidth="xl">
+        {/* Header */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2, md: 3 },
+            mb: 3,
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`
+          }}
         >
-          <FilterSidebar keyword={keyword} />
-        </Grid>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Avatar
+              sx={{
+                bgcolor: theme.palette.primary.main,
+                width: 48,
+                height: 48
+              }}
+            >
+              <SearchIcon />
+            </Avatar>
+            <Box>
+              <Typography
+                variant="h5"
+                fontWeight={700}
+                sx={{
+                  color: theme.palette.text.primary,
+                  mb: 0.5
+                }}
+              >
+                Kết quả tìm kiếm
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Tìm kiếm cho: <strong>"{keyword}"</strong>
+              </Typography>
+            </Box>
+          </Stack>
+        </Paper>
 
-        {/* Kết quả */}
-        <Grid item xs={12} md={9} lg={7}>
-          {(type === "all" || type === "people") && (
-            <PeopleSection keyword={keyword} />
-          )}
+        {/* Filter Tabs */}
+        <FilterTabs keyword={keyword} currentType={type} />
 
-          {(type === "all" || type === "people") && (type === "all" || type === "posts") && (
-            <Divider sx={{ my: 2 }} />
-          )}
+        {/* Main Content - Centered */}
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ width: '100%', maxWidth: '800px' }}>
+            {(type === "all" || type === "people") && (
+              <PeopleSection keyword={keyword} />
+            )}
 
-          {(type === "all" || type === "posts") && (
-            <PostsSection keyword={keyword} />
-          )}
+            {type === "all" && (
+              <Divider sx={{ my: 3 }} />
+            )}
 
-          <Divider sx={{ my: 2 }} />
-        </Grid>
-
-        {/* Cột phải (tuỳ chọn: gợi ý, trending…) */}
-        <Grid item lg={3} sx={{ display: { xs: "none", lg: "block" } }}>
-          <Box
-            sx={{
-              position: "sticky",
-              top: 72,
-              p: 2,
-              borderLeft: "1px solid #eee",
-            }}
-          >
-            <Typography variant="subtitle1" fontWeight={700}>
-              Gợi ý cho bạn
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              (Đặt quảng cáo, trending, nhóm đề xuất…)
-            </Typography>
+            {(type === "all" || type === "posts") && (
+              <PostsSection keyword={keyword} />
+            )}
           </Box>
-        </Grid>
-      </Grid>
+        </Box>
+      </Container>
     </Box>
   );
 }

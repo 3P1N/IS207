@@ -53,7 +53,7 @@ export default function ThreadList() {
       const other = others[0];
 
       const displayName = t.name ?? other?.user?.name ?? "Cuộc trò chuyện";
-      const avatarUrl = other?.user?.avatar || "image.png";
+      const avatarUrl = other?.user?.avatarUrl || "image.png";
       const conversationId = t.conversation_id ?? t.id;
       // Lưu ý: Nếu t.last_message là object (do socket update), logic này vẫn chạy đúng vì nó lấy .content
       const last_message = t?.last_message?.content ?? "Chưa có tin nhắn nào";

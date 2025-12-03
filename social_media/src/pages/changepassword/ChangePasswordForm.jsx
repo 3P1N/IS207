@@ -6,8 +6,6 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff, LockReset } from "@mui/icons-material";
 import { api } from "../../shared/api";
-// --- MOCK API (Để test lỗi) ---
-
 
 export default function ChangePasswordForm() {
   const [formData, setFormData] = useState({
@@ -16,20 +14,19 @@ export default function ChangePasswordForm() {
     password_confirmation: ""
   });
   
-  // State lưu lỗi validate frontend (từng field)
   const [fieldErrors, setFieldErrors] = useState({});
-  
-  // State lưu lỗi trả về từ server (Alert chung)
   const [serverError, setServerError] = useState(null);
   
+  // --- THÊM STATE CHO CURRENT PASSWORD ---
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false); 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  // --- Theme Colors ---
   const frogGreen = "#4caf50";
   const darkFrogGreen = "#2e7d32";
   const pondWater = "#e0f7fa";
@@ -38,25 +35,20 @@ export default function ChangePasswordForm() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
-    // Xóa lỗi của field đó ngay khi người dùng nhập lại (UX tốt hơn)
     if (fieldErrors[name]) {
       setFieldErrors({ ...fieldErrors, [name]: "" });
     }
   };
 
-  // --- FRONTEND VALIDATION ---
   const validate = () => {
     const newErrors = {};
     let isValid = true;
 
-    // 1. Kiểm tra Current Password
     if (!formData.current_password.trim()) {
       newErrors.current_password = "Vui lòng nhập mật khẩu hiện tại.";
       isValid = false;
     }
 
-    // 2. Kiểm tra New Password
     if (!formData.password) {
       newErrors.password = "Vui lòng nhập mật khẩu mới.";
       isValid = false;
@@ -65,7 +57,6 @@ export default function ChangePasswordForm() {
       isValid = false;
     }
 
-    // 3. Kiểm tra Confirm Password
     if (!formData.password_confirmation) {
       newErrors.password_confirmation = "Vui lòng xác nhận mật khẩu.";
       isValid = false;
@@ -83,14 +74,10 @@ export default function ChangePasswordForm() {
     setServerError(null);
     setSuccess(null);
 
-    // Bước 1: Validate Frontend
-    if (!validate()) {
-      return; // Dừng nếu có lỗi frontend
-    }
+    if (!validate()) return;
 
     setLoading(true);
     try {
-      // Gọi API
       await api.post("/auth/change-password", {
         current_password: formData.current_password,
         new_password: formData.password,
@@ -98,22 +85,17 @@ export default function ChangePasswordForm() {
       });
 
       setSuccess("Ribbit! Đổi mật khẩu thành công. 🐸");
-      setFormData({ current_password: "", password: "", password_confirmation: "" }); // Reset form
-      setTimeout(() => navigate("/login"), 2000);
+      setFormData({ current_password: "", password: "", password_confirmation: "" });
+      setTimeout(() => navigate("/"), 2000);
 
     } catch (err) {
-      // Bước 2: Xử lý lỗi từ Server trả về
       console.error(err);
-      
       let msg = "Đổi mật khẩu thất bại. Vui lòng thử lại.";
-      
-      // Ưu tiên lấy message từ response của backend
       if (err.response && err.response.data && err.response.data.message) {
         msg = err.response.data.message;
       } else if (err.message) {
         msg = err.message;
       }
-
       setServerError(msg);
     } finally {
       setLoading(false);
@@ -129,7 +111,6 @@ export default function ChangePasswordForm() {
         p: 2, position: "relative", overflow: "hidden"
       }}
     >
-      {/* Trang trí nền */}
       <Box sx={{ position: "absolute", top: -50, left: -50, width: 200, height: 200, bgcolor: "#a5d6a7", borderRadius: "50%", opacity: 0.3, zIndex: 0 }} />
       <Box sx={{ position: "absolute", bottom: -30, right: -30, width: 150, height: 150, bgcolor: "#81c784", borderRadius: "50%", opacity: 0.3, zIndex: 0 }} />
 
@@ -155,24 +136,39 @@ export default function ChangePasswordForm() {
             <Typography variant="body2" color="text.secondary">Secure your lily pad</Typography>
           </Box>
 
-          {/* Hiển thị lỗi từ Server (Alert ở trên cùng) */}
           {serverError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{serverError}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{success}</Alert>}
 
           <form onSubmit={handleSubmit} noValidate>
+            
+            {/* --- CẬP NHẬT TEXTFIELD CURRENT PASSWORD --- */}
             <TextField
               label="Current Password"
               name="current_password"
-              fullWidth margin="normal" type="password"
+              fullWidth margin="normal" 
+              // 1. Sử dụng state showCurrentPassword
+              type={showCurrentPassword ? "text" : "password"} 
               value={formData.current_password}
               onChange={handleChange}
               color="success"
-              
-              // Hiển thị lỗi frontend cho từng field
               error={!!fieldErrors.current_password}
               helperText={fieldErrors.current_password}
-
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+              
+              // 2. Thêm InputProps chứa nút bấm
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton 
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)} 
+                      edge="end" 
+                      sx={{ color: darkFrogGreen }}
+                    >
+                      {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
              
             <TextField
@@ -183,11 +179,8 @@ export default function ChangePasswordForm() {
               value={formData.password}
               onChange={handleChange}
               color="success"
-              
-              // Hiển thị lỗi frontend
               error={!!fieldErrors.password}
               helperText={fieldErrors.password}
-
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               InputProps={{
                 endAdornment: (
@@ -208,11 +201,8 @@ export default function ChangePasswordForm() {
               value={formData.password_confirmation}
               onChange={handleChange}
               color="success"
-              
-              // Hiển thị lỗi frontend
               error={!!fieldErrors.password_confirmation}
               helperText={fieldErrors.password_confirmation}
-
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               InputProps={{
                 endAdornment: (
