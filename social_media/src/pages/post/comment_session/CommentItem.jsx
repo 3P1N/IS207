@@ -68,7 +68,12 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
       }
       setSnackbar({ open: true, message: "Đã xóa", severity: "success" });
     } catch (err) {
-      setSnackbar({ open: true, message: "Lỗi xóa", severity: "error" });
+        // --- XỬ LÝ 429 ---
+        if (err.response && err.response.status === 429) {
+            setSnackbar({ open: true, message: "Thao tác quá nhanh, thử lại sau.", severity: "warning" });
+        } else {
+            setSnackbar({ open: true, message: "Lỗi xóa", severity: "error" });
+        }
     } finally {
       setLoading(false);
     }
@@ -82,7 +87,12 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
       comment.content = editContent;
       setIsEditing(false);
     } catch (err) {
-      setSnackbar({ open: true, message: "Lỗi sửa", severity: "error" });
+      // --- XỬ LÝ 429 ---
+      if (err.response && err.response.status === 429) {
+          setSnackbar({ open: true, message: "Bạn sửa quá nhanh, từ từ thôi!", severity: "warning" });
+      } else {
+          setSnackbar({ open: true, message: "Lỗi sửa", severity: "error" });
+      }
     } finally {
       setLoading(false);
     }
@@ -90,13 +100,28 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
 
   const handleLike = async () => {
     const prevLiked = isLiked;
+    // Optimistic Update
     setIsLiked(!prevLiked);
     setLikesCount(prevLiked ? likesCount - 1 : likesCount + 1);
+
     try {
       await api.post(`/posts/${postId}/comments/${comment.id}/reactions`);
     } catch (err) {
+      // Revert nếu lỗi
       setIsLiked(prevLiked);
       setLikesCount(prevLiked ? likesCount : likesCount);
+
+      // --- XỬ LÝ 429 CHO LIKE ---
+      if (err.response && err.response.status === 429) {
+        setSnackbar({ 
+            open: true, 
+            message: "Bạn thả like quá nhanh! Vui lòng chờ.", 
+            severity: "warning" 
+        });
+      } else {
+         // Các lỗi khác có thể không cần báo để tránh spam UI, hoặc báo nhẹ nhàng
+         console.error("Like error", err);
+      }
     }
   };
 
@@ -146,8 +171,19 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
       );
     } catch (err) {
       console.error("Reply error:", err);
+      // Xóa comment lạc quan do lỗi
       setChildComments((prev) => prev.filter((c) => c.id !== tempId));
-      setSnackbar({ open: true, message: "Gửi phản hồi thất bại", severity: "error" });
+
+      // --- XỬ LÝ 429 CHO REPLY ---
+      if (err.response && err.response.status === 429) {
+          setSnackbar({ 
+              open: true, 
+              message: "Bạn phản hồi quá nhanh. Vui lòng chậm lại!", 
+              severity: "warning" 
+          });
+      } else {
+          setSnackbar({ open: true, message: "Gửi phản hồi thất bại", severity: "error" });
+      }
     }
   };
 
@@ -155,18 +191,14 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
 
   return (
     <Box sx={{ width: "100%", mb: 1.5 }}>
-      
-      {/* --- PHẦN COMMENT CHÍNH --- */}
-      {/* UPDATE 1: Tăng gap lên 2 (16px) */}
+      {/* ... (Phần hiển thị Comment Chính giữ nguyên) ... */}
       <Box sx={{ display: "flex", gap: 3 }}> 
         
-        {/* Avatar Wrapper */}
         <Box sx={{ width: 32, height: 32, flexShrink: 0 }}>
              <AvatarUser userData={comment.user || {}} />
         </Box>
 
         <Box sx={{ flex: 1 }}>
-          {/* Bong bóng chat */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box
               sx={{
@@ -220,7 +252,6 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
               )}
             </Box>
 
-            {/* Menu More */}
             {isOwner && !isEditing && (
               <>
                 <IconButton size="small" onClick={handleMenuOpen}><MoreVertIcon fontSize="small" /></IconButton>
@@ -232,7 +263,7 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
             )}
           </Box>
 
-          {/* --- ACTION BAR --- */}
+          {/* Action Bar */}
           {!isEditing && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, ml: 1.5, mt: 0.5 }}>
               {comment.isSending ? (
@@ -264,9 +295,8 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
             </Box>
           )}
 
-          {/* --- FORM REPLY --- */}
+          {/* Form Reply */}
           {isReplying && (
-            // UPDATE 3: Tăng gap lên 2 cho thoáng
             <Box sx={{ mt: 1.5, display: "flex", gap: 4, alignItems: "flex-start" }}>
                <Box sx={{ width: 24, height: 24, mt: 0.5 }}>
                   <AvatarUser userData={userData} />
@@ -301,11 +331,10 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
         </Box>
       </Box>
 
-      {/* --- RENDER CON --- */}
+      {/* Render Con */}
       {childComments && childComments.length > 0 && (
         <Box sx={{ 
             mt: 0.5, 
-            // UPDATE 2: Tăng padding-left lên 48px (32px Avatar + 16px Gap) để thẳng hàng
             pl: level === 0 ? '48px' : 0 
         }}>
           {childComments.map((child) => (
@@ -320,6 +349,7 @@ export default function CommentItem({ comment, setComments, postId, level = 0 })
         </Box>
       )}
 
+      {/* Snackbar */}
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
       </Snackbar>

@@ -18,7 +18,7 @@ class AdminController extends Controller{
             return response()->json(['message' => "Forbidden"], 403);            
         }
     
-        $users = User::where('role','!==',Role::ADMIN)->get();
+        $users = User::where('role',Role::USER)->get();
 
         return response()->json($users, 200); 
     }
