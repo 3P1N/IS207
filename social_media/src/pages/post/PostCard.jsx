@@ -28,25 +28,27 @@ export default function PostCard({ postData, index }) {
 
     const handleTouchStart = (e) => {
         touchStartX.current = e.targetTouches[0].clientX;
+        // FIX 1: Reset touchEndX bằng touchStartX ngay khi bắt đầu chạm
+        // Nếu người dùng chỉ chạm mà không vuốt, distance sẽ bằng 0
+        touchEndX.current = e.targetTouches[0].clientX;
     };
-
     const handleTouchMove = (e) => {
         touchEndX.current = e.targetTouches[0].clientX;
     };
 
     const handleTouchEnd = () => {
         if (!postData?.media) return;
-        
-        const distance = touchStartX.current - touchEndX.current;
-        const minSwipeDistance = 50; // Khoảng cách tối thiểu để tính là vuốt
 
-        // Nếu vuốt sang trái (next)
+        const distance = touchStartX.current - touchEndX.current;
+        const minSwipeDistance = 50;
+
+        // Nếu distance = 0 (do click mà không vuốt), logic dưới này sẽ không chạy
         if (distance > minSwipeDistance) {
-            if (currentImageIndex < postData.media.length - 1) {
+            if (currentImageIndex < mediaList.length - 1) {
                 setCurrentImageIndex(prev => prev + 1);
             }
         }
-        // Nếu vuốt sang phải (prev)
+
         if (distance < -minSwipeDistance) {
             if (currentImageIndex > 0) {
                 setCurrentImageIndex(prev => prev - 1);
@@ -65,7 +67,7 @@ export default function PostCard({ postData, index }) {
     const mediaList = postData.media || [];
 
     useEffect(() => {
-         if (!postData) return;
+        if (!postData) return;
         setLocalPostData({
             likes: postData.reactions_count,
             comments: postData.comments_count,
@@ -82,7 +84,7 @@ export default function PostCard({ postData, index }) {
             isOwner: userData?.id === postData.user.id,
             avatarUrl: postData.user.avatarUrl
         });
-        setCurrentImageIndex(0); 
+        setCurrentImageIndex(0);
     }, [postData, userData?.id]);
 
     // ... (Giữ nguyên các hàm handleLike, Comment, Share) ...
@@ -108,23 +110,23 @@ export default function PostCard({ postData, index }) {
         <>
             <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm overflow-hidden mb-4">
                 <PostHeader headerData={headerData} postData={postData} index={index} />
-                
+
                 <p className="text-base px-4 py-2 whitespace-pre-line">{postData.content}</p>
 
                 {/* Media Slider */}
                 {mediaList.length > 0 && (
-                    <div 
+                    <div
                         className="relative group touch-pan-y" // Thêm touch-pan-y để không chặn cuộn dọc trang
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
                     >
-                        <div 
+                        <div
                             className="w-full aspect-square bg-black flex items-center justify-center cursor-pointer overflow-hidden select-none"
                             onClick={() => setSelectedImage(mediaList[currentImageIndex].media_url)}
                         >
-                            <img 
-                                src={mediaList[currentImageIndex].media_url} 
+                            <img
+                                src={mediaList[currentImageIndex].media_url}
                                 alt={`Slide ${currentImageIndex}`}
                                 className="w-full h-full object-cover transition-transform duration-300 pointer-events-none" // pointer-events-none để tránh conflict drag ảnh
                             />
@@ -132,9 +134,10 @@ export default function PostCard({ postData, index }) {
 
                         {/* Nút Previous */}
                         {currentImageIndex > 0 && (
-                            <button 
+                            <button
                                 onClick={prevImage}
-                                // SỬA CSS: opacity-100 (hiện luôn trên mobile) md:opacity-0 (ẩn trên pc)
+                                // FIX 2: Ngăn sự kiện chạm lan ra cha (để cha không tính là đang vuốt)
+                                onTouchStart={(e) => e.stopPropagation()}
                                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                             >
                                 <ChevronLeft />
@@ -143,9 +146,10 @@ export default function PostCard({ postData, index }) {
 
                         {/* Nút Next */}
                         {currentImageIndex < mediaList.length - 1 && (
-                            <button 
+                            <button
                                 onClick={nextImage}
-                                // SỬA CSS TƯƠNG TỰ
+                                // FIX 2: Ngăn sự kiện chạm lan ra cha
+                                onTouchStart={(e) => e.stopPropagation()}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10"
                             >
                                 <ChevronRight />
@@ -156,18 +160,17 @@ export default function PostCard({ postData, index }) {
                         {mediaList.length > 1 && (
                             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
                                 {mediaList.map((_, idx) => (
-                                    <div 
+                                    <div
                                         key={idx}
-                                        className={`w-2 h-2 rounded-full transition-all shadow-sm ${
-                                            idx === currentImageIndex 
-                                                ? 'bg-blue-500 scale-110' 
+                                        className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex
+                                                ? 'bg-blue-500 scale-110'
                                                 : 'bg-white/60'
-                                        }`}
+                                            }`}
                                     />
                                 ))}
                             </div>
                         )}
-                        
+
                         {/* Số lượng ảnh */}
                         {mediaList.length > 1 && (
                             <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full pointer-events-none">
@@ -185,9 +188,9 @@ export default function PostCard({ postData, index }) {
                     isLiked={localPostData.isLiked}
                     isShared={localPostData.isShared}
                     postId={postData.id}
-                    onLikeUpdate={handleLikeUpdate}   
+                    onLikeUpdate={handleLikeUpdate}
                     onShareUpdate={handleShareUpdate}
-                    onCommentUpdate={handleCommentUpdate} 
+                    onCommentUpdate={handleCommentUpdate}
                     postData={postData}
                 />
             </div>
