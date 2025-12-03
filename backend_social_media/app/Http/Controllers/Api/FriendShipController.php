@@ -85,6 +85,7 @@ class FriendShipController extends Controller
             $query->where('user_id', $addressee_id)
                   ->where('addressee_id', $user->id);
         })->first();
+
         if($existingFriendship){
             return response()->json(['message' => 'Đã tồn tại'], 409);
         }
@@ -103,7 +104,7 @@ class FriendShipController extends Controller
                 'message' => 'Bạn không có quyền chấp nhận lời mời này',
             ], 403);
         }
-        $addressee_id = $friendship->addressee_id;
+        $addressee_id = $friendship->user_id;
 
         // cập nhật trạng thái
         $friendship->update([
@@ -132,6 +133,7 @@ class FriendShipController extends Controller
         return response()->json([
             'message' => 'Đã chấp nhận lời mời kết bạn',
             'friendship' => $friendship,
+            'existingConversation' => $existingConversation,
         ], 200);
     }
 }
