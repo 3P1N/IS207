@@ -176,7 +176,7 @@ export default function FriendCard({
       {/* Info */}
       <div className="friend-info">
         <p className="friend-name">{name}</p>
-        <p className="friend-username">{email || gender || "@username"}</p>
+        {/* <p className="friend-gender">{ gender || "@username"}</p> */}
         <p className="friend-mutual">0 bạn chung</p>
       </div>
 

@@ -333,9 +333,9 @@ function ProfileShell({
               <Typography variant="h5" fontWeight="bold" color="text.primary">
                  {profileUser?.name || "User Name"}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              {/* <Typography variant="body2" color="text.secondary">
                  {profileUser?.username ? `@${profileUser.username}` : profileUser?.email || "@username"}
-              </Typography>
+              </Typography> */}
             </Box>
 
             {showAddFriendButton && (

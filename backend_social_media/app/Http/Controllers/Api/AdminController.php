@@ -18,7 +18,8 @@ class AdminController extends Controller{
             return response()->json(['message' => "Forbidden"], 403);            
         }
     
-        $users = User::get();
+        $users = User::where('role','!==',Role::ADMIN)->get();
+
         return response()->json($users, 200); 
     }
 
@@ -29,6 +30,9 @@ class AdminController extends Controller{
         }
         if($admin->role !== Role::ADMIN){
             return response()->json(['message' => "Forbidden"], 403);            
+        }
+        if($user->role === Role::ADMIN){
+            return response()->json(['message'=>"Cannot change violated status of admin user"], 400);
         }
         if(!$user){
             return response()->json(['message'=>"User not found"], 404);

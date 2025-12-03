@@ -87,7 +87,7 @@ class UserController extends Controller{
         }
         $keyword = trim($request->query('search', ''));
         $users = User::when(!empty($keyword), function($q) use($keyword){
-                $q->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%");
+                $q->where('name', 'like', "%{$keyword}%");
             })
             ->where('is_Violated', false)
             ->get();
