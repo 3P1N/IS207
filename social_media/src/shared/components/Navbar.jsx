@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import {
     AppBar,
     Toolbar,
@@ -15,7 +15,10 @@ import {
     useTheme,
     useMediaQuery,
     Divider,
-    CircularProgress // Import thêm loading
+    CircularProgress,
+    Tooltip,
+    tooltipClasses, // Import thêm cái này để sle class con
+    styled // <--- 1. Import thêm Tooltip
 } from "@mui/material";
 import {
     Home,
@@ -25,28 +28,44 @@ import {
     AdminPanelSettings,
     Menu as MenuIcon,
     Close as CloseIcon,
-    Lock as LockIcon,     // Import icon khóa
-    Logout as LogoutIcon  // Import icon đăng xuất
+    Lock as LockIcon,
+    Logout as LogoutIcon
 } from "@mui/icons-material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AvatarUser from "./AvatarUser";
 import { AuthContext } from "../../router/AuthProvider";
 import SettingDropdown from "./SettingDropDown";
 
+// Tạo một Tooltip mới đã được style lại
+const CustomTooltip = styled(({ className, ...props }) => (
+    <Tooltip {...props} arrow classes={{ popper: className }} />
+))(({ theme }) => ({
+    [`& .${tooltipClasses.tooltip}`]: {
+        backgroundColor: theme.palette.grey[800], // Màu nền tối (không đen kịt)
+        color: theme.palette.common.white,        // Màu chữ trắng
+        boxShadow: theme.shadows[2],              // Đổ bóng nhẹ cho nổi
+        fontSize: 12,                             // Cỡ chữ gọn gàng
+        fontWeight: 500,                          // Chữ hơi đậm cho dễ đọc
+        borderRadius: 8,                          // Bo tròn các góc (8px là đẹp)
+        padding: "6px 12px",                      // Khoảng cách đệm trong
+    },
+    [`& .${tooltipClasses.arrow}`]: {
+        color: theme.palette.grey[800],           // Màu mũi tên trùng màu nền
+    },
+}));
+
 export default function Navbar() {
     const [keyword, setKeyword] = useState("");
     const [mobileOpen, setMobileOpen] = useState(false);
-    // State loading cho nút Logout trong Drawer
-    const [logoutLoading, setLogoutLoading] = useState(false); 
-    
+    const [logoutLoading, setLogoutLoading] = useState(false);
+
     const navigate = useNavigate();
-    // Lấy thêm hàm logout từ Context
-    const { userData, logout } = useContext(AuthContext); 
-    
+    const { userData, logout } = useContext(AuthContext);
+
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-    const handleKeyPress = (e) => {
+    const handleSearch = (e) => {
         if (e.key === "Enter" && keyword.trim() !== "") {
             navigate(`/search?query=${encodeURIComponent(keyword.trim())}`);
         }
@@ -56,12 +75,11 @@ export default function Navbar() {
         setMobileOpen(!mobileOpen);
     };
 
-    // --- XỬ LÝ LOGOUT TRÊN MOBILE ---
     const handleMobileLogout = async () => {
         setLogoutLoading(true);
         try {
             await logout();
-            handleDrawerToggle(); // Đóng menu sau khi logout
+            handleDrawerToggle();
         } catch (err) {
             console.error("Lỗi đăng xuất:", err);
         } finally {
@@ -69,10 +87,9 @@ export default function Navbar() {
         }
     };
 
-    // --- NỘI DUNG MENU MOBILE ---
+    // --- NỘI DUNG MENU MOBILE (Giữ nguyên vì đã có text hiển thị) ---
     const drawerContent = (
         <Box sx={{ width: 280, p: 2 }} role="presentation">
-            {/* Header Drawer */}
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Typography variant="h6" color="primary.main" fontWeight="bold">
                     Menu
@@ -82,11 +99,10 @@ export default function Navbar() {
                 </IconButton>
             </Box>
 
-            {/* Info User */}
-            <Box 
-                sx={{ 
-                    display: "flex", alignItems: "center", gap: 1.5, mb: 2, p: 1.5, 
-                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100', 
+            <Box
+                sx={{
+                    display: "flex", alignItems: "center", gap: 1.5, mb: 2, p: 1.5,
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
                     borderRadius: 2,
                     cursor: 'pointer'
                 }}
@@ -105,11 +121,10 @@ export default function Navbar() {
                     </Typography>
                 </Box>
             </Box>
-            
+
             <Divider sx={{ mb: 1 }} />
 
             <List>
-                {/* Các menu chính */}
                 <ListItem disablePadding>
                     <ListItemButton component={RouterLink} to="/" onClick={handleDrawerToggle}>
                         <ListItemIcon><Home color="primary" /></ListItemIcon>
@@ -139,11 +154,8 @@ export default function Navbar() {
 
                 <Divider sx={{ my: 1 }} />
 
-                {/* --- PHẦN THAY ĐỔI: SETTING TRỰC TIẾP --- */}
-                
-                {/* 1. Nút Đổi mật khẩu */}
                 <ListItem disablePadding>
-                    <ListItemButton 
+                    <ListItemButton
                         onClick={() => {
                             navigate("/change-password");
                             handleDrawerToggle();
@@ -154,19 +166,19 @@ export default function Navbar() {
                     </ListItemButton>
                 </ListItem>
 
-                {/* 2. Nút Đăng xuất */}
                 <ListItem disablePadding>
                     <ListItemButton onClick={handleMobileLogout}>
                         <ListItemIcon>
                             {logoutLoading ? <CircularProgress size={20} /> : <LogoutIcon color="error" />}
                         </ListItemIcon>
-                        <ListItemText 
-                            primary="Đăng xuất" 
-                            primaryTypographyProps={{ color: 'error.main' }} // Chữ đỏ cho nút đăng xuất
+                        <ListItemText
+                            primary="Đăng xuất"
+                            slotProps={{
+                                primary: { style: { color: theme.palette.error.main } }
+                            }}
                         />
                     </ListItemButton>
                 </ListItem>
-
             </List>
         </Box>
     );
@@ -174,12 +186,15 @@ export default function Navbar() {
     return (
         <AppBar position="sticky" color="default" elevation={1} sx={{ bgcolor: 'background.paper' }}>
             <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-                
+
                 {/* 1. LOGO */}
                 <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 'fit-content' }}>
-                    <IconButton component={RouterLink} to="/" color="primary" sx={{ p: 0, mr: 1 }}>
-                        <Home fontSize="large" /> 
-                    </IconButton>
+                    {/* Tooltip cho logo luôn (tuỳ chọn) */}
+                    <CustomTooltip title="Trang chủ">
+                        <IconButton component={RouterLink} to="/" color="primary">
+                            <Home />
+                        </IconButton>
+                    </CustomTooltip>
                     <Typography
                         variant="h6"
                         component={RouterLink}
@@ -197,9 +212,9 @@ export default function Navbar() {
                 </Box>
 
                 {/* 2. SEARCH BAR WRAPPER */}
-                <Box sx={{ 
-                    flex: 1, 
-                    display: 'flex', 
+                <Box sx={{
+                    flex: 1,
+                    display: 'flex',
                     justifyContent: 'center',
                     px: { xs: 1, md: 4 }
                 }}>
@@ -220,35 +235,57 @@ export default function Navbar() {
                             placeholder={isMobile ? "Tìm kiếm..." : "Tìm kiếm bạn bè hoặc bài viết..."}
                             value={keyword}
                             onChange={(e) => setKeyword(e.target.value)}
-                            onKeyPress={handleKeyPress}
+                            onKeyDown={handleSearch}
                             sx={{ flex: 1 }}
                         />
                     </Box>
                 </Box>
 
-                {/* 3. NAVIGATION BUTTONS */}
+                {/* 3. NAVIGATION BUTTONS (DESKTOP) */}
                 <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 'fit-content' }}>
                     {!isMobile ? (
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <IconButton component={RouterLink} to="/" color="primary">
-                                <Home />
-                            </IconButton>
 
-                            <IconButton component={RouterLink} to="/message" color="primary">
-                                <Message />
-                            </IconButton>
-                            <IconButton component={RouterLink} to="/create-post" color="primary">
-                                <AddCircle />
-                            </IconButton>
-                            {userData?.role === "admin" && (
-                                <IconButton component={RouterLink} to="/admin" color="primary">
-                                    <AdminPanelSettings />
+                            {/* Sử dụng CustomTooltip thay cho Tooltip */}
+
+                            <CustomTooltip title="Trang chủ">
+                                <IconButton component={RouterLink} to="/" color="primary">
+                                    <Home />
                                 </IconButton>
+                            </CustomTooltip>
+
+                            <CustomTooltip title="Tin nhắn">
+                                <IconButton component={RouterLink} to="/message" color="primary">
+                                    <Message />
+                                </IconButton>
+                            </CustomTooltip>
+
+                            <CustomTooltip title="Tạo bài viết mới">
+                                <IconButton component={RouterLink} to="/create-post" color="primary">
+                                    <AddCircle />
+                                </IconButton>
+                            </CustomTooltip>
+
+                            {userData?.role === "admin" && (
+                                <CustomTooltip title="Trang quản trị">
+                                    <IconButton component={RouterLink} to="/admin" color="primary">
+                                        <AdminPanelSettings />
+                                    </IconButton>
+                                </CustomTooltip>
                             )}
 
-                            {/* Desktop vẫn giữ Dropdown */}
                             <SettingDropdown />
-                            <AvatarUser userData={userData} />
+
+                            <CustomTooltip title="Trang cá nhân">
+                                <IconButton 
+                                    component={RouterLink} 
+                                    to={`/profile/${userData?.id}`}
+                                    sx={{ ml: 0.5, p: 0.5 }}
+                                >
+                                    <AvatarUser userData={userData} />
+                                </IconButton>
+                            </CustomTooltip>
+
                         </Box>
                     ) : (
                         <IconButton
@@ -267,7 +304,9 @@ export default function Navbar() {
                 open={mobileOpen}
                 onClose={handleDrawerToggle}
                 ModalProps={{ keepMounted: true }}
-                PaperProps={{ sx: { borderRadius: '20px 0 0 20px' } }}
+                slotProps={{
+                    paper: { sx: { borderRadius: '20px 0 0 20px' } }
+                }}
             >
                 {drawerContent}
             </Drawer>

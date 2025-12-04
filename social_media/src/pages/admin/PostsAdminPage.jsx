@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -13,6 +13,10 @@ import {
   CircularProgress,
   TextField,
   InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 // 1. Import React Query hooks
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,7 +28,8 @@ import { api } from "../../shared/api";
 export default function PostsAdminPage() {
   const queryClient = useQueryClient();
   const [loadingToggles, setLoadingToggles] = useState({});
-  const [searchTerm, setSearchTerm] = useState(""); // <--- 1. State tìm kiếm
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("reports_desc"); // State cho sort
 
   // --- 1. HÀM FETCH DATA ---
   const fetchPostsViolation = async () => {
@@ -61,20 +66,33 @@ export default function PostsAdminPage() {
     if (searchTerm.trim()) {
       const lowerTerm = searchTerm.toLowerCase();
       result = result.filter((post) => {
-        // Lọc theo ID (chuyển sang string để so sánh)
         const idMatch = String(post.id).includes(lowerTerm);
-        // Lọc theo tên người đăng (lưu ý check null/undefined)
         const nameMatch = (post.user?.name || "").toLowerCase().includes(lowerTerm);
-        // Lọc theo nội dung bài viết
         const contentMatch = (post.content || "").toLowerCase().includes(lowerTerm);
-
         return idMatch || nameMatch || contentMatch;
       });
     }
 
-    // BƯỚC SẮP XẾP (SORT) - Giữ nguyên logic report nhiều lên đầu
-    return result.sort((a, b) => b.reports_count - a.reports_count);
-  }, [posts, searchTerm]);
+    // BƯỚC SẮP XẾP (SORT)
+    return result.sort((a, b) => {
+      switch (sortBy) {
+        case "reports_desc":
+          return b.reports_count - a.reports_count;
+        case "reports_asc":
+          return a.reports_count - b.reports_count;
+        case "date_desc":
+          return new Date(b.created_at) - new Date(a.created_at);
+        case "date_asc":
+          return new Date(a.created_at) - new Date(b.created_at);
+        case "status_hidden":
+          return (b.is_visible ? 0 : 1) - (a.is_visible ? 0 : 1);
+        case "status_visible":
+          return (a.is_visible ? 0 : 1) - (b.is_visible ? 0 : 1);
+        default:
+          return 0;
+      }
+    });
+  }, [posts, searchTerm, sortBy]);
 
   return (
     <Box>
@@ -87,23 +105,42 @@ export default function PostsAdminPage() {
         </Typography>
       </Box>
 
-      {/* --- UI THANH TÌM KIẾM --- */}
+      {/* --- UI THANH TÌM KIẾM & SORT --- */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }} elevation={1}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Tìm kiếm theo ID, tên người đăng hoặc nội dung..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Tìm kiếm theo ID, tên người đăng hoặc nội dung..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }
+            }}
+          />
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Sắp xếp theo</InputLabel>
+            <Select
+              value={sortBy}
+              label="Sắp xếp theo"
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <MenuItem value="reports_desc">Số report: Cao → Thấp</MenuItem>
+              <MenuItem value="reports_asc">Số report: Thấp → Cao</MenuItem>
+              <MenuItem value="date_desc">Ngày tạo: Mới → Cũ</MenuItem>
+              <MenuItem value="date_asc">Ngày tạo: Cũ → Mới</MenuItem>
+              <MenuItem value="status_hidden">Trạng thái: Đã ẩn trước</MenuItem>
+              <MenuItem value="status_visible">Trạng thái: Hiển thị trước</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
       </Paper>
 
       <Paper

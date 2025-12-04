@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Box, Typography, Table, TableHead, TableRow, TableCell, TableBody,
-  Button, Chip, Paper, CircularProgress, TextField, InputAdornment
+  Button, Chip, Paper, CircularProgress, TextField, InputAdornment,
+  Select, MenuItem, FormControl, InputLabel
 } from "@mui/material";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from "react-router-dom";
@@ -12,7 +13,8 @@ import AvatarUser from "../../shared/components/AvatarUser";
 export default function UsersAdminPage() {
   const queryClient = useQueryClient();
   const [loadingToggles, setLoadingToggles] = useState({});
-  const [searchTerm, setSearchTerm] = useState(""); // <--- 1. State lưu từ khóa tìm kiếm
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("status_violated"); // State cho sort
 
   // --- FETCH DATA ---
   const fetchUsers = async () => {
@@ -57,14 +59,38 @@ export default function UsersAdminPage() {
       });
     }
 
-    // BƯỚC SẮP XẾP (SORT - Giữ nguyên logic cũ)
+    // BƯỚC SẮP XẾP (SORT)
     return result.sort((a, b) => {
-      const aBlocked = !!a.is_Violated;
-      const bBlocked = !!b.is_Violated;
-      if (aBlocked === bBlocked) return 0;
-      return aBlocked ? -1 : 1;
+      switch (sortBy) {
+        case "status_violated":
+          // Đã vô hiệu lên đầu
+          return (b.is_Violated ? 1 : 0) - (a.is_Violated ? 1 : 0);
+        case "status_active":
+          // Đang hoạt động lên đầu
+          return (a.is_Violated ? 1 : 0) - (b.is_Violated ? 1 : 0);
+        case "created_desc":
+          // Mới tạo lên đầu
+          return new Date(b.created_at) - new Date(a.created_at);
+        case "created_asc":
+          // Cũ nhất lên đầu
+          return new Date(a.created_at) - new Date(b.created_at);
+        case "name_asc":
+          // Tên A-Z
+          return (a.name || "").localeCompare(b.name || "");
+        case "name_desc":
+          // Tên Z-A
+          return (b.name || "").localeCompare(a.name || "");
+        case "id_asc":
+          // ID tăng dần
+          return a.id - b.id;
+        case "id_desc":
+          // ID giảm dần
+          return b.id - a.id;
+        default:
+          return 0;
+      }
     });
-  }, [users, searchTerm]); // Chạy lại khi data thay đổi hoặc từ khóa thay đổi
+  }, [users, searchTerm, sortBy]);
 
   return (
     <Box>
@@ -79,23 +105,44 @@ export default function UsersAdminPage() {
         </Box>
       </Box>
 
-      {/* --- 3. UI THANH TÌM KIẾM --- */}
+      {/* --- 3. UI THANH TÌM KIẾM & SORT --- */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }} elevation={1}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Tìm kiếm theo tên hoặc email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Tìm kiếm theo tên hoặc email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }
+            }}
+          />
+          <FormControl size="small" sx={{ minWidth: 220 }}>
+            <InputLabel>Sắp xếp theo</InputLabel>
+            <Select
+              value={sortBy}
+              label="Sắp xếp theo"
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <MenuItem value="status_violated">Trạng thái: Đã vô hiệu trước</MenuItem>
+              <MenuItem value="status_active">Trạng thái: Hoạt động trước</MenuItem>
+              <MenuItem value="created_desc">Ngày tạo: Mới → Cũ</MenuItem>
+              <MenuItem value="created_asc">Ngày tạo: Cũ → Mới</MenuItem>
+              <MenuItem value="name_asc">Tên: A → Z</MenuItem>
+              <MenuItem value="name_desc">Tên: Z → A</MenuItem>
+              <MenuItem value="id_asc">ID: Tăng dần</MenuItem>
+              <MenuItem value="id_desc">ID: Giảm dần</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
       </Paper>
 
       <Paper elevation={3} sx={{ borderRadius: 3, overflow: "hidden" }}>
@@ -106,6 +153,8 @@ export default function UsersAdminPage() {
                 <TableCell>ID</TableCell>
                 <TableCell>Người dùng</TableCell>
                 <TableCell>Email</TableCell>
+                <TableCell>Ngày tạo</TableCell>
+                <TableCell>Ngày vô hiệu</TableCell>
                 <TableCell>Trạng thái</TableCell>
                 <TableCell align="right">Hành động</TableCell>
               </TableRow>
@@ -114,7 +163,7 @@ export default function UsersAdminPage() {
             {isLoading ? (
               <TableBody>
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                     <CircularProgress /> <br /> Đang tải dữ liệu...
                   </TableCell>
                 </TableRow>
@@ -143,6 +192,32 @@ export default function UsersAdminPage() {
                         <TableCell>{user.email}</TableCell>
 
                         <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {user.created_at 
+                              ? new Date(user.created_at).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit', 
+                                  year: 'numeric'
+                                })
+                              : '-'
+                            }
+                          </Typography>
+                        </TableCell>
+
+                        <TableCell>
+                          <Typography variant="body2" color={user.disable_at ? "error.main" : "text.secondary"}>
+                            {user.disable_at 
+                              ? new Date(user.disable_at).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })
+                              : '-'
+                            }
+                          </Typography>
+                        </TableCell>
+
+                        <TableCell>
                           <Chip
                             label={user.is_Violated ? "Đã vô hiệu" : "Đang hoạt động"}
                             color={user.is_Violated ? "error" : "success"}
@@ -167,7 +242,7 @@ export default function UsersAdminPage() {
                 ) : (
                   // Hiển thị khi không tìm thấy kết quả
                   <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                       <Typography variant="body2" color="text.secondary">
                         Không tìm thấy người dùng nào khớp với "{searchTerm}"
                       </Typography>

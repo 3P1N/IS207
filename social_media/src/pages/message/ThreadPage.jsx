@@ -63,8 +63,9 @@ export default function ThreadPage() {
       return undefined;
     },
     enabled: !!threadId,
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Đánh dấu dữ liệu là "cũ" ngay lập tức để kích hoạt refetch
+    refetchOnMount: true, // Bắt buộc gọi lại API khi vào lại trang
+    refetchOnWindowFocus: "always",
     retry: (failureCount, error) => {
       if (error.response && (error.response.status === 404 || error.response.status === 403)) return false;
       return failureCount < 3;
