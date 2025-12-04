@@ -11,6 +11,7 @@ class ConversationParticipant extends Model
     protected $fillable = [
         'conversation_id',
         'user_id',
+        'last_read_message_id'
     ];
     public function conversation()
     {
