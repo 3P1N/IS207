@@ -9,12 +9,16 @@ import {
     CircularProgress, 
     Snackbar, 
     Alert, 
+    Chip,
+    Stack, 
+    Tooltip,
     Typography, // Import thêm
     Box,        // Import thêm
     Button,     // Import thêm Button của MUI để thay thế button thường
     Menu,       // Import Menu cho dropdown
     MenuItem    // Import MenuItem
 } from "@mui/material";
+import SecurityIcon from "@mui/icons-material/Security";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'; // Icon mũi tên
 
@@ -260,6 +264,7 @@ function ProfileShell({
   const handleFriendMenuClose = () => {
     setAnchorEl(null);
   };
+  const isAdmin = profileUser?.role === 'admin';
 
   return (
     <div className="profile-layout scrollbar-thin">
@@ -328,14 +333,22 @@ function ProfileShell({
 
           {/* Info + Nav tab - ĐÃ FIX HIỂN THỊ TÊN */}
           <div className="px-4 pt-4 pb-4 sm:px-8 flex flex-col items-center gap-2">
-            <Box sx={{ textAlign: 'center' }}>
-              {/* Sử dụng Typography thay vì h1/p để màu sắc tự động theo theme */}
-              <Typography variant="h5" fontWeight="bold" color="text.primary">
-                 {profileUser?.name || "User Name"}
-              </Typography>
-              {/* <Typography variant="body2" color="text.secondary">
-                 {profileUser?.username ? `@${profileUser.username}` : profileUser?.email || "@username"}
-              </Typography> */}
+            <Box sx={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Stack direction="row" alignItems="center" gap={1} justifyContent="center">
+                <Typography variant="h5" fontWeight="bold" color="text.primary">
+                  {profileUser?.name || "User Name"}
+                </Typography>
+                
+                {/* Hiển thị Icon Admin nếu là admin */}
+                {isAdmin && (
+                  <Tooltip title="Quản trị viên hệ thống" arrow>
+                    <SecurityIcon 
+                      color="primary" 
+                      sx={{ fontSize: 24 }} 
+                    />
+                  </Tooltip>
+                )}
+              </Stack>
             </Box>
 
             {showAddFriendButton && (

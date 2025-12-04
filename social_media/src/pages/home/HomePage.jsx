@@ -35,10 +35,10 @@ export default function HomePage() {
             });
             setNextPageUrl(response.data.next_page_url);
         } catch (err) {
-            console.log("lỗi: ", err);
+            console.error("lỗi: ", err);
         } finally {
             setLoading(false);
-            console.log(postsData[1]);
+            
         }
     };
 

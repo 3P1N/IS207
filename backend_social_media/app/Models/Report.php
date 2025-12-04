@@ -7,7 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Report extends Model
 {
     protected $fillable = [
-        'reporter_id', 'post_id', 'reason',
+        'reporter_id',
+        'post_id',
+        'reason',
+        'content_reason',
     ];
 
     public function reporter()
@@ -20,4 +23,3 @@ class Report extends Model
         return $this->belongsTo(Post::class, 'post_id');
     }
 }
-

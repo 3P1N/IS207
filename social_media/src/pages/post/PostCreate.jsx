@@ -1,11 +1,13 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import './PostCreate.css';
-import { IconButton, Tooltip, CircularProgress, Snackbar, Alert } from "@mui/material";
+import { IconButton, Tooltip, CircularProgress, Snackbar, Alert, Popover } from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions'; // UPDATE: Import Icon Emoji
 import { AuthContext } from '../../router/AuthProvider';
 import { api } from '../../shared/api';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import AvatarUser from '../../shared/components/AvatarUser';
+import EmojiPicker from 'emoji-picker-react'; // UPDATE: Import thư viện Emoji
 
 export default function PostCreate() {
 
@@ -14,30 +16,74 @@ export default function PostCreate() {
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
 
-    // State lưu trữ các đối tượng file đã chọn (bao gồm cả URL tạm thời cho preview)
+    // State lưu trữ các đối tượng file đã chọn
     const [mediaFiles, setMediaFiles] = useState([]);
     const [loadingPost, setLoadingPost] = useState(false);
-    const [idPost, setIdPost] = useState();
     const navigate = useNavigate();
-
     const [urlMedia, setUrlMedia] = useState([]);
 
+    // UPDATE: State cho Emoji Picker
+    const [anchorElEmoji, setAnchorElEmoji] = useState(null);
+    const showEmojiPicker = Boolean(anchorElEmoji);
 
+    // --- LOGIC EMOJI ---
+    const handleEmojiClick = (event) => {
+        setAnchorElEmoji(event.currentTarget);
+    };
+
+    const handleEmojiClose = () => {
+        setAnchorElEmoji(null);
+    };
+
+    const onEmojiClick = (emojiObject) => {
+        // Cộng dồn emoji vào nội dung text hiện tại
+        setPostContent(prev => prev + emojiObject.emoji);
+        // Không đóng picker để user có thể chọn nhiều icon
+    };
+
+    // --- LOGIC PASTE IMAGE (Dán ảnh từ clipboard) ---
+    const handlePaste = (event) => {
+        const items = event.clipboardData.items;
+        let filesToProcess = [];
+
+        // Duyệt qua các item trong clipboard
+        for (let i = 0; i < items.length; i++) {
+            // Nếu item là hình ảnh
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                filesToProcess.push(blob);
+                // Ngăn không cho trình duyệt dán tên file hoặc dữ liệu rác vào textarea
+                event.preventDefault(); 
+            }
+        }
+
+        if (filesToProcess.length > 0) {
+            const newMedia = filesToProcess.map(file => ({
+                file: file,
+                url: URL.createObjectURL(file),
+                alt: "Pasted Image",
+                type: 'image'
+            }));
+
+            setMediaFiles(prevFiles => [...prevFiles, ...newMedia]);
+            setSnackbarMessage("Đã dán ảnh từ Clipboard!");
+            setOpenSnackbar(true);
+        }
+    };
+
+    // --- CÁC HÀM CŨ GIỮ NGUYÊN ---
     const uploadPost = async (urls) => {
         try {
-            const response = await api.post(`/posts`,
-                {
-                    content: postContent,
-                    media_url: urls,
-                }
-            );
+            const response = await api.post(`/posts`, {
+                content: postContent,
+                media_url: urls,
+            });
             return response.data;
         } catch (e) {
             console.error(e);
             return e;
         }
     };
-
 
     const uploadMultipleFilesParallel = async (files) => {
         const uploadPromises = files.map(file => {
@@ -54,75 +100,50 @@ export default function PostCreate() {
 
         const results = await Promise.all(uploadPromises);
         const urls = results.map(r => r.secure_url);
-        setUrlMedia(urls);   // vẫn update state nếu muốn UI
-
-        return urls;          // ✅ return để dùng ngay
+        setUrlMedia(urls);
+        return urls;
     };
 
-
-
-    // Hàm xử lý việc chọn file media
     const handleMediaChange = (event) => {
         const files = Array.from(event.target.files);
-
-        // Tạo một mảng mới chứa đối tượng file và URL tạm thời (blob URL) để preview
         const newMedia = files.map(file => ({
-            file: file, // Lưu trữ File object
-            url: URL.createObjectURL(file), // Tạo URL tạm thời cho preview (quan trọng)
+            file: file,
+            url: URL.createObjectURL(file),
             alt: file.name,
-            type: file.type.startsWith('image') ? 'image' : 'video' // Xác định loại file (để sau này phân biệt giữa img và video tag)
+            type: file.type.startsWith('image') ? 'image' : 'video'
         }));
 
         setMediaFiles(prevFiles => [...prevFiles, ...newMedia]);
-        // Xóa giá trị input để người dùng có thể chọn cùng một file lần nữa
         event.target.value = null;
     };
 
-    // Hàm xử lý xóa một file media khỏi danh sách
     const handleRemoveMedia = (indexToRemove) => {
-        // Cần thu hồi (revoke) URL tạm thời để tránh rò rỉ bộ nhớ
         URL.revokeObjectURL(mediaFiles[indexToRemove].url);
-
         setMediaFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
     };
-    // Hàm xử lý việc gửi bài viết (trong thực tế sẽ là API call)
-    // Hàm xử lý việc gửi bài viết
+
     const handlePost = async () => {
-        if (!postContent.trim() ) {
-            alert("Vui lòng nhập nội dung");
+        if (!postContent.trim() && mediaFiles.length === 0) {
+            alert("Vui lòng nhập nội dung hoặc chọn ảnh/video");
             return;
         }
-
         setLoadingPost(true);
-
         try {
-            let uploadedUrls = []; // Mặc định là mảng rỗng
-
-            // CHỈ UPLOAD NẾU CÓ FILE TRONG LIST
+            let uploadedUrls = [];
             if (mediaFiles.length > 0) {
                 uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
             }
-
-            // Gửi post: nếu không có file, uploadedUrls sẽ gửi lên là []
-            // Backend của bạn nên handle trường hợp media_url là mảng rỗng
             const newPost = await uploadPost(uploadedUrls);
-
             setPostsData(prev => [newPost, ...postsData]);
-
-            // reset form
+            
             setPostContent('');
             setMediaFiles([]);
             setUrlMedia([]);
-
-            // hiện thông báo thành công
             setSnackbarMessage("Đăng bài thành công!");
             setOpenSnackbar(true);
-
-            // chờ 1.5s rồi điều hướng về home
             setTimeout(() => {
                 navigate("/home");
             }, 1500);
-
         } catch (err) {
             console.error(err);
             setSnackbarMessage("Đăng bài thất bại. Vui lòng thử lại.");
@@ -132,11 +153,6 @@ export default function PostCreate() {
         }
     };
 
-
-
-    // 3. LOGIC BIẾN
-
-    // Nút Post chỉ được kích hoạt khi có nội dung hoặc có file media
     const isPostButtonDisabled = !postContent.trim() && mediaFiles.length === 0;
 
     return (
@@ -152,29 +168,18 @@ export default function PostCreate() {
                 onClose={() => setOpenSnackbar(false)}
                 anchorOrigin={{ vertical: "top", horizontal: "center" }}
             >
-                <Alert
-                    onClose={() => setOpenSnackbar(false)}
-                    severity="success"
-                    sx={{ width: "100%" }}
-                >
+                <Alert onClose={() => setOpenSnackbar(false)} severity="success" sx={{ width: "100%" }}>
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
 
             <main className="flex-grow w-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
                 <div className="w-full max-w-lg">
-                    {/* Hộp Modal/Card tạo bài viết */}
                     <div className="bg-white dark:bg-[#111821] border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4">
-
-                        {/* Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
                             <h2 className="text-xl font-bold text-[#1C1E21] dark:text-white">Create Post</h2>
-                            {/* <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-[#65676B] dark:text-gray-400">
-                                <span className="material-symbols-outlined">close</span>
-                            </button> */}
                         </div>
 
-                        {/* User Info & Visibility (Giữ nguyên) */}
                         <div className="flex items-start gap-4 pt-4">
                             <div>
                                 <AvatarUser userData={userData} />
@@ -182,22 +187,17 @@ export default function PostCreate() {
                             </div>
                         </div>
 
-                        {/* Text Area Input */}
                         <div className="mt-4">
                             <textarea
                                 className="post-textarea w-full min-h-[120px] resize-none border-none outline-none focus:ring-0 bg-transparent p-0 text-base leading-relaxed caret-current cursor-text text-[#1C1E21] dark:text-white"
                                 placeholder={`What's on your mind, ${userData.name}?`}
                                 value={postContent}
                                 onChange={(e) => setPostContent(e.target.value)}
+                                onPaste={handlePaste} // UPDATE: Gắn sự kiện Paste vào đây
                             />
                         </div>
 
-
-
-
-                        {/* Add to Post Bar */}
                         <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg mt-4">
-                            {/* <span className="text-sm font-medium text-[#1C1E21] dark:text-gray-300">Add to your post</span> */}
                             <div className="flex items-center gap-2">
                                 {/* INPUT FILE ẨN */}
                                 <input
@@ -209,31 +209,63 @@ export default function PostCreate() {
                                     onChange={handleMediaChange}
                                 />
 
-                                {/* ICON BUTTON MUI */}
+                                {/* ICON CAMERA */}
                                 <Tooltip title="Add Photo / Video">
                                     <IconButton
                                         component="label"
                                         htmlFor="media-upload"
-                                        color="primary"
                                         sx={{
-                                            bgcolor: "rgba(25,118,210,0.08)",          // nhẹ đẹp
-                                            "&:hover": { bgcolor: "rgba(25,118,210,0.15)" }
+                                            color: '#45bd62', // Màu xanh lá giống FB
+                                            bgcolor: "rgba(69, 189, 98, 0.1)",
+                                            "&:hover": { bgcolor: "rgba(69, 189, 98, 0.2)" }
                                         }}
                                     >
                                         <PhotoCamera />
                                     </IconButton>
                                 </Tooltip>
+
+                                {/* UPDATE: ICON EMOJI */}
+                                <Tooltip title="Insert Emoji">
+                                    <IconButton
+                                        onClick={handleEmojiClick}
+                                        sx={{
+                                            color: '#f7b928', // Màu vàng
+                                            bgcolor: "rgba(247, 185, 40, 0.1)",
+                                            "&:hover": { bgcolor: "rgba(247, 185, 40, 0.2)" }
+                                        }}
+                                    >
+                                        <EmojiEmotionsIcon />
+                                    </IconButton>
+                                </Tooltip>
+
+                                {/* UPDATE: Popover chứa Emoji Picker */}
+                                <Popover
+                                    open={showEmojiPicker}
+                                    anchorEl={anchorElEmoji}
+                                    onClose={handleEmojiClose}
+                                    anchorOrigin={{
+                                        vertical: 'bottom',
+                                        horizontal: 'left',
+                                    }}
+                                    transformOrigin={{
+                                        vertical: 'top',
+                                        horizontal: 'left',
+                                    }}
+                                >
+                                    <EmojiPicker 
+                                        onEmojiClick={onEmojiClick}
+                                        width={350}
+                                        height={400}
+                                    />
+                                </Popover>
                             </div>
                         </div>
 
-                        {/* Media Preview */}
                         {/* Media Preview */}
                         {mediaFiles.length > 0 && (
                             <div className={`mt-4 grid gap-2 ${mediaFiles.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                 {mediaFiles.map((media, index) => (
                                     <div key={index} className="relative group w-full aspect-video bg-black rounded-lg overflow-hidden">
-
-                                        {/* Logic hiển thị Ảnh hoặc Video */}
                                         {media.type === 'video' ? (
                                             <video
                                                 src={media.url}
@@ -247,8 +279,6 @@ export default function PostCreate() {
                                                 className="w-full h-full object-cover"
                                             />
                                         )}
-
-                                        {/* Nút xóa */}
                                         <button
                                             className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 z-10"
                                             onClick={() => handleRemoveMedia(index)}
@@ -260,7 +290,6 @@ export default function PostCreate() {
                             </div>
                         )}
 
-                        {/* Post Button */}
                         <div className="mt-4 flex gap-2">
                             <button disabled={isPostButtonDisabled}
                                 className={`
@@ -270,14 +299,12 @@ export default function PostCreate() {
                                         ? "bg-gray-400 cursor-not-allowed opacity-70"
                                         : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
                                     }
-                                    `}
+                                `}
                                 onClick={handlePost}
-
                             >
                                 <span className="truncate">Post</span>
                             </button>
                         </div>
-
                     </div>
                 </div>
             </main>

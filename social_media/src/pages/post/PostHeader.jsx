@@ -75,7 +75,7 @@ export default function PostHeader({ headerData, postData, index }) {
       setPostsData(prev => prev.filter((_, i) => i !== index));
 
     } catch (err) {
-      console.log("Lỗi khi delete", err);
+      console.error("Lỗi khi delete", err);
       setSnackbarMessage("Failed to delete post");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
@@ -99,7 +99,7 @@ export default function PostHeader({ headerData, postData, index }) {
       setSnackbarOpen(true);
       setPostsData(prev => prev.filter((_, i) => i !== index));
     } catch (err) {
-      console.log("Lỗi khi report", err);
+      console.error("Lỗi khi report", err);
       setSnackbarMessage("Failed to report post");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
@@ -113,7 +113,7 @@ export default function PostHeader({ headerData, postData, index }) {
     <div className="flex items-center gap-3 bg-card-light dark:bg-card-dark px-4 pt-4 pb-2 justify-between">
       {/* Left: Avatar + Info */}
       <div className="flex items-center gap-3">
-        <AvatarUser userData={{ name: headerData?.author, avatarUrl: headerData?.avatarUrl, id: headerData?.id }} />
+        <AvatarUser userData={postData.user} />
         <div className="flex flex-col justify-center">
           <p className="text-text-light-primary dark:text-text-dark-primary text-base font-semibold">
             {headerData?.author}

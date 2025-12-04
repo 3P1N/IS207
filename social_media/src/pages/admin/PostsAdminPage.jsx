@@ -47,7 +47,7 @@ export default function PostsAdminPage() {
       await api.patch(`/admin/posts/${postId}/is_visible`);
       await queryClient.invalidateQueries({ queryKey: ["violation-posts"] });
     } catch (err) {
-      console.log("Lỗi khi chỉnh trạng thái bài viết: ", err);
+      console.error("Lỗi khi chỉnh trạng thái bài viết: ", err);
     } finally {
       setLoadingToggles((prev) => ({ ...prev, [postId]: false }));
     }

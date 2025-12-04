@@ -18,7 +18,7 @@ export default function FriendCard({
   pivot = {},
 } = friend;
   const{ status: friend_status=null, id: friendship_id=null, user_id: user_id=null }=pivot;
-  console.log("isOwnProfile: ", isOwnProfile);
+ 
   const [friendStatus, setFriendStatus] = useState(
     friend_status || defaultStatus
   ); // none | friends | pending_sent | pending_received | self
@@ -46,7 +46,7 @@ export default function FriendCard({
   // --- HỦY KẾT BẠN / HỦY LỜI MỜI ---
   const handleUnfriendOrCancel = async () => {
     if (!friendshipId) return;
-    console.log(friend);
+   
     try {
       setLoading(true);
       const response = await api.delete(`/friendship/${friendshipId}`);

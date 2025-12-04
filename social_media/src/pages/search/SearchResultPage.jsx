@@ -10,6 +10,7 @@ import {
   Avatar,
   Paper,
   alpha,
+  Grid,
   useTheme,
   Container
 } from "@mui/material";
@@ -176,16 +177,24 @@ function PeopleSection({ keyword }) {
         />
       </Stack>
 
-      <div
-        style={{
+      {/* --- PHẦN ĐÃ SỬA: RESPONSIVE GRID --- */}
+      <Box
+        sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '16px',
+          // Mobile (xs): 1 cột
+          // Tablet nhỏ (sm): 2 cột
+          // Desktop (md trở lên): 3 cột
+          gridTemplateColumns: {
+            xs: '1fr', 
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(3, 1fr)'
+          },
+          gap: 2, // 16px
           width: '100%'
         }}
       >
         {users.map((u) => (
-          <div key={u.id}>
+          <Box key={u.id}>
             <Card
               elevation={0}
               sx={{
@@ -205,9 +214,9 @@ function PeopleSection({ keyword }) {
                 <FriendCard friend={u} defaultStatus="friends" />
               </Box>
             </Card>
-          </div>
+          </Box>
         ))}
-      </div>
+      </Box>
     </Box>
   );
 }
