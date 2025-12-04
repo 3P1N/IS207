@@ -38,13 +38,13 @@ class AdminController extends Controller{
             return response()->json(['message'=>"User not found"], 404);
         }
         $isViolated = $user->is_violated;
-        $user->update([
-            'is_Violated'=> !$user->is_Violated,
-        ]);
-        if (!$isViolated) {
-            
+        $updateData = [
+            'is_violated' => !$isViolated,
+        ];
+        if (!$isViolated) {          
             $updateData['disable_at'] = now();
         }
+        $user->update($updateData);
         return response()->json(['message'=>'Update user successfull','user'=> $user], 200); 
     }
 
