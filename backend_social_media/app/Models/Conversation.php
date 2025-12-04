@@ -17,6 +17,7 @@ class Conversation extends Model
         'name',
         'type',
         'avatar_url',
+        
     ];
 
     public function messages()

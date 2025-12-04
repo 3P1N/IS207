@@ -187,7 +187,15 @@ export default function UsersAdminPage() {
                         </TableCell>
 
                         <TableCell align="right">
-                          <Button variant="contained" size="small" color={user.is_Violated ? "success" : "error"} onClick={() => toggleUserViolated(user.id)} disabled={isLoadingThis}>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            color={user.is_Violated ? "success" : "error"}
+                            onClick={() => toggleUserViolated(user.id)}
+                            disabled={isLoadingThis}
+                            // THÊM DÒNG NÀY:
+                            sx={{ whiteSpace: "nowrap" }}
+                          >
                             {isLoadingThis ? <CircularProgress size={16} color="inherit" /> : (user.is_Violated ? "Kích hoạt lại" : "Vô hiệu")}
                           </Button>
                         </TableCell>
