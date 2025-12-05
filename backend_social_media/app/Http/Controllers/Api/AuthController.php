@@ -61,27 +61,55 @@ class AuthController extends Controller
         ])->withCookie($cookie);
     }
 
-    public function register(Request $request){
-        $request->validate([
+    public function register(Request $request)
+    {
+        $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|unique:users',
+            'email' => 'required|string|email',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        $email = mb_strtolower(trim($data['email']));
+
+        // Tìm user theo email (case-insensitive)
+        $existing = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if ($existing) {
+
+            // Nếu email đã xác thực → báo lỗi trùng email
+            if ($existing->email_verified_at !== null) {
+                return response()->json([
+                    'message' => 'Email đã được sử dụng.',
+                ], 422);
+            }
+
+            // Nếu email CHƯA xác thực → cập nhật lại & gửi email verify
+            $existing->update([
+                'name' => $data['name'],
+                'password' => bcrypt($data['password']),
+            ]);
+
+            $existing->sendEmailVerificationNotification();
+
+            return response()->json([
+                'message' => 'Email này đã được đăng ký nhưng chưa xác thực. Chúng tôi đã gửi lại email xác thực.',
+            ]);
+        }
+
+        // Nếu chưa tồn tại → tạo user mới
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            
+            'name' => $data['name'],
+            'email' => $email,
+            'password' => bcrypt($data['password']),
         ]);
 
-        // Gửi email xác thực
         $user->sendEmailVerificationNotification();
 
         return response()->json([
-            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực (Thư rác hoặc spam).',
-        ]);
+            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực.',
+        ], 201);
     }
+
     public function logout(Request $request)
     {
         // Lấy token từ cookie
