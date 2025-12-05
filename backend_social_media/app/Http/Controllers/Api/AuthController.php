@@ -63,47 +63,56 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
+        // 1. Validate định dạng trước (bỏ unique ở đây là đúng với logic của bạn)
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $email = mb_strtolower(trim($data['email']));
+        // 2. Chuẩn hóa email về chữ thường để so sánh chính xác
+        $email = strtolower(trim($data['email']));
 
-        // Tìm user theo email (case-insensitive)
-        $existing = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        // 3. Tìm user trong DB (QUAN TRỌNG: dùng withTrashed để tìm cả user đã xóa mềm)
+        $user = User::where('email', $email)->first();
 
-        if ($existing) {
-
-            // Nếu email đã xác thực → báo lỗi trùng email
-            if ($existing->email_verified_at !== null) {
-                return response()->json([
-                    'message' => 'Email đã được sử dụng.',
-                ], 422);
+        if ($user) {
+            // Trường hợp A: Email đã tồn tại và ĐÃ xác thực
+            if ($user->email_verified_at) {
+                // Trả về lỗi giống format của Laravel Validate để frontend dễ hiển thị
+                throw ValidationException::withMessages([
+                    'email' => ['Email này đã được sử dụng.'],
+                ]);
             }
 
-            // Nếu email CHƯA xác thực → cập nhật lại & gửi email verify
-            $existing->update([
+            // Trường hợp B: Email tồn tại nhưng CHƯA xác thực (hoặc đã bị xóa mềm)
+            // Nếu user đang bị xóa mềm thì khôi phục lại
+            // if ($user->trashed()) {
+            //     $user->restore();
+            // }
+
+            // Cập nhật thông tin mới
+            $user->update([
                 'name' => $data['name'],
-                'password' => bcrypt($data['password']),
+                'password' => Hash::make($data['password']),
             ]);
 
-            $existing->sendEmailVerificationNotification();
+            // Gửi lại email xác thực
+            $user->sendEmailVerificationNotification();
 
             return response()->json([
-                'message' => 'Email này đã được đăng ký nhưng chưa xác thực. Chúng tôi đã gửi lại email xác thực.',
+                'message' => 'Tài khoản chưa kích hoạt. Chúng tôi đã cập nhật thông tin và gửi lại email xác thực mới.',
             ]);
         }
 
-        // Nếu chưa tồn tại → tạo user mới
-        $user = User::create([
+        // 4. Trường hợp C: User hoàn toàn mới -> Tạo mới
+        $newUser = User::create([
             'name' => $data['name'],
             'email' => $email,
-            'password' => bcrypt($data['password']),
+            'password' => Hash::make($data['password']),
         ]);
 
-        $user->sendEmailVerificationNotification();
+        $newUser->sendEmailVerificationNotification();
 
         return response()->json([
             'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực.',
