@@ -32,9 +32,14 @@ export default function ThreadPage() {
   const [lastSentMessageId, setLastSentMessageId] = useState(null);
 
   // --- 1. FETCH DATA ---
-  const fetchConversation = async ({ pageParam = 1 }) => {
+  const fetchConversation = async ({ pageParam = null }) => {
     try {
-      const response = await api.get(`/conversations/${threadId}/messages?page=${pageParam}`);
+      // Nếu pageParam có giá trị (là chuỗi cursor), nối vào URL. Nếu null thì là trang đầu.
+      const url = pageParam 
+        ? `/conversations/${threadId}/messages?cursor=${pageParam}`
+        : `/conversations/${threadId}/messages`;
+        
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 403)) {
@@ -56,11 +61,8 @@ export default function ThreadPage() {
     queryFn: fetchConversation,
     getNextPageParam: (lastPage) => {
       if (lastPage?.isAccessDenied) return undefined;
-      const msgData = lastPage.messages;
-      if (msgData?.next_page_url) {
-        return msgData.current_page + 1;
-      }
-      return undefined;
+      // SỬA LỖI: Laravel cursorPaginate trả về 'next_cursor'
+      return lastPage.messages?.next_cursor || undefined;
     },
     enabled: !!threadId,
     staleTime: 0, // Đánh dấu dữ liệu là "cũ" ngay lập tức để kích hoạt refetch

@@ -17,13 +17,14 @@ class MessageController extends Controller
         $user = $request->user();
 
         // 1. Check quyền (giữ nguyên logic của bạn)
-        $isParticipant = ConversationParticipant::where('conversation_id', $conversation->id)
+        $participant = ConversationParticipant::where('conversation_id', $conversation->id)
             ->where('user_id', $user->id)
-            ->exists();
+            ->first();
 
-        if (!$isParticipant) {
+        if (!$participant) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
+
 
         // 2. Load thông tin Conversation và Participants (không load messages ở đây nữa)
         $conversation->load(['participants.user']);
@@ -32,8 +33,15 @@ class MessageController extends Controller
         // Lấy tin nhắn MỚI NHẤT trước (DESC) để trang 1 là tin mới nhất, trang 2 cũ hơn...
         $messages = $conversation->messages()
             ->with('sender')
-            ->orderBy('created_at', 'desc') 
-            ->simplePaginate(20); // Lấy 15 tin mỗi lần tải
+            ->orderBy('created_at', 'desc')
+            ->cursorPaginate(20);
+
+        $lastMessage = $messages->first();
+        if ($lastMessage && $lastMessage->id > $participant->last_seen_message_id) {
+            $participant->update([
+                'last_seen_message_id' => $lastMessage->id
+            ]);
+        }
 
         // 4. Trả về format tách biệt để frontend dễ xử lý
         return response()->json([
