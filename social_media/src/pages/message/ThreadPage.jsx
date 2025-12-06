@@ -135,28 +135,45 @@ export default function ThreadPage() {
 
   // --- 3. NORMALIZE DATA ---
   const normalizedMessages = useMemo(() => {
-    // 1. Tạo Map lưu vị trí đã xem của từng người (trừ mình)
-    // Key: message_id, Value: Array [UserA, UserB...]
-    const seenMap = {};
+    // A. Gom tất cả tin nhắn lại và tạo Map để tra cứu nhanh
+    const allMessages = rawMessages;
+    const msgIdMap = new Map();
+    // Map giúp lấy thông tin tin nhắn tức thì bằng ID mà không cần dùng .find() (O(1))
+    allMessages.forEach(msg => msgIdMap.set(msg.id, msg));
+
+    // B. Tính toán seenMap
+    const seenMap = {}; // Key: message_id, Value: Array[User]
 
     if (participants.length > 0) {
       participants.forEach(p => {
-        // Bỏ qua bản thân & những người chưa xem tin nhắn nào
-        if (p.user_id === meId || !p.last_read_message_id) return;
+        // 1. Bỏ qua bản thân & người chưa có last_seen
+        // Lưu ý: Đảm bảo trường trong DB là last_seen_message_id (Code cũ bạn ghi last_read_message_id, hãy thống nhất)
+        const lastSeenId = p.last_seen_message_id || p.last_read_message_id;
 
-        const msgId = p.last_read_message_id;
-        if (!seenMap[msgId]) {
-          seenMap[msgId] = [];
+        if (p.user_id === meId || !lastSeenId) return;
+
+        // 2. Lấy tin nhắn tương ứng ra kiểm tra
+        const msgToCheck = msgIdMap.get(lastSeenId);
+
+        // 3. LOGIC QUAN TRỌNG: 
+        // Chỉ hiển thị nếu tin nhắn đó tồn tại VÀ NGƯỜI GỬI KHÔNG PHẢI LÀ CHÍNH HỌ
+        if (msgToCheck && msgToCheck.sender?.id !== p.user_id) {
+          if (!seenMap[lastSeenId]) {
+            seenMap[lastSeenId] = [];
+          }
+          seenMap[lastSeenId].push({
+            id: p.user.id,
+            name: p.user.name,
+            avatarUrl: p.user.avatarUrl
+          });
         }
-        // Push thông tin user vào map tại message_id đó
-        seenMap[msgId].push({
-          id: p.user.id,
-          name: p.user.name
-        });
       });
     }
 
-    const reversed = [...rawMessages].reverse();
+    // C. Format dữ liệu cuối cùng
+    // Reverse lại để hiển thị từ trên xuống (Cũ nhất -> Mới nhất) hoặc ngược lại tùy UI
+    // Ở đây rawMessages thường là từ API (Mới -> Cũ), nên reverse lại để render (Cũ -> Mới)
+    const reversed = [...allMessages].reverse();
     const unique = new Map();
     for (const msg of reversed) unique.set(msg.id, msg);
 
@@ -173,7 +190,7 @@ export default function ThreadPage() {
         mine: msg.sender?.id === meId,
         status: status,
         errorMessage: msg.errorMessage,
-        // CẬP NHẬT: Gắn danh sách người đã xem vào tin nhắn này
+        // Gắn danh sách người xem đã lọc sạch sẽ
         seenBy: seenMap[msg.id] || []
       };
     });

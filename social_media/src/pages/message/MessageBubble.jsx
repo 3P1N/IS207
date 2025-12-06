@@ -74,10 +74,19 @@ export default function MessageBubble({ message }) {
             {/* 2. HIỂN THỊ NGƯỜI ĐÃ XEM (Seen By) */}
             {seenBy && seenBy.length > 0 && (
                 <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}> 
-                   {/* flexDirection row-reverse để avatar đè lên nhau đẹp hơn nếu dùng margin âm */}
+                  
                    {seenBy.map((user) => (
                        <Tooltip key={user.id} title={`Đã xem bởi ${user.name}`} arrow>
-                           
+                           <Avatar 
+                               src={user.avatarUrl} 
+                               alt={user.name}
+                               sx={{ 
+                                   width: 14, 
+                                   height: 14, 
+                                   border: '1px solid #fff',
+                                   ml: -0.5 // Xếp chồng nhẹ lên nhau
+                               }} 
+                           />
                        </Tooltip>
                    ))}
                 </Box>

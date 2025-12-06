@@ -51,7 +51,7 @@ class PostController extends Controller
                     }
                 ])
                 ->orderBy('created_at', 'desc')
-                ->simplePaginate(10);
+                ->cursorPaginate(10);
 
         return response()->json($posts, 200);
     }
