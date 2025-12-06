@@ -35,10 +35,10 @@ export default function ThreadPage() {
   const fetchConversation = async ({ pageParam = null }) => {
     try {
       // Nếu pageParam có giá trị (là chuỗi cursor), nối vào URL. Nếu null thì là trang đầu.
-      const url = pageParam 
+      const url = pageParam
         ? `/conversations/${threadId}/messages?cursor=${pageParam}`
         : `/conversations/${threadId}/messages`;
-        
+
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -135,6 +135,27 @@ export default function ThreadPage() {
 
   // --- 3. NORMALIZE DATA ---
   const normalizedMessages = useMemo(() => {
+    // 1. Tạo Map lưu vị trí đã xem của từng người (trừ mình)
+    // Key: message_id, Value: Array [UserA, UserB...]
+    const seenMap = {};
+
+    if (participants.length > 0) {
+      participants.forEach(p => {
+        // Bỏ qua bản thân & những người chưa xem tin nhắn nào
+        if (p.user_id === meId || !p.last_read_message_id) return;
+
+        const msgId = p.last_read_message_id;
+        if (!seenMap[msgId]) {
+          seenMap[msgId] = [];
+        }
+        // Push thông tin user vào map tại message_id đó
+        seenMap[msgId].push({
+          id: p.user.id,
+          name: p.user.name
+        });
+      });
+    }
+
     const reversed = [...rawMessages].reverse();
     const unique = new Map();
     for (const msg of reversed) unique.set(msg.id, msg);
@@ -151,10 +172,12 @@ export default function ThreadPage() {
         content: msg.content,
         mine: msg.sender?.id === meId,
         status: status,
-        errorMessage: msg.errorMessage
+        errorMessage: msg.errorMessage,
+        // CẬP NHẬT: Gắn danh sách người đã xem vào tin nhắn này
+        seenBy: seenMap[msg.id] || []
       };
     });
-  }, [rawMessages, meId, lastSentMessageId]);
+  }, [rawMessages, meId, lastSentMessageId, participants]);
 
   // --- 4. MUTATION & REALTIME ---
   const sendMessageMutation = useMutation({

@@ -37,9 +37,9 @@ class MessageController extends Controller
             ->cursorPaginate(20);
 
         $lastMessage = $messages->first();
-        if ($lastMessage && $lastMessage->id > $participant->last_seen_message_id) {
+        if ($lastMessage && $lastMessage->id > $participant->last_read_message_id) {
             $participant->update([
-                'last_seen_message_id' => $lastMessage->id
+                'last_read_message_id' => $lastMessage->id
             ]);
         }
 

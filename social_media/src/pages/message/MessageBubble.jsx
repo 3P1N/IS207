@@ -1,11 +1,11 @@
 // src/shared/components/MessageBubble.jsx
 import React from "react";
-import { Box, Typography } from "@mui/material";
-import AvatarUser from "../../shared/components/AvatarUser";
+import { Box, Typography, Avatar, Tooltip } from "@mui/material";
+import AvatarUser from "../../shared/components/AvatarUser"; // Giả sử component này hiển thị avatar lớn
 
 export default function MessageBubble({ message }) {
-  // Lấy thêm status và errorMessage từ message object (đã normalize ở ThreadPage)
-  const { sender, content, mine, status, errorMessage } = message;
+  // Lấy thêm prop seenBy từ message
+  const { sender, content, mine, status, errorMessage, seenBy } = message;
 
   return (
     <Box
@@ -14,20 +14,19 @@ export default function MessageBubble({ message }) {
         flexDirection: mine ? "row-reverse" : "row",
         alignItems: "flex-end",
         gap: 1,
+        mb: seenBy && seenBy.length > 0 ? 1.5 : 0 // Thêm margin bottom nếu có avatar "đã xem" để tránh dính
       }}
     >
-      {/* Avatar người khác */}
+      {/* Avatar người gửi (người khác) */}
       {!mine && <AvatarUser userData={sender} />}
 
-      {/* WRAPPER: Chứa Bong bóng chat + Dòng trạng thái bên dưới
-         Dùng flex-column để xếp chồng status xuống dưới bubble
-      */}
       <Box
         sx={{
           display: "flex",
           flexDirection: "column",
-          alignItems: mine ? "flex-end" : "flex-start", // Căn phải nếu là mình
+          alignItems: mine ? "flex-end" : "flex-start",
           maxWidth: "70%",
+          position: "relative" // Để căn chỉnh vị trí seenBy nếu cần
         }}
       >
         {/* BONG BÓNG CHAT */}
@@ -38,9 +37,8 @@ export default function MessageBubble({ message }) {
             borderRadius: 2,
             px: 1.5,
             py: 1,
-            width: "fit-content", // Ôm sát nội dung
+            width: "fit-content",
             wordBreak: "break-word",
-            // Nếu đang gửi thì làm mờ đi 1 chút cho đẹp
             opacity: status === "sending" ? 0.7 : 1, 
           }}
         >
@@ -55,23 +53,36 @@ export default function MessageBubble({ message }) {
           <Typography variant="body2">{content}</Typography>
         </Box>
 
-        {/* TRẠNG THÁI GỬI (Chỉ hiện cho tin nhắn của mình) */}
-        {mine && status && (
-          <Typography
-            variant="caption"
-            sx={{
-              mt: 0.5,
-              mr: 0.5, // Thụt vào 1 chút cho thẳng hàng
-              fontSize: "0.75rem",
-              // Nếu lỗi thì màu đỏ, còn lại màu xám
-              color: status === "error" ? "error.main" : "text.secondary",
-            }}
-          >
-            {status === "sending" && "Đang gửi..."}
-            {status === "sent" && "Đã gửi"}
-            {status === "error" && (errorMessage || "Gửi lỗi. Nhấn để thử lại.")}
-          </Typography>
-        )}
+        {/* --- KHU VỰC HIỂN THỊ STATUS & SEEN BY --- */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 0.5, gap: 1 }}>
+            
+            {/* 1. Trạng thái gửi (Sending/Error) - Chỉ hiện cho mình */}
+            {mine && status && (
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.75rem",
+                  color: status === "error" ? "error.main" : "text.secondary",
+                }}
+              >
+                {status === "sending" && "Đang gửi..."}
+                {status === "sent" && "Đã gửi"}
+                {status === "error" && (errorMessage || "Lỗi")}
+              </Typography>
+            )}
+
+            {/* 2. HIỂN THỊ NGƯỜI ĐÃ XEM (Seen By) */}
+            {seenBy && seenBy.length > 0 && (
+                <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}> 
+                   {/* flexDirection row-reverse để avatar đè lên nhau đẹp hơn nếu dùng margin âm */}
+                   {seenBy.map((user) => (
+                       <Tooltip key={user.id} title={`Đã xem bởi ${user.name}`} arrow>
+                           
+                       </Tooltip>
+                   ))}
+                </Box>
+            )}
+        </Box>
       </Box>
     </Box>
   );
