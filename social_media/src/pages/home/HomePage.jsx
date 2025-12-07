@@ -2,7 +2,7 @@ import { useContext, useEffect, useState, useRef, useCallback } from "react";
 import { api } from "../../shared/api";
 import { AuthContext } from "../../router/AuthProvider";
 import PostCard from "../post/PostCard";
-
+import PostSkeleton from "../post/PostSkeleton";
 // Component Spinner nhỏ gọn (tái sử dụng nội bộ)
 const LoadingSpinner = () => (
     <svg
@@ -121,8 +121,12 @@ export default function HomePage() {
 
                 {/* Phần hiển thị Loading Spinner */}
                 {loading && (
-                    <div className="py-6 w-full flex justify-center items-center">
-                        <LoadingSpinner />
+                    <div className="mt-6 w-full flex flex-col items-center gap-4">
+                        <>
+                            {[1, 2, 3].map((n) => (
+                                <PostSkeleton key={n} />
+                            ))}
+                        </>
                     </div>
                 )}
 
