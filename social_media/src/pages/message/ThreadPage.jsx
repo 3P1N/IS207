@@ -30,6 +30,8 @@ export default function ThreadPage() {
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
 
   const [lastSentMessageId, setLastSentMessageId] = useState(null);
+  const maxReadIdRef = useRef(null); // Lưu ID lớn nhất đã đọc để gửi về DB khi thoát
+  const lastWhisperIdRef = useRef(null);
 
   // --- 1. FETCH DATA ---
   const fetchConversation = async ({ pageParam = null }) => {
@@ -48,6 +50,12 @@ export default function ThreadPage() {
       throw error;
     }
   };
+
+  const fetchLastReadMessage = async () => {
+    if (!maxReadIdRef) return;
+    const url = `/conversations/${threadId}/messages/${maxReadIdRef}`;
+    const response = await api.put(url);
+  }
 
   const {
     data,
@@ -118,6 +126,8 @@ export default function ThreadPage() {
       fetchNextPage();
     }
   };
+
+
 
   useLayoutEffect(() => {
     if (!containerRef.current) return;
@@ -273,7 +283,9 @@ export default function ThreadPage() {
     if (!echoInstance || !threadId) return;
     const channelName = `chat.${threadId}`;
     const channel = echoInstance.private(channelName);
-    const handler = (newMessage) => {
+
+    // Xử lý tin nhắn mới
+    const handlerMessage = (newMessage) => {
       if (containerRef.current) {
         const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
         const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
@@ -284,27 +296,49 @@ export default function ThreadPage() {
       }
     };
 
-    const handlerRead = (participant) => {
-      console.log("participant: ", participant);
-    }
+    // Xử lý sự kiện Đã xem (Read)
+    const handlerReadWhisper = (eventData) => {
+      // eventData: { user_id, last_read_message_id }
+      if (!eventData || !eventData.user_id) return;
+
+      queryClient.setQueryData(["messages", threadId], (oldData) => {
+        if (!oldData) return oldData;
+        const newPages = [...oldData.pages];
+        const firstPage = { ...newPages[0] };
+
+        if (firstPage.conversation && firstPage.conversation.participants) {
+          const newConversation = { ...firstPage.conversation };
+          newConversation.participants = newConversation.participants.map((p) => {
+            if (p.user_id === eventData.user_id) {
+              return {
+                ...p,
+                last_read_message_id: eventData.last_read_message_id,
+                last_seen_message_id: eventData.last_read_message_id
+              };
+            }
+            return p;
+          });
+          firstPage.conversation = newConversation;
+          newPages[0] = firstPage;
+        }
+        return { ...oldData, pages: newPages };
+      });
+    };
+
+    channel.listen(".MessageSent", handlerMessage);
+    channel.listen("MessageSent", handlerMessage);
 
 
-    channel.listen(".MessageSent", handler);
-    channel.listen("MessageSent", handler);
-
-    channel.listen("MessageRead", handlerRead);
-    channel.listen(".MessageRead", handlerRead);
+    channel.listenForWhisper('MessageRead', handlerReadWhisper);;
 
     return () => {
       channel.stopListening(".MessageSent");
       channel.stopListening("MessageSent");
-
       channel.stopListening("MessageRead");
       channel.stopListening(".MessageRead");
-
       echoInstance.leave(`private-${channelName}`);
     };
-  }, [echoInstance, threadId, queryClient, meId]);
+  }, [echoInstance, threadId, queryClient, meId]); // Đã bỏ 'updateMessagesCache' khỏi dep để tránh re-bind không cần thiết
 
   useEffect(() => {
     const container = containerRef.current;
@@ -314,6 +348,58 @@ export default function ThreadPage() {
       fetchNextPage();
     }
   }, [normalizedMessages, hasNextPage, isFetchingNextPage, loadingMessage]);
+
+  // Logic: Whisper ngay lập tức khi đọc tin nhắn mới
+  // --- 5. LOGIC GỬI SIGNAL ĐÃ ĐỌC (WHISPER) ---
+  useEffect(() => {
+    // Hàm kiểm tra và bắn tín hiệu
+    const checkAndSendWhisper = () => {
+      // Safety check
+      if (!normalizedMessages || normalizedMessages.length === 0 || !echoInstance) return;
+
+      const lastMessage = normalizedMessages[normalizedMessages.length - 1];
+      const isWindowFocused = document.hasFocus();
+
+      // 1. Chỉ gửi nếu tin nhắn cuối KHÔNG phải của mình
+      // 2. Chỉ gửi nếu ĐANG focus vào màn hình
+      // 3. Chỉ gửi nếu tin nhắn này CHƯA từng được whisper trước đó (tránh spam)
+      if (
+        !lastMessage.mine &&
+        isWindowFocused &&
+        lastMessage.id !== lastWhisperIdRef.current
+      ) {
+        console.log(">> Sending Whisper Read for msg:", lastMessage.id);
+
+        // Update Ref để chặn lần gọi tiếp theo
+        lastWhisperIdRef.current = lastMessage.id;
+
+        // (Optional) Update Ref để dành cho DB sau này
+        maxReadIdRef.current = lastMessage.id;
+
+        // Gửi tín hiệu sang máy đối phương
+        const channel = echoInstance.private(`chat.${threadId}`);
+        channel.whisper('MessageRead', {
+          user_id: meId,
+          last_read_message_id: lastMessage.id
+        });
+      }
+    };
+
+    // Case A: Chạy ngay khi có tin nhắn mới hoặc danh sách load xong
+    checkAndSendWhisper();
+
+    // Case B: Chạy khi người dùng click vào lại tab (Focus)
+    const handleFocus = () => checkAndSendWhisper();
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("click", handleFocus); // Thêm click cho chắc chắn trên mobile
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("click", handleFocus);
+    };
+  }, [normalizedMessages, echoInstance, threadId, meId]);
+  // Dependency: Khi list tin nhắn đổi -> chạy check. Khi threadId đổi -> chạy check.
 
   const handleSend = (content) => sendMessageMutation.mutate(content);
 

@@ -4,7 +4,7 @@ import Maintenance from '../pages/maintenance/Maintenance';
 
 export default function MaintenanceGuard({ children }) {
   // const [loading, setLoading] = useState(true);
-  const [isMaint, setIsMaint] = useState(true);
+  const [isMaint, setIsMaint] = useState(false);
 
   if (isMaint) {
     return <Maintenance />;

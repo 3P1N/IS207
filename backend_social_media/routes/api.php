@@ -55,11 +55,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/friendships', [App\Http\Controllers\Api\FriendShipController::class, 'addfriend']);
     Route::patch('/friendships/{friendship}', [App\Http\Controllers\Api\FriendShipController::class, 'acceptfriend']);
     Route::patch('/userProfile', [App\Http\Controllers\Api\UserController::class, 'updateProfile']);
+
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
     Route::post('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'store']);
     Route::get('/conversations/{conversation}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
     Route::post('/conversations/{id}/messages', [App\Http\Controllers\Api\MessageController::class, 'store']);
     Route::post('/conversations/{conversation}/participants', [App\Http\Controllers\Api\ConversationController::class,'addParticipant']);
+    Route::patch('/conversations/{conversation}/messages/{message}', [App\Http\Controllers\Api\MessageController::class, 'updateLastReadMessage']);
+
     // Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
     Route::get('/posts', [App\Http\Controllers\Api\PostController::class, 'index']);
     Route::post('/posts', [App\Http\Controllers\Api\PostController::class, 'store']);

@@ -83,5 +83,21 @@ class MessageController extends Controller
 
     }
 
+    public function updateLastReadMessage(Request $request, Conversation $conversation, Message $message){
+        $user = $request->user();
+        $conversationId = $conversation->id;
+        $messageId = $message->id;
+        // Kiểm tra xem người dùng có phải là thành viên của cuộc trò chuyện không
+        $participant = ConversationParticipant::where('conversation_id', $conversationId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$participant) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+        
+        $participant->update(['last_read_message_id'=>$messageId]);
+        return response()->json(['message' => 'updated last seen message successfully'],200);
+    }
 
 }
