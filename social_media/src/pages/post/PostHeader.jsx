@@ -17,6 +17,7 @@ import AvatarUser from "../../shared/components/AvatarUser";
 import EditPostModal from "./EditPostModal";
 import { api } from "../../shared/api";
 import { AuthContext } from "../../router/AuthProvider";
+import ReportPostModal from "./report/ReportPostModal";
 
 const formatDate = (isoString) => {
   if (!isoString) return "";
@@ -36,6 +37,7 @@ export default function PostHeader({ headerData, postData, index }) {
   const open = Boolean(anchorEl);
   const { postsData, setPostsData } = useContext(AuthContext);
   const [isEditing, setIsEditing] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -71,8 +73,9 @@ export default function PostHeader({ headerData, postData, index }) {
       setSnackbarMessage(message?.message || "Delete successfully submitted");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-
-      setPostsData(prev => prev.filter((_, i) => i !== index));
+      setTimeout(() => {
+        setPostsData(prev => prev.filter((_, i) => i !== index));
+      }, 1500);
 
     } catch (err) {
       console.error("Lỗi khi delete", err);
@@ -85,27 +88,42 @@ export default function PostHeader({ headerData, postData, index }) {
     }
   };
 
-  const report = async (postId) => {
-    const response = await api.post(`/posts/${postId}/report`);
-    return response.data;
+
+
+  const handleOpenReportModal = () => {
+    setIsReporting(true);
+    handleMenuClose();
   };
 
-  const handleReport = async () => {
+  const submitReport = async (reasonString) => {
     setLoading(true);
     try {
-      const message = await report(postData.id);
-      setSnackbarMessage(message?.message || "Report successfully submitted");
+      // Gửi post request kèm body { reason: ... }
+      const response = await api.post(`/posts/${postData.id}/report`, {
+        reason: reasonString
+      });
+
+      const message = response.data;
+      setSnackbarMessage("Report successfully submitted");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-      setPostsData(prev => prev.filter((_, i) => i !== index));
+      
+      // Tùy chọn: Ẩn bài viết sau khi report thành công
+      setTimeout(() => {
+        setPostsData(prev => prev.filter((_, i) => i !== index));
+      }, 1500);
+
+      // Đóng modal sau khi thành công
+      setIsReporting(false);
+
     } catch (err) {
       console.error("Lỗi khi report", err);
       setSnackbarMessage("Failed to report post");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
+      // Không đóng modal ngay để user có thể thử lại nếu muốn, hoặc đóng tùy ý bạn
     } finally {
       setLoading(false);
-      handleMenuClose();
     }
   };
 
@@ -153,7 +171,7 @@ export default function PostHeader({ headerData, postData, index }) {
             </MenuItem>
           ]
           : (
-            <MenuItem onClick={handleReport} disabled={loading}>
+            <MenuItem onClick={handleOpenReportModal} disabled={loading}>
               <ListItemIcon>
                 {loading ? <CircularProgress size={18} /> : <FlagIcon fontSize="small" />}
               </ListItemIcon>
@@ -161,6 +179,14 @@ export default function PostHeader({ headerData, postData, index }) {
             </MenuItem>
           )}
       </Menu>
+      {isReporting && (
+        <ReportPostModal
+          open={isReporting}
+          onClose={() => setIsReporting(false)}
+          onSubmit={submitReport} // Truyền hàm xử lý submit vào
+          loading={loading}
+        />
+      )}
 
       {isEditing && (
         <EditPostModal

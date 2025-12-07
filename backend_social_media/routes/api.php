@@ -25,6 +25,8 @@ Route::middleware(['auth:sanctum','ensureRole:admin'])->prefix('admin')->group(f
     Route::get('/users',  [App\Http\Controllers\Api\AdminController::class, 'getUsers']);
     Route::patch('/users/{user}/violated',  [App\Http\Controllers\Api\AdminController::class, 'toggleUsersViolated']);
 
+    Route::get('/posts/{post}/reports',  [App\Http\Controllers\Api\AdminController::class, 'getPostsReport']);
+
     Route::get('/posts/violation',  [App\Http\Controllers\Api\AdminController::class, 'getPostsViolation']);
     Route::patch('/posts/{post}/is_visible',  [App\Http\Controllers\Api\AdminController::class, 'togglePostsVisible']);
 

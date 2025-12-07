@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Post;
+use App\Models\Report;
 
 use Illuminate\Http\Request;
 use App\Enums\Role;
@@ -78,6 +79,13 @@ class AdminController extends Controller{
         
         $post->update(['is_visible'=> !$post->is_visible]);
         return response()->json(['message'=>'Update post is_visible successfull'], 200); 
+    }
+
+    public function getPostsReport(Request $request, Post $post){
+        $report = Report::where('post_id', $post->id)
+                    ->with('reporter')
+                    ->get();
+        return response()->json($report,200);
     }
 
 }
