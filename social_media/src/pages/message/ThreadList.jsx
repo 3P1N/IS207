@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AvatarUser from "../../shared/components/AvatarUser";
 import { AuthContext } from "../../router/AuthProvider";
 import { api } from "../../shared/api";
+import ThreadListSkeleton from "./ThreadListSkeleton";
 
 export default function ThreadList() {
   // --- 2. SỬA: Khởi tạo queryClient ---
@@ -137,9 +138,7 @@ export default function ThreadList() {
   // --- RENDER ---
   if (isLoading) {
     return (
-      <Typography variant="body2" sx={{ color: "text.secondary", p: 2 }}>
-        Đang tải danh sách tin nhắn...
-      </Typography>
+      <ThreadListSkeleton count={8} />
     );
   }
 

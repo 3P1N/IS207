@@ -14,6 +14,7 @@ import NotFoundPage from "../not-found/NotFoundPage";
 import ParticipantsModal from "./ParticipantsModal";
 import AddMemberModal from "./AddMemberModal";
 import { ArrowBack } from "@mui/icons-material";
+import ThreadPageSkeleton from "./ThreadPageSkeleton";
 
 export default function ThreadPage() {
   const { threadId } = useParams();
@@ -85,7 +86,7 @@ export default function ThreadPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    loadingMessage, // Đây là isLoading (trạng thái hard loading khi chưa có data)
+    isLoading: loadingMessage, // Đây là isLoading (trạng thái hard loading khi chưa có data)
     isFetching,     // [MỚI] Đây là trạng thái fetch ngầm (background fetching)
     isError
   } = useInfiniteQuery({
@@ -458,9 +459,7 @@ export default function ThreadPage() {
   // Kiểm tra Loading Lần đầu (quan trọng để tránh render UI khi chưa có data)
   if (loadingMessage && !data) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress /> <Typography ml={2}>Đang tải cuộc trò chuyện...</Typography>
-      </Box>
+      <ThreadPageSkeleton/>
     )
   }
 

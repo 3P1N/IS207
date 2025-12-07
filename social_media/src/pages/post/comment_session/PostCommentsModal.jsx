@@ -20,6 +20,7 @@ import PostHeader from "../PostHeader";
 import CommentItem from "./CommentItem";
 import ImageViewer from "../../../shared/components/ImageViewer";
 import { AuthContext } from "../../../router/AuthProvider";
+import CommentSkeleton from "./CommentSkeleton";
 
 // ... (Giữ nguyên phần Icons ChevronLeft, ChevronRight) ...
 const ChevronLeft = () => (
@@ -332,9 +333,18 @@ export default function PostCommentsModal({ open, onClose, postId, postData, onC
 
           <Box sx={{ px: 2, pb: 2 }}>
             {isLoading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-                <CircularProgress size={30} />
-              </Box>
+              <div className="px-4 py-2">
+                {/* Comment cha 1 */}
+                <CommentSkeleton />
+
+                {/* Comment cha 2 */}
+                <CommentSkeleton />
+
+                {/* Giả lập Comment con (Reply) bằng cách thêm margin-left */}
+                <div className="ml-10 border-l-2 border-gray-100 pl-2">
+                  <CommentSkeleton />
+                </div>
+              </div>
             ) : rootComments.length === 0 ? (
               <Typography variant="body2" align="center" color="textSecondary" sx={{ mt: 4 }}>
                 Chưa có bình luận nào. Hãy là người đầu tiên!
