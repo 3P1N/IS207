@@ -17,6 +17,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Tooltip
 } from "@mui/material";
 // 1. Import React Query hooks
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,13 +25,14 @@ import SearchIcon from "@mui/icons-material/Search"; // Import icon tìm kiếm
 import AvatarUser from "../../shared/components/AvatarUser";
 import { Link } from "react-router-dom";
 import { api } from "../../shared/api";
+import ReportDetailModal from "./ReportDetailModal";
 
 export default function PostsAdminPage() {
   const queryClient = useQueryClient();
   const [loadingToggles, setLoadingToggles] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("reports_desc"); // State cho sort
-
+  const [viewingReportPostId, setViewingReportPostId] = useState(null);
   // --- 1. HÀM FETCH DATA ---
   const fetchPostsViolation = async () => {
     const response = await api.get("admin/posts/violation");
@@ -221,11 +223,18 @@ export default function PostsAdminPage() {
 
                         {/* Số report */}
                         <TableCell>
-                          <Chip
-                            label={`${post.reports_count} report`}
-                            color={post.reports_count >= 10 ? "error" : "warning"}
-                            size="small"
-                          />
+                          <Tooltip title="Click để xem chi tiết báo cáo">
+                            <Chip
+                              label={`${post.reports_count} report`}
+                              color={post.reports_count >= 10 ? "error" : "warning"}
+                              size="small"
+                              onClick={() => setViewingReportPostId(post.id)} // Set ID để mở modal
+                              sx={{
+                                cursor: "pointer",
+                                "&:hover": { opacity: 0.8 }
+                              }}
+                            />
+                          </Tooltip>
                         </TableCell>
 
                         {/* Trạng thái */}
@@ -273,6 +282,11 @@ export default function PostsAdminPage() {
           </Table>
         </Box>
       </Paper>
+      <ReportDetailModal
+        open={!!viewingReportPostId} // Mở khi có ID
+        postId={viewingReportPostId}
+        onClose={() => setViewingReportPostId(null)}
+      />
     </Box>
   );
 }
