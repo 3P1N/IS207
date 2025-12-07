@@ -283,11 +283,25 @@ export default function ThreadPage() {
         updateMessagesCache(newMessage);
       }
     };
+
+    const handlerRead = (participant) => {
+      console.log("participant: ", participant);
+    }
+
+
     channel.listen(".MessageSent", handler);
     channel.listen("MessageSent", handler);
+
+    channel.listen("MessageRead", handlerRead);
+    channel.listen(".MessageRead", handlerRead);
+
     return () => {
       channel.stopListening(".MessageSent");
       channel.stopListening("MessageSent");
+
+      channel.stopListening("MessageRead");
+      channel.stopListening(".MessageRead");
+
       echoInstance.leave(`private-${channelName}`);
     };
   }, [echoInstance, threadId, queryClient, meId]);

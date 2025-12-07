@@ -7,6 +7,7 @@ use App\Models\ConversationParticipant;
 use App\Models\Conversation;
 
 use App\Events\MessageSent;
+use App\Events\MessageRead;
 use App\Events\ConversationSent;
 
 
@@ -41,6 +42,7 @@ class MessageController extends Controller
             $participant->update([
                 'last_read_message_id' => $lastMessage->id
             ]);
+            broadcast(new \App\Events\MessageRead($participant));
         }
 
         // 4. Trả về format tách biệt để frontend dễ xử lý
