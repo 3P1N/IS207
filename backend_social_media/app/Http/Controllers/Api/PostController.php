@@ -8,7 +8,7 @@ use App\Models\Media;
 use App\Models\PostReaction;
 use App\Models\Comment;
 use App\Http\Controllers\Api\MediaController;
-
+use App\Enums\Role;
 
 
 class PostController extends Controller
@@ -100,37 +100,46 @@ class PostController extends Controller
         return response()->json($post, 201);
     }
 
-    public function show(Request $request, $index){
+    public function show(Request $request, $index)
+    {
         $user = $request->user();
-        $userId = $user->id;
-        if (!$user) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
+        $userId = $user?->id; // null-safe
+
+        // Build query: thêm withExists chỉ khi có user để tránh where user_id = null
+        $query = Post::with(['user', 'media'])
+                    ->withCount(['reactions', 'comments', 'shares']);
+
+        if ($userId) {
+            $query->withExists([
+                'reactions as is_liked' => function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                }
+            ])->withExists([
+                'shares as is_shared' => function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                }
+            ]);
         }
-        $post = Post:: 
-            whereDoesntHave('reports', function($query) use ($userId) {
-                $query->where('reporter_id', $userId);
-            })
-            ->with(['user', 'media'])
-            ->withExists([
-                    'reactions as is_liked' => function ($q) use ($userId) {
-                        $q->where('user_id', $userId);
-                    }
-                ])
-            ->withExists([
-                    'shares as is_shared' => function ($q) use ($userId) {
-                        $q->where('user_id', $userId);
-                    }
-                ])
-            ->withCount(['reactions', 'comments', 'shares'])
-            ->find($index);
-        if(!$post){
+
+        $post = $query->find($index);
+
+        if (! $post) {
             return response()->json(['message' => 'Post not found'], 404);
         }
-        return response()->json($post, 200);
 
+        // Kiểm tra xem user hiện tại đã report bài này chưa
+        $isReportedByCurrentUser = $userId
+            ? $post->reports()->where('reporter_id', $userId)->exists()
+            : false;
+
+        // Nếu đã report và user không phải admin => trả 404 (giả lập "ẩn" với reporter)
+        if ($isReportedByCurrentUser && (! $user || $user->role !== Role::ADMIN)) {
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+
+        return response()->json($post, 200);
     }
+
 
     public function update(Request $request, $id) { 
         $user = $request->user();

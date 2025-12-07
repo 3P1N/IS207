@@ -11,30 +11,37 @@ import {
     Snackbar, 
     Alert, 
     Box, 
-    Typography
+    Typography,
+    Popover // UPDATE: Import Popover
 } from "@mui/material";
+import EmojiPicker from 'emoji-picker-react'; 
 
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions'; // UPDATE: Import Icon Emoji
 import CloseIcon from '@mui/icons-material/Close'; 
 import { AuthContext } from '../../router/AuthProvider';
 import { api } from '../../shared/api';
 import AvatarUser from '../../shared/components/AvatarUser';
 
 export default function EditPostModal({ postData, postIndex, onClose }) {
-    // 1. Thêm setPostsData vào useContext
     const { userData, setPostsData } = useContext(AuthContext);
 
     const [postContent, setPostContent] = useState(postData.content || '');
+    
     // Logic map media cũ
     const [mediaFiles, setMediaFiles] = useState(postData.media?.map(url => ({ 
         file: null, 
         url: url.media_url, 
-        type: url.media_url.includes('.mp4') ? 'video' : 'image' // Check đơn giản đuôi file hoặc logic backend trả về type
+        type: url.media_url.includes('.mp4') ? 'video' : 'image'
     })) || []);
     
     const [loading, setLoading] = useState(false);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
+
+    // --- UPDATE: State cho Emoji Picker ---
+    const [anchorElEmoji, setAnchorElEmoji] = useState(null);
+    const showEmojiPicker = Boolean(anchorElEmoji);
 
     useEffect(() => {
         setPostContent(postData.content || '');
@@ -47,6 +54,20 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
     const handleClose = () => {
         if (onClose) onClose();
+    };
+
+    // --- UPDATE: LOGIC EMOJI ---
+    const handleEmojiClick = (event) => {
+        setAnchorElEmoji(event.currentTarget);
+    };
+
+    const handleEmojiClose = () => {
+        setAnchorElEmoji(null);
+    };
+
+    const onEmojiClick = (emojiObject) => {
+        // Cộng dồn emoji vào nội dung text hiện tại
+        setPostContent(prev => prev + emojiObject.emoji);
     };
 
     const uploadMultipleFilesParallel = async (files) => {
@@ -65,9 +86,8 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
 
         const results = await Promise.all(uploadPromises);
         const newUrls = results.map(r => r.secure_url);
-        // Lọc lấy url của các ảnh cũ (không có file object)
         const existingUrls = files.filter(f => !f.file).map(f => f.url);
-        const urls = [...existingUrls, ...newUrls]; // Ghép ảnh cũ + ảnh mới
+        const urls = [...existingUrls, ...newUrls]; 
         
         return urls;
     };
@@ -103,26 +123,21 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
         try {
             const uploadedUrls = await uploadMultipleFilesParallel(mediaFiles);
             
-            // 2. Gọi API update
             await api.put(`/posts/${postData.id}`, { 
                 content: postContent, 
                 media_url: uploadedUrls 
             });
             
-            // 3. Fetch lại post để lấy dữ liệu mới nhất từ server
             const postResponse = await api.get(`/posts/${postData.id}`);
             const updatedPost = postResponse.data;
 
-            // 4. Cập nhật ngay lập tức vào Context để UI render lại
             setPostsData(prevPosts => {
                 const newPosts = [...prevPosts];
-                // Cập nhật đúng vị trí index đang sửa
                 if (newPosts[postIndex]) {
                     newPosts[postIndex] = {
-                        ...newPosts[postIndex],  // Giữ các props cũ
-                        ...updatedPost,           // Ghi đè bằng data mới từ server
-                        user: newPosts[postIndex].user, // Đảm bảo user object không bị mất
-                        // Đảm bảo media được format đúng
+                        ...newPosts[postIndex], 
+                        ...updatedPost,           
+                        user: newPosts[postIndex].user, 
                         media: updatedPost.media || []
                     };
                 }
@@ -147,7 +162,6 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
     const isSaveDisabled = !postContent.trim() && mediaFiles.length === 0;
 
     return (
-        // ... (Giữ nguyên phần return UI như cũ)
         <>
             <Dialog 
                 open={true} 
@@ -160,7 +174,6 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                     }
                 }}
             >
-                {/* ... UI code ... */}
                 {loading && (
                     <Box sx={{
                         position: 'absolute', inset: 0, zIndex: 50,
@@ -174,8 +187,7 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                 <DialogTitle>Edit Post</DialogTitle>
                 
                 <DialogContent dividers>
-                   {/* ... UI code ... */}
-                   {/* Header User */}
+                    {/* Header User */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                         <AvatarUser userData={userData} />
                         <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
@@ -206,8 +218,8 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                         }}
                     />
 
-                    {/* Media Upload & Preview */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    {/* Media Upload & Tools */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, gap: 1 }}>
                         <input
                             type="file"
                             id="media-upload-edit"
@@ -216,23 +228,57 @@ export default function EditPostModal({ postData, postIndex, onClose }) {
                             style={{ display: "none" }}
                             onChange={handleMediaChange}
                         />
+                        
+                        {/* ICON CAMERA */}
                         <Tooltip title="Add Photo / Video">
-                            <IconButton component="label" htmlFor="media-upload-edit" color="primary">
+                            <IconButton component="label" htmlFor="media-upload-edit" sx={{ color: '#45bd62' }}>
                                 <PhotoCamera />
                             </IconButton>
                         </Tooltip>
+
+                        {/* UPDATE: ICON EMOJI */}
+                        <Tooltip title="Insert Emoji">
+                            <IconButton 
+                                onClick={handleEmojiClick} 
+                                sx={{ color: '#f7b928' }} // Màu vàng giống bên CreatePost
+                            >
+                                <EmojiEmotionsIcon />
+                            </IconButton>
+                        </Tooltip>
+
+                        {/* UPDATE: Popover chứa Emoji Picker */}
+                        <Popover
+                            open={showEmojiPicker}
+                            anchorEl={anchorElEmoji}
+                            onClose={handleEmojiClose}
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'left',
+                            }}
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'left',
+                            }}
+                            sx={{ zIndex: 1400 }} // Đảm bảo nổi lên trên Dialog (MUI Dialog z-index là 1300)
+                        >
+                            <EmojiPicker 
+                                onEmojiClick={onEmojiClick}
+                                width={350}
+                                height={400}
+                            />
+                        </Popover>
                     </Box>
 
+                    {/* Media Preview */}
                     {mediaFiles.length > 0 && (
                         <Box sx={{ mt: 2, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
                             {mediaFiles.map((media, index) => (
                                 <Box key={index} sx={{ position: 'relative', '&:hover .delete-btn': { opacity: 1 } }}>
-                                    {/* Handle Video Preview if needed */}
                                     {media.type === 'video' ? (
                                         <video 
                                             src={media.url} 
                                             className="w-full aspect-video object-cover rounded-lg border border-divider"
-                                            controls={false} // Preview thumbnail thôi
+                                            controls={false}
                                         />
                                     ) : (
                                         <Box
