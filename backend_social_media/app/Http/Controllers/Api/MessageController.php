@@ -17,7 +17,7 @@ class MessageController extends Controller
     {
         $user = $request->user();
 
-        // 1. Check quyền (giữ nguyên logic của bạn)
+        // 1. Check quyền
         $participant = ConversationParticipant::where('conversation_id', $conversation->id)
             ->where('user_id', $user->id)
             ->first();
@@ -26,29 +26,60 @@ class MessageController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-
-        // 2. Load thông tin Conversation và Participants (không load messages ở đây nữa)
+        // 2. Load quan hệ
         $conversation->load(['participants.user']);
 
-        // 3. Load Messages riêng biệt để lấy object phân trang chuẩn
-        // Lấy tin nhắn MỚI NHẤT trước (DESC) để trang 1 là tin mới nhất, trang 2 cũ hơn...
+        // 3. Logic tính toán số lượng tin cần lấy (Tránh lỗi mất tin unread)
+        $perPage = 20;
+        $shouldUpdateReadStatus = false;
+
+        // Chỉ tính toán logic phức tạp khi load trang đầu (không có cursor)
+        if (!$request->has('cursor')) {
+            $lastReadAt = $participant->last_read_message_id; // Giả sử bạn lưu ID, hoặc dùng timestamp tùy DB
+            
+            // Đếm số tin chưa đọc để lấy cho đủ
+            // Lưu ý: So sánh ID chỉ đúng nếu ID tăng dần (auto-increment hoặc ULID/Snowflake). 
+            // Nếu dùng UUID v4 ngẫu nhiên thì phải so sánh created_at.
+            if ($lastReadAt) {
+                $unreadCount = $conversation->messages()
+                    ->where('id', '>', $lastReadAt) 
+                    ->count();
+                $perPage = max(20, $unreadCount);
+            }
+            
+            $shouldUpdateReadStatus = true;
+        }
+
+        // 4. Query Messages
         $messages = $conversation->messages()
             ->with('sender')
             ->orderBy('created_at', 'desc')
-            ->cursorPaginate(20);
+            ->cursorPaginate($perPage);
 
-        $lastMessage = $messages->first();
-        if ($lastMessage && $lastMessage->id > $participant->last_read_message_id) {
-            $participant->update([
-                'last_read_message_id' => $lastMessage->id
-            ]);
-            broadcast(new \App\Events\MessageRead($participant));
+        // 5. Update trạng thái đã đọc (Chỉ chạy ở trang đầu và nếu có tin mới hơn)
+        if ($shouldUpdateReadStatus) {
+            $lastMessage = $messages->first(); // Tin mới nhất trong đám vừa lấy
+            
+            if ($lastMessage && $lastMessage->id > $participant->last_read_message_id) {
+                
+                // A. Update DB
+                $participant->update([
+                    'last_read_message_id' => $lastMessage->id,
+                    'last_read_at' => now() // Nên có thêm trường này để debug thời gian
+                ]);
+
+                // B. [QUAN TRỌNG] Bắn Event Real-time để bên kia thấy chữ "Seen" ngay lập tức
+                // Bạn có thể dùng Laravel Echo event hoặc logic Whisper như frontend bạn đang làm.
+                // Nếu dùng Whisper ở frontend rồi thì đoạn broadcast này có thể bỏ qua để đỡ duplicate logic,
+                // nhưng làm ở backend thì chắc chắn hơn (tránh trường hợp user tắt browser nhanh quá).
+                
+                broadcast(new \App\Events\MessageRead($conversation->id, $user->id, $lastMessage->id))->toOthers();
+            }
         }
 
-        // 4. Trả về format tách biệt để frontend dễ xử lý
         return response()->json([
             'conversation' => $conversation,
-            'messages' => $messages // Object này chứa data, next_page_url, prev_page_url...
+            'messages' => $messages
         ], 200);
     }
     public function store(Request $request, $id)

@@ -51,31 +51,57 @@ export default function ThreadPage() {
     }
   };
 
-  const fetchLastReadMessage = async () => {
-    if (!maxReadIdRef) return;
-    const url = `/conversations/${threadId}/messages/${maxReadIdRef}`;
-    const response = await api.put(url);
-  }
+  const debounceTimeoutRef = useRef(null);
+
+  // --- HÀM GỌI API (Đã tách ra để tái sử dụng) ---
+  // Hàm này chịu trách nhiệm lưu xuống DB bền vững
+  const callApiMarkRead = async (messageId) => {
+    try {
+      if (!messageId) return;
+      console.log(">> Saving to DB (Persistent):", messageId);
+      await api.patch(`/conversations/${threadId}/messages/${messageId}`);
+    } catch (error) {
+      console.error("Failed to save read status", error);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      // 1. Cleanup timeout (giữ nguyên)
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      // 2. Gọi API mark read lần cuối (giữ nguyên)
+      if (maxReadIdRef.current) {
+        callApiMarkRead(maxReadIdRef.current);
+      }
+
+    };
+  }, [threadId, queryClient]); // Bỏ dòng queryClient.removeQueries
+
 
   const {
     data,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading: loadingMessage, // SỬA LỖI 1: Đổi tên isLoading thành loadingMessage để khớp với code bên dưới
+    loadingMessage, // Đây là isLoading (trạng thái hard loading khi chưa có data)
+    isFetching,     // [MỚI] Đây là trạng thái fetch ngầm (background fetching)
     isError
   } = useInfiniteQuery({
     queryKey: ["messages", threadId],
     queryFn: fetchConversation,
     getNextPageParam: (lastPage) => {
       if (lastPage?.isAccessDenied) return undefined;
-      // SỬA LỖI: Laravel cursorPaginate trả về 'next_cursor'
       return lastPage.messages?.next_cursor || undefined;
     },
     enabled: !!threadId,
-    staleTime: 0, // Đánh dấu dữ liệu là "cũ" ngay lập tức để kích hoạt refetch
-    refetchOnMount: true, // Bắt buộc gọi lại API khi vào lại trang
-    refetchOnWindowFocus: "always",
+    
+    // --- CẤU HÌNH LOGIC CACHE ---
+    staleTime: 0,        // Dữ liệu luôn được coi là "cũ" ngay lập tức
+    refetchOnMount: true, // Khi vào component: Luôn gọi API mới (nhưng vẫn hiện data cũ trong lúc chờ)
+    refetchOnWindowFocus: false, 
+    
     retry: (failureCount, error) => {
       if (error.response && (error.response.status === 404 || error.response.status === 403)) return false;
       return failureCount < 3;
@@ -352,7 +378,6 @@ export default function ThreadPage() {
   // Logic: Whisper ngay lập tức khi đọc tin nhắn mới
   // --- 5. LOGIC GỬI SIGNAL ĐÃ ĐỌC (WHISPER) ---
   useEffect(() => {
-    // Hàm kiểm tra và bắn tín hiệu
     const checkAndSendWhisper = () => {
       // Safety check
       if (!normalizedMessages || normalizedMessages.length === 0 || !echoInstance) return;
@@ -360,43 +385,53 @@ export default function ThreadPage() {
       const lastMessage = normalizedMessages[normalizedMessages.length - 1];
       const isWindowFocused = document.hasFocus();
 
-      // 1. Chỉ gửi nếu tin nhắn cuối KHÔNG phải của mình
-      // 2. Chỉ gửi nếu ĐANG focus vào màn hình
-      // 3. Chỉ gửi nếu tin nhắn này CHƯA từng được whisper trước đó (tránh spam)
+      // Logic kiểm tra điều kiện (giống cũ)
       if (
         !lastMessage.mine &&
         isWindowFocused &&
         lastMessage.id !== lastWhisperIdRef.current
       ) {
-        console.log(">> Sending Whisper Read for msg:", lastMessage.id);
-
-        // Update Ref để chặn lần gọi tiếp theo
+        // 1. Cập nhật Ref cục bộ
         lastWhisperIdRef.current = lastMessage.id;
-
-        // (Optional) Update Ref để dành cho DB sau này
         maxReadIdRef.current = lastMessage.id;
 
-        // Gửi tín hiệu sang máy đối phương
+        // 2. Bắn Socket Whisper (REALTIME - để đối phương thấy ngay lấp tức khi đang online)
+        // Cái này NHANH, không tốn tài nguyên DB
         const channel = echoInstance.private(`chat.${threadId}`);
         channel.whisper('MessageRead', {
           user_id: meId,
           last_read_message_id: lastMessage.id
         });
+
+        // 3. Gọi API lưu vào DB (PERSISTENT - để khi reload vẫn còn)
+        // Dùng Debounce: Hủy timeout cũ nếu có, tạo timeout mới
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+
+        // Đợi 2 giây (2000ms) sau khi dừng lướt mới gọi API
+        // Nếu người dùng lướt liên tục, API sẽ không bị gọi, chỉ gọi khi dừng lại ở tin cuối
+        debounceTimeoutRef.current = setTimeout(() => {
+          callApiMarkRead(lastMessage.id);
+        }, 2000);
       }
     };
 
-    // Case A: Chạy ngay khi có tin nhắn mới hoặc danh sách load xong
+    // Trigger logic
     checkAndSendWhisper();
 
-    // Case B: Chạy khi người dùng click vào lại tab (Focus)
     const handleFocus = () => checkAndSendWhisper();
-
     window.addEventListener("focus", handleFocus);
-    window.addEventListener("click", handleFocus); // Thêm click cho chắc chắn trên mobile
+    window.addEventListener("click", handleFocus);
 
     return () => {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("click", handleFocus);
+
+      // Cleanup timeout khi unmount để tránh memory leak
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
   }, [normalizedMessages, echoInstance, threadId, meId]);
   // Dependency: Khi list tin nhắn đổi -> chạy check. Khi threadId đổi -> chạy check.
