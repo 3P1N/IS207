@@ -30,13 +30,15 @@ import ResetPasswordForm from "../pages/auth/forgot-password-form";
 import ForgotPasswordForm from "../pages/auth/forgot-password-form";
 import ChangePasswordForm from "../pages/changepassword/ChangePasswordForm";
 import VideoCallProvider from "./VideoCallProvider";
+import MaintenanceGuard from "./MaintenanceGuard";
 // import NotFoundPage from "@/pages/not-found/NotFoundPage";
 
 export default function AppRouter() {
     return (
         <BrowserRouter>
-            <AuthProvider>
-                {/* <VideoCallProvider> */}
+            <MaintenanceGuard>
+                <AuthProvider>
+                    {/* <VideoCallProvider> */}
                     <Routes>
 
                         <Route element={<GuestRouter />}>
@@ -95,8 +97,9 @@ export default function AppRouter() {
                         <Route path="*" element={<NotFoundPage />} />
 
                     </Routes>
-                {/* </VideoCallProvider> */}
-            </AuthProvider>
+                    {/* </VideoCallProvider> */}
+                </AuthProvider>
+            </MaintenanceGuard>
         </BrowserRouter>
     );
 }
