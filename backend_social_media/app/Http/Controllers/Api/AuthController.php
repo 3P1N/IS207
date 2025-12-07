@@ -121,7 +121,9 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // Lấy token từ cookie
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+        
         $token = $request->cookie('api_token');
 
         if ($token) {

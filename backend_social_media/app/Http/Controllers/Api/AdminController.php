@@ -43,6 +43,7 @@ class AdminController extends Controller{
         ];
         if (!$isViolated) {          
             $updateData['disable_at'] = now();
+            $user->tokens()->delete();
         }
         $user->update($updateData);
         return response()->json(['message'=>'Update user successfull','user'=> $user], 200); 
