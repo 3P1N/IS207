@@ -42,7 +42,7 @@ class ConversationController extends Controller
         if(!$users){
             return response()->json(['message'=>'You have no participants yet!'], 422);
         }
-        $conversation = Conversation::create(['name'=>$name]);
+        $conversation = Conversation::create(['name'=>$name, 'type'=>'group']);
         foreach ($users as $key => $id) {
             # code...
             ConversationParticipant::create([
