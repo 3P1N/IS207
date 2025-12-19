@@ -64,18 +64,22 @@ export default function PostCard({ postData, index }) {
     // ... (Giữ nguyên phần useState headerData, localPostData và useEffect) ...
     const [headerData, setHeaderData] = useState(null);
     const [localPostData, setLocalPostData] = useState({
-        likes: 0, comments: 0, shares: 0, isLiked: false, isShared: false, ...postData
+        likes: postData?.reactions_count || 0, 
+        comments: postData?.comments_count || 0, 
+        shares: postData?.shares_count || 0, 
+        isLiked: postData?.is_liked || false, 
+        isShared: postData?.is_shared || false
     });
     const mediaList = postData.media || [];
 
     useEffect(() => {
         if (!postData) return;
         setLocalPostData({
-            likes: postData.reactions_count,
-            comments: postData.comments_count,
-            shares: postData.shares_count,
-            isLiked: postData.is_liked,
-            isShared: postData.is_shared,
+            likes: postData.reactions_count || 0,
+            comments: postData.comments_count || 0,
+            shares: postData.shares_count || 0,
+            isLiked: postData.is_liked || false,
+            isShared: postData.is_shared || false,
         });
 
         if (!postData.user) return;
@@ -91,11 +95,22 @@ export default function PostCard({ postData, index }) {
 
     // ... (Giữ nguyên các hàm handleLike, Comment, Share) ...
     const handleLikeUpdate = (isLikedNow) => {
-        setLocalPostData(prev => ({ ...prev, isLiked: isLikedNow, likes: isLikedNow ? prev.likes + 1 : prev.likes - 1 }));
+        setLocalPostData(prev => ({ 
+            ...prev, 
+            isLiked: isLikedNow, 
+            likes: isLikedNow ? (prev.likes || 0) + 1 : Math.max((prev.likes || 0) - 1, 0)
+        }));
     };
-    const handleCommentUpdate = () => setLocalPostData(prev => ({ ...prev, comments: prev.comments + 1 }));
+    const handleCommentUpdate = () => setLocalPostData(prev => ({ 
+        ...prev, 
+        comments: (prev.comments || 0) + 1 
+    }));
     const handleShareUpdate = (isSharedNow) => {
-        setLocalPostData(prev => ({ ...prev, isShared: isSharedNow, shares: isSharedNow ? prev.shares + 1 : prev.shares - 1 }));
+        setLocalPostData(prev => ({ 
+            ...prev, 
+            isShared: isSharedNow, 
+            shares: isSharedNow ? (prev.shares || 0) + 1 : Math.max((prev.shares || 0) - 1, 0)
+        }));
     };
 
     const nextImage = (e) => {
