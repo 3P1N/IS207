@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import {
   Box, Typography, Table, TableHead, TableRow, TableCell, TableBody,
   Button, Chip, Paper, CircularProgress, TextField, InputAdornment,
-  Select, MenuItem, FormControl, InputLabel
+  Select, MenuItem, FormControl, InputLabel, TableSortLabel, Stack
 } from "@mui/material";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from "react-router-dom";
@@ -25,6 +25,10 @@ export default function UsersAdminPage() {
   const [loadingToggles, setLoadingToggles] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("status_violated");
+  // Thay đổi để hỗ trợ sort đa tiêu chí
+  const [sortCriteria, setSortCriteria] = useState([
+    { column: "status", order: "desc" }
+  ]);
 
   // --- FETCH DATA ---
   const fetchUsers = async () => {
@@ -71,7 +75,35 @@ export default function UsersAdminPage() {
     }
   };
 
-  // --- LOGIC LỌC & SẮP XẾP ---
+  // Hàm xử lý sort đa tiêu chí khi click vào header
+  const handleSort = (column) => {
+    setSortCriteria(prevCriteria => {
+      const existingIndex = prevCriteria.findIndex(c => c.column === column);
+      
+      if (existingIndex >= 0) {
+        // Nếu cột đã tồn tại, thay đổi thứ tự
+        const newCriteria = [...prevCriteria];
+        if (newCriteria[existingIndex].order === "asc") {
+          newCriteria[existingIndex].order = "desc";
+        } else {
+          // Nếu đã desc, xóa khỏi danh sách sort
+          newCriteria.splice(existingIndex, 1);
+        }
+        return newCriteria;
+      } else {
+        // Nếu cột chưa tồn tại, thêm vào với order "asc"
+        return [...prevCriteria, { column, order: "asc" }];
+      }
+    });
+  };
+
+  // Hàm lấy thông tin sort cho một cột
+  const getSortInfo = (column) => {
+    const criterion = sortCriteria.find(c => c.column === column);
+    return criterion ? { active: true, direction: criterion.order } : { active: false, direction: "asc" };
+  };
+
+  // --- LOGIC LỌC & SẮP XẾP ĐA TIÊU CHÍ ---
   const processedUsers = useMemo(() => {
     let result = [...users];
 
@@ -85,8 +117,49 @@ export default function UsersAdminPage() {
       });
     }
 
-    // Sort
+    // Sort đa tiêu chí
     return result.sort((a, b) => {
+      // Duyệt qua từng tiêu chí sort theo thứ tự ưu tiên
+      for (const criterion of sortCriteria) {
+        let comparison = 0;
+        
+        switch (criterion.column) {
+          case "id":
+            comparison = a.id - b.id;
+            break;
+          case "name":
+            comparison = (a.name || "").localeCompare(b.name || "");
+            break;
+          case "email":
+            comparison = (a.email || "").localeCompare(b.email || "");
+            break;
+          case "created_at":
+            comparison = new Date(a.created_at) - new Date(b.created_at);
+            break;
+          case "disable_at":
+            const aDate = a.disable_at ? new Date(a.disable_at) : new Date(0);
+            const bDate = b.disable_at ? new Date(b.disable_at) : new Date(0);
+            comparison = aDate - bDate;
+            break;
+          case "status":
+            comparison = (a.is_Violated ? 1 : 0) - (b.is_Violated ? 1 : 0);
+            break;
+          default:
+            continue;
+        }
+        
+        // Áp dụng thứ tự sort
+        const result = criterion.order === "asc" ? comparison : -comparison;
+        
+        // Nếu khác nhau, trả về kết quả
+        if (result !== 0) {
+          return result;
+        }
+        
+        // Nếu bằng nhau, tiếp tục với tiêu chí tiếp theo
+      }
+      
+      // Nếu tất cả tiêu chí đều bằng nhau, fallback to old sorting logic
       switch (sortBy) {
         case "status_violated": return (b.is_Violated ? 1 : 0) - (a.is_Violated ? 1 : 0);
         case "status_active": return (a.is_Violated ? 1 : 0) - (b.is_Violated ? 1 : 0);
@@ -99,7 +172,7 @@ export default function UsersAdminPage() {
         default: return 0;
       }
     });
-  }, [users, searchTerm, sortBy]);
+  }, [users, searchTerm, sortBy, sortCriteria]);
 
   return (
     <Box>
@@ -110,21 +183,47 @@ export default function UsersAdminPage() {
         </Box>
       </Box>
 
-      {/* UI THANH TÌM KIẾM & SORT (Giữ nguyên) */}
+      {/* UI THANH TÌM KIẾM & HIỂN THỊ SORT */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }} elevation={1}>
-        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'flex-start' }}>
           <TextField
             fullWidth variant="outlined" placeholder="Tìm kiếm theo tên hoặc email..."
             value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} size="small"
             slotProps={{ input: { startAdornment: (<InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>) } }}
           />
-          <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Sắp xếp theo</InputLabel>
-            <Select value={sortBy} label="Sắp xếp theo" onChange={(e) => setSortBy(e.target.value)}>
-              <MenuItem value="status_violated">Trạng thái: Đã vô hiệu trước</MenuItem>
-              {/* ... các menu item khác giữ nguyên ... */}
-            </Select>
-          </FormControl>
+          
+          {/* Hiển thị các tiêu chí sort đang áp dụng */}
+          {sortCriteria.length > 0 && (
+            <Box sx={{ minWidth: 'fit-content' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                Đang sắp xếp theo:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {sortCriteria.map((criterion, index) => {
+                  const columnNames = {
+                    id: "ID",
+                    name: "Tên",
+                    email: "Email",
+                    created_at: "Ngày tạo",
+                    disable_at: "Ngày vô hiệu",
+                    status: "Trạng thái"
+                  };
+                  return (
+                    <Chip
+                      key={criterion.column}
+                      label={`${index + 1}. ${columnNames[criterion.column]} (${criterion.order === "asc" ? "↑" : "↓"})`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      onDelete={() => {
+                        setSortCriteria(prev => prev.filter(c => c.column !== criterion.column));
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
         </Box>
       </Paper>
 
@@ -133,12 +232,60 @@ export default function UsersAdminPage() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: "#f0f2f5" }}>
-                <TableCell>ID</TableCell>
-                <TableCell>Người dùng</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Ngày tạo</TableCell>
-                <TableCell>Ngày vô hiệu</TableCell>
-                <TableCell>Trạng thái</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("id").active}
+                    direction={getSortInfo("id").direction}
+                    onClick={() => handleSort("id")}
+                  >
+                    ID
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("name").active}
+                    direction={getSortInfo("name").direction}
+                    onClick={() => handleSort("name")}
+                  >
+                    Người dùng
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("email").active}
+                    direction={getSortInfo("email").direction}
+                    onClick={() => handleSort("email")}
+                  >
+                    Email
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("created_at").active}
+                    direction={getSortInfo("created_at").direction}
+                    onClick={() => handleSort("created_at")}
+                  >
+                    Ngày tạo
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("disable_at").active}
+                    direction={getSortInfo("disable_at").direction}
+                    onClick={() => handleSort("disable_at")}
+                  >
+                    Ngày vô hiệu
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("status").active}
+                    direction={getSortInfo("status").direction}
+                    onClick={() => handleSort("status")}
+                  >
+                    Trạng thái
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell align="right">Hành động</TableCell>
               </TableRow>
             </TableHead>

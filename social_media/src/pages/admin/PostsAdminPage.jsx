@@ -17,7 +17,9 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Tooltip
+  Tooltip,
+  TableSortLabel,
+  Stack
 } from "@mui/material";
 // 1. Import React Query hooks
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +35,10 @@ export default function PostsAdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("reports_desc"); // State cho sort
   const [viewingReportPostId, setViewingReportPostId] = useState(null);
+  // Thay đổi để hỗ trợ sort đa tiêu chí
+  const [sortCriteria, setSortCriteria] = useState([
+    { column: "reports_count", order: "desc" }
+  ]);
   // --- 1. HÀM FETCH DATA ---
   const fetchPostsViolation = async () => {
     const response = await api.get("admin/posts/violation");
@@ -60,7 +66,35 @@ export default function PostsAdminPage() {
     }
   };
 
-  // --- 4. LỌC & SẮP XẾP ---
+  // Hàm xử lý sort đa tiêu chí khi click vào header
+  const handleSort = (column) => {
+    setSortCriteria(prevCriteria => {
+      const existingIndex = prevCriteria.findIndex(c => c.column === column);
+      
+      if (existingIndex >= 0) {
+        // Nếu cột đã tồn tại, thay đổi thứ tự
+        const newCriteria = [...prevCriteria];
+        if (newCriteria[existingIndex].order === "asc") {
+          newCriteria[existingIndex].order = "desc";
+        } else {
+          // Nếu đã desc, xóa khỏi danh sách sort
+          newCriteria.splice(existingIndex, 1);
+        }
+        return newCriteria;
+      } else {
+        // Nếu cột chưa tồn tại, thêm vào với order "asc"
+        return [...prevCriteria, { column, order: "asc" }];
+      }
+    });
+  };
+
+  // Hàm lấy thông tin sort cho một cột
+  const getSortInfo = (column) => {
+    const criterion = sortCriteria.find(c => c.column === column);
+    return criterion ? { active: true, direction: criterion.order } : { active: false, direction: "asc" };
+  };
+
+  // --- 4. LỌC & SẮP XẾP ĐA TIÊU CHÍ ---
   const processedPosts = useMemo(() => {
     let result = [...posts];
 
@@ -75,8 +109,47 @@ export default function PostsAdminPage() {
       });
     }
 
-    // BƯỚC SẮP XẾP (SORT)
+    // BƯỚC SẮP XẾP ĐA TIÊU CHÍ
     return result.sort((a, b) => {
+      // Duyệt qua từng tiêu chí sort theo thứ tự ưu tiên
+      for (const criterion of sortCriteria) {
+        let comparison = 0;
+        
+        switch (criterion.column) {
+          case "id":
+            comparison = a.id - b.id;
+            break;
+          case "user_name":
+            comparison = (a.user?.name || "").localeCompare(b.user?.name || "");
+            break;
+          case "content":
+            comparison = (a.content || "").localeCompare(b.content || "");
+            break;
+          case "reports_count":
+            comparison = a.reports_count - b.reports_count;
+            break;
+          case "created_at":
+            comparison = new Date(a.created_at) - new Date(b.created_at);
+            break;
+          case "status":
+            comparison = (a.is_visible ? 1 : 0) - (b.is_visible ? 1 : 0);
+            break;
+          default:
+            continue;
+        }
+        
+        // Áp dụng thứ tự sort
+        const result = criterion.order === "asc" ? comparison : -comparison;
+        
+        // Nếu khác nhau, trả về kết quả
+        if (result !== 0) {
+          return result;
+        }
+        
+        // Nếu bằng nhau, tiếp tục với tiêu chí tiếp theo
+      }
+      
+      // Nếu tất cả tiêu chí đều bằng nhau, fallback to old sorting logic
       switch (sortBy) {
         case "reports_desc":
           return b.reports_count - a.reports_count;
@@ -94,7 +167,7 @@ export default function PostsAdminPage() {
           return 0;
       }
     });
-  }, [posts, searchTerm, sortBy]);
+  }, [posts, searchTerm, sortBy, sortCriteria]);
 
   return (
     <Box>
@@ -107,9 +180,9 @@ export default function PostsAdminPage() {
         </Typography>
       </Box>
 
-      {/* --- UI THANH TÌM KIẾM & SORT --- */}
+      {/* --- UI THANH TÌM KIẾM & HIỂN THỊ SORT --- */}
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }} elevation={1}>
-        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'flex-start' }}>
           <TextField
             fullWidth
             variant="outlined"
@@ -127,21 +200,39 @@ export default function PostsAdminPage() {
               }
             }}
           />
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Sắp xếp theo</InputLabel>
-            <Select
-              value={sortBy}
-              label="Sắp xếp theo"
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <MenuItem value="reports_desc">Số report: Cao → Thấp</MenuItem>
-              <MenuItem value="reports_asc">Số report: Thấp → Cao</MenuItem>
-              <MenuItem value="date_desc">Ngày tạo: Mới → Cũ</MenuItem>
-              <MenuItem value="date_asc">Ngày tạo: Cũ → Mới</MenuItem>
-              <MenuItem value="status_hidden">Trạng thái: Đã ẩn trước</MenuItem>
-              <MenuItem value="status_visible">Trạng thái: Hiển thị trước</MenuItem>
-            </Select>
-          </FormControl>
+          
+          {/* Hiển thị các tiêu chí sort đang áp dụng */}
+          {sortCriteria.length > 0 && (
+            <Box sx={{ minWidth: 'fit-content' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                Đang sắp xếp theo:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {sortCriteria.map((criterion, index) => {
+                  const columnNames = {
+                    id: "ID bài",
+                    user_name: "Người đăng",
+                    content: "Nội dung",
+                    reports_count: "Số report",
+                    created_at: "Ngày tạo",
+                    status: "Trạng thái"
+                  };
+                  return (
+                    <Chip
+                      key={criterion.column}
+                      label={`${index + 1}. ${columnNames[criterion.column]} (${criterion.order === "asc" ? "↑" : "↓"})`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      onDelete={() => {
+                        setSortCriteria(prev => prev.filter(c => c.column !== criterion.column));
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
         </Box>
       </Paper>
 
@@ -156,11 +247,51 @@ export default function PostsAdminPage() {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: "#f0f2f5" }}>
-                <TableCell>ID bài</TableCell>
-                <TableCell>Người đăng</TableCell>
-                <TableCell>Nội dung</TableCell>
-                <TableCell>Số report</TableCell>
-                <TableCell>Trạng thái</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("id").active}
+                    direction={getSortInfo("id").direction}
+                    onClick={() => handleSort("id")}
+                  >
+                    ID bài
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("user_name").active}
+                    direction={getSortInfo("user_name").direction}
+                    onClick={() => handleSort("user_name")}
+                  >
+                    Người đăng
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("content").active}
+                    direction={getSortInfo("content").direction}
+                    onClick={() => handleSort("content")}
+                  >
+                    Nội dung
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("reports_count").active}
+                    direction={getSortInfo("reports_count").direction}
+                    onClick={() => handleSort("reports_count")}
+                  >
+                    Số report
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={getSortInfo("status").active}
+                    direction={getSortInfo("status").direction}
+                    onClick={() => handleSort("status")}
+                  >
+                    Trạng thái
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell align="right">Hành động</TableCell>
               </TableRow>
             </TableHead>

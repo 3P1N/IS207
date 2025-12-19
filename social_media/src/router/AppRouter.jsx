@@ -79,7 +79,7 @@ export default function AppRouter() {
                                     <Route path=":threadId" element={<ThreadPage />} />
                                 </Route>
 
-                                {/* Phần riêng quản lý của Admin */}
+                                {/* Phần quản lý của Admin - GIỮ LẠI TRONG MainLayout để có Navbar */}
                                 <Route element={<RoleRoute roles={['admin']} />}>
                                     <Route path="admin" element={<AdminLayout />}>
                                         <Route index element={<Navigate to="users" replace />} />

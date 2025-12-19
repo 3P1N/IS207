@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import {
   Box,
@@ -9,7 +9,6 @@ import {
   Divider,
   Paper,
   Drawer,
-  IconButton,
   useTheme,
   useMediaQuery,
   Button
@@ -31,6 +30,8 @@ export default function AdminLayout() {
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  // Không cần ngăn scroll ở body nữa vì đã xử lý ở MainLayout
 
   // --- NỘI DUNG MENU (Dùng chung cho cả Mobile và Desktop) ---
   const drawerContent = (
@@ -75,9 +76,9 @@ export default function AdminLayout() {
       sx={{
         display: "flex",
         bgcolor: "#f5f7fb",
-        minHeight: "calc(100vh - 64px)",
-        px: { xs: 1, md: 2 }, // Giảm padding trên mobile
-        py: 2,
+        height: "100%", // Sử dụng 100% thay vì 100vh vì đã có MainLayout xử lý
+        overflow: "hidden", // Ngăn scroll toàn bộ layout
+        position: "relative",
       }}
     >
       {/* --- 1. MOBILE DRAWER (Chỉ hiện khi isMobile = true và bấm mở) --- */}
@@ -101,22 +102,42 @@ export default function AdminLayout() {
           width: 260,
           borderRadius: 3,
           mr: 3,
+          ml: 2,
+          mt: 2,
           display: { xs: "none", md: "flex" }, // ẨN HOÀN TOÀN TRÊN MOBILE
           flexDirection: "column",
           overflow: "hidden",
-          height: "fit-content", // Để sidebar không dài vô tận nếu ít item
-          minHeight: "300px"
+          height: "100%", // Sử dụng 100% của container
+          position: "relative", // Thay đổi từ fixed sang relative
+          zIndex: 1000,
         }}
       >
         {drawerContent}
       </Paper>
 
       {/* --- 3. NỘI DUNG CHÍNH --- */}
-      <Box sx={{ flex: 1, width: "100%" }}>
+      <Box 
+        sx={{ 
+          flex: 1, 
+          width: "100%",
+          ml: { xs: 0, md: 0 }, // Bỏ margin left vì sidebar không còn fixed
+          height: "100%", // Sử dụng 100% thay vì 100vh
+          overflow: "auto", // Chỉ nội dung này được scroll
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         
-        {/* Nút mở Menu Admin (Chỉ hiện trên Mobile) */}
+        {/* Nút mở Menu Admin (Chỉ hiện trên Mobile) - Cố định ở đầu */}
         {isMobile && (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ 
+            p: { xs: 1, md: 2 }, 
+            pb: 0,
+            position: "sticky", // Cố định nút menu khi scroll
+            top: 0,
+            bgcolor: "#f5f7fb",
+            zIndex: 100,
+          }}>
             <Button 
                 variant="outlined" 
                 startIcon={<MenuIcon />} 
@@ -128,8 +149,15 @@ export default function AdminLayout() {
           </Box>
         )}
 
-        {/* Outlet render các trang con */}
-        <Outlet />
+        {/* Container cho nội dung có thể scroll */}
+        <Box sx={{ 
+          flex: 1,
+          p: { xs: 1, md: 2 },
+          pt: { xs: isMobile ? 1 : 2, md: 2 }, // Điều chỉnh padding top cho mobile
+          overflow: "auto", // Cho phép scroll nội dung
+        }}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );
