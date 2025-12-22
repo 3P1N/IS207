@@ -80,9 +80,9 @@ class AuthController extends Controller
             // Trường hợp A: Email đã tồn tại và ĐÃ xác thực
             if ($user->email_verified_at) {
                 // Trả về lỗi giống format của Laravel Validate để frontend dễ hiển thị
-                throw ValidationException::withMessages([
-                    'email' => ['Email này đã được sử dụng.'],
-                ]);
+                return response()->json([
+                    'message' => 'Email đã được sử dụng.',
+                ], 400); 
             }
 
             // Trường hợp B: Email tồn tại nhưng CHƯA xác thực (hoặc đã bị xóa mềm)
