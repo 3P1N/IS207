@@ -54,7 +54,9 @@ export default function MessageBubble({ message }) {
         </Box>
 
         {/* --- KHU VỰC HIỂN THỊ STATUS & SEEN BY --- */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 0.5, gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center',
+          flexDirection: 'column',
+          justifyContent: 'flex-end', mt: 0.5, gap: 1 }}>
             
             {/* 1. Trạng thái gửi (Sending/Error) - Chỉ hiện cho mình */}
             {mine && status && (
