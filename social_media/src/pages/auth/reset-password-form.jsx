@@ -5,7 +5,6 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff, LockReset, ArrowBack } from "@mui/icons-material";
 import { api } from "../../shared/api";
-import FrogAvatar from "./FrogAvatar";
 
 export default function ResetPasswordForm() {
   const [searchParams] = useSearchParams();
@@ -103,13 +102,6 @@ export default function ResetPasswordForm() {
 
   return (
     <Box sx={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      
-      {/* FROG AVATAR */}
-      <FrogAvatar 
-        focusedField={focusedField} 
-        valueLength={formData[focusedField]?.length || 0}
-        showPassword={isAnyPasswordShown}
-      />
 
       <Paper 
         elevation={6}

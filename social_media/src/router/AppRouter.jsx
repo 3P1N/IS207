@@ -26,7 +26,7 @@ import SearchResultPage from "../pages/search/SearchResultPage";
 import RoleRoute from "./RoleRoute";
 import PostCreate from "../pages/post/PostCreate";
 import ProfileSuggest from "../pages/profile/ProfileSuggest";
-import ResetPasswordForm from "../pages/auth/forgot-password-form";
+import ResetPasswordForm from "../pages/auth/reset-password-form";
 import ForgotPasswordForm from "../pages/auth/forgot-password-form";
 import ChangePasswordForm from "../pages/changepassword/ChangePasswordForm";
 import VideoCallProvider from "./VideoCallProvider";
