@@ -57,6 +57,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/friendships', [App\Http\Controllers\Api\FriendShipController::class, 'addfriend']);
     Route::patch('/friendships/{friendship}', [App\Http\Controllers\Api\FriendShipController::class, 'acceptfriend']);
     Route::patch('/userProfile', [App\Http\Controllers\Api\UserController::class, 'updateProfile']);
+    Route::post('/userProfile', [App\Http\Controllers\Api\UserController::class, 'updateProfile']);
+
 
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
     Route::post('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'store']);
