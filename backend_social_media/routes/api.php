@@ -59,7 +59,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/userProfile', [App\Http\Controllers\Api\UserController::class, 'updateProfile']);
     Route::post('/userProfile', [App\Http\Controllers\Api\UserController::class, 'updateProfile']);
 
-
     Route::get('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'index']);
     Route::post('/conversations', [App\Http\Controllers\Api\ConversationController::class, 'store']);
     Route::get('/conversations/{conversation}/messages', [App\Http\Controllers\Api\MessageController::class, 'index']);
