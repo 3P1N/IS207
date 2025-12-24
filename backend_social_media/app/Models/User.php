@@ -148,7 +148,7 @@ class User extends Authenticatable implements MustVerifyEmail
             $this->friendsOfs()->pluck('users.id')
         );
 
-        // loại trùng + thêm luôn id của chính mình để exclude
+        // loại trùng
         return $ids->push($this->id)
                 ->unique()
                 ->values();

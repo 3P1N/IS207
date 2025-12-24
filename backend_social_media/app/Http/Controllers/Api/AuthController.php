@@ -13,20 +13,20 @@ class AuthController extends Controller
 {
    public function login(Request $request)
     {
-        // 1️⃣ Kiểm tra dữ liệu đầu vào
+        // Kiểm tra dữ liệu đầu vào
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        // 2️⃣ Thử đăng nhập (không tạo session)
+        
         if (!Auth::attempt($credentials)) {
             return response()->json([
                 'message' => 'Invalid email or password',
             ], 401);
         }
 
-        // 3️⃣ Lấy user hiện tại
+        // Lấy user hiện tại
         $user = Auth::user();   
         if (! $user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email not verified'], 403);
@@ -36,7 +36,7 @@ class AuthController extends Controller
             return response()->json(['message'=>'Forbidden'], 403);
         }
 
-        // 4️⃣ Tạo token cá nhân (Personal Access Token)
+        // Tạo token cá nhân (Personal Access Token)
         $plainTextToken  = $user->createToken('api_token')->plainTextToken;
 
         $minutes = 60 * 24 * 30; // 30 days (ví dụ)
@@ -45,14 +45,14 @@ class AuthController extends Controller
             $plainTextToken,        // giá trị token (plaintext — browser nhận nhưng HttpOnly)
             $minutes,               // thời gian (phút)
             '/',                    // path
-            null,// domain (null nếu ko dùng)
+            null,   // domain (null nếu ko dùng)
             true,                   // secure (true: chỉ gửi trên https)
             true,                   // httpOnly (true: JS không đọc được)
             false,                  // raw
             'None'              // SameSite (Lax/Strict/None)
         );
 
-        // 5️⃣ Trả token về cho frontend
+        // Trả token về cho frontend
         return response()->json([
             'message' => 'Đăng nhập thành công',
             'user' => $user,
@@ -63,34 +63,28 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        // 1. Validate định dạng trước (bỏ unique ở đây là đúng với logic của bạn)
+        // Validate định dạng
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        // 2. Chuẩn hóa email về chữ thường để so sánh chính xác
         $email = strtolower(trim($data['email']));
 
-        // 3. Tìm user trong DB (QUAN TRỌNG: dùng withTrashed để tìm cả user đã xóa mềm)
+        
         $user = User::where('email', $email)->first();
 
         if ($user) {
-            // Trường hợp A: Email đã tồn tại và ĐÃ xác thực
+            // Email đã tồn tại và đã xác thực
             if ($user->email_verified_at) {
-                // Trả về lỗi giống format của Laravel Validate để frontend dễ hiển thị
+            
                 return response()->json([
                     'message' => 'Email đã được sử dụng.',
                 ], 400); 
             }
 
-            // Trường hợp B: Email tồn tại nhưng CHƯA xác thực (hoặc đã bị xóa mềm)
-            // Nếu user đang bị xóa mềm thì khôi phục lại
-            // if ($user->trashed()) {
-            //     $user->restore();
-            // }
-
+          
             // Cập nhật thông tin mới
             $user->update([
                 'name' => $data['name'],
@@ -105,7 +99,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // 4. Trường hợp C: User hoàn toàn mới -> Tạo mới
+        //User mới 
         $newUser = User::create([
             'name' => $data['name'],
             'email' => $email,
@@ -127,7 +121,7 @@ class AuthController extends Controller
         $token = $request->cookie('api_token');
 
         if ($token) {
-            // Tìm và xóa token trong DB
+            // Tìm và xóa token
             $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
             if ($tokenModel) {
                 $tokenModel->delete();

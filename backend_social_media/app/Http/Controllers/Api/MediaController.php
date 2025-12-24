@@ -32,7 +32,7 @@ class MediaController extends Controller
             $media = Media::create([
                 'post_id' => $post->id,
                 'media_url' => $url,
-                // thêm các cột khác nếu model có: type, filename, disk ...
+              
             ]);
             $created[] = $media;
         }

@@ -17,7 +17,7 @@ class MessageController extends Controller
     {
         $user = $request->user();
 
-        // 1. Check quyền
+        //Check quyền
         $participant = ConversationParticipant::where('conversation_id', $conversation->id)
             ->where('user_id', $user->id)
             ->first();
@@ -26,20 +26,18 @@ class MessageController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        // 2. Load quan hệ
+        //Load quan hệ
         $conversation->load(['participants.user']);
 
-        // 3. Logic tính toán số lượng tin cần lấy (Tránh lỗi mất tin unread)
+        // Logic tính toán số lượng tin cần lấy 
         $perPage = 20;
         $shouldUpdateReadStatus = false;
 
-        // Chỉ tính toán logic phức tạp khi load trang đầu (không có cursor)
+        // load trang đầu (không có cursor)
         if (!$request->has('cursor')) {
-            $lastReadAt = $participant->last_read_message_id; // Giả sử bạn lưu ID, hoặc dùng timestamp tùy DB
+            $lastReadAt = $participant->last_read_message_id;
             
-            // Đếm số tin chưa đọc để lấy cho đủ
-            // Lưu ý: So sánh ID chỉ đúng nếu ID tăng dần (auto-increment hoặc ULID/Snowflake). 
-            // Nếu dùng UUID v4 ngẫu nhiên thì phải so sánh created_at.
+            
             if ($lastReadAt) {
                 $unreadCount = $conversation->messages()
                     ->where('id', '>', $lastReadAt) 
@@ -50,28 +48,24 @@ class MessageController extends Controller
             $shouldUpdateReadStatus = true;
         }
 
-        // 4. Query Messages
+        
         $messages = $conversation->messages()
             ->with('sender')
             ->orderBy('created_at', 'desc')
             ->cursorPaginate($perPage);
 
-        // 5. Update trạng thái đã đọc (Chỉ chạy ở trang đầu và nếu có tin mới hơn)
+        //Update trạng thái đã đọc 
         if ($shouldUpdateReadStatus) {
-            $lastMessage = $messages->first(); // Tin mới nhất trong đám vừa lấy
+            $lastMessage = $messages->first();
             
             if ($lastMessage && $lastMessage->id > $participant->last_read_message_id) {
                 
-                // A. Update DB
+                
                 $participant->update([
                     'last_read_message_id' => $lastMessage->id,
-                    'last_read_at' => now() // Nên có thêm trường này để debug thời gian
+                    'last_read_at' => now() 
                 ]);
 
-                // B. [QUAN TRỌNG] Bắn Event Real-time để bên kia thấy chữ "Seen" ngay lập tức
-                // Bạn có thể dùng Laravel Echo event hoặc logic Whisper như frontend bạn đang làm.
-                // Nếu dùng Whisper ở frontend rồi thì đoạn broadcast này có thể bỏ qua để đỡ duplicate logic,
-                // nhưng làm ở backend thì chắc chắn hơn (tránh trường hợp user tắt browser nhanh quá).
                 
                 broadcast(new \App\Events\MessageRead($conversation->id, $user->id, $lastMessage->id))->toOthers();
             }
@@ -86,7 +80,7 @@ class MessageController extends Controller
     {
         $user = $request->user();
 
-        // Kiểm tra xem người dùng có phải là thành viên của cuộc trò chuyện không
+        // Kiểm tra xem người dùng có phải là thành viên
         $isParticipant = ConversationParticipant::where('conversation_id', $id)
             ->where('user_id', $user->id)
             ->exists();
@@ -118,7 +112,7 @@ class MessageController extends Controller
         $user = $request->user();
         $conversationId = $conversation->id;
         $messageId = $message->id;
-        // Kiểm tra xem người dùng có phải là thành viên của cuộc trò chuyện không
+        // Kiểm tra xem người dùng có phải là thành viê
         $participant = ConversationParticipant::where('conversation_id', $conversationId)
             ->where('user_id', $user->id)
             ->first();

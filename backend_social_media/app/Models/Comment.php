@@ -42,8 +42,8 @@ class Comment extends Model
     public function childrenRecursive()
     {
         return $this->childComments()
-            ->with(['user', 'childrenRecursive', 'reactions']) // load user + reactions
-            ->withCount('reactions'); // count reactions cho mọi level
+            ->with(['user', 'childrenRecursive', 'reactions']) 
+            ->withCount('reactions'); 
     }
     public function reactions()
     {

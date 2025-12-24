@@ -13,17 +13,10 @@ class FriendShipController extends Controller
 {
     public function getfriend(Request $request, User $user)
     {
-        /** @var User|null $viewer */
+        
         $viewer = $request->user();
 
-        // Nếu muốn bắt buộc phải đăng nhập
-        if (!$viewer) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
-        }
-
-        // Lấy danh sách bạn bè của profile $user
+        // Lấy danh sách bạn bè
         $friends = $user->allFriendss()
             ->map(function ($friend) use ($viewer) {
                 // Nếu chính viewer = friend
@@ -76,7 +69,7 @@ class FriendShipController extends Controller
         if ($user->id == $addressee_id) {
             return response()->json([
                 'message' => 'Bạn không thể gửi lời mời kết bạn cho chính mình.'
-            ], 400); // Bad Request
+            ], 400);
         }
         $existingFriendship = Friendship::where(function ($query) use ($user, $addressee_id) {
             $query->where('user_id', $user->id)

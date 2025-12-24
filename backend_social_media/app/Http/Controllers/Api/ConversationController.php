@@ -48,7 +48,7 @@ class ConversationController extends Controller
             
             ]);
         foreach ($users as $key => $id) {
-            # code...
+            
             ConversationParticipant::create([
                 'conversation_id'=>$conversation->id,
                 'user_id'=>$id

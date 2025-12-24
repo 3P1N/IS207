@@ -64,15 +64,13 @@ class PostController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // 1. Validate dữ liệu
+        // Validate dữ liệu
         $validated = $request->validate([
-            'content'   => 'nullable|string',        // Cho phép null (nếu chỉ đăng ảnh)
-            'media_url' => 'nullable|array',         // Phải là mảng (vì frontend gửi mảng urls)
-            'media_url.*' => 'string',               // Các phần tử trong mảng phải là chuỗi (URL)
+            'content'   => 'nullable|string',       
+            'media_url' => 'nullable|array',        
+            'media_url.*' => 'string',               
         ]);
 
-        // 2. Kiểm tra logic: Phải có ít nhất Content HOẶC Media
-        // Nếu cả 2 đều trống thì báo lỗi
         $hasContent = !empty($request->input('content'));
         $hasMedia   = !empty($request->input('media_url')) && count($request->input('media_url')) > 0;
 
@@ -82,19 +80,18 @@ class PostController extends Controller
             ], 422);
         }
 
-        // 3. Tạo Post
+        
         $post = Post::create([
             'user_id' => $user->id,
-            'content' => $request->input('content'), // Nếu null thì lưu null (DB cột content phải allow NULL)
+            'content' => $request->input('content'),
         ]);
 
        
         if ($hasMedia) {
-            // Lưu ý: Đảm bảo hàm store bên MediaController xử lý được mảng media_url từ $request
+            
             (new MediaController)->store($request, $post->id);
         }
 
-        // 5. Load quan hệ để trả về frontend hiển thị ngay
         $post->load('media', 'user');
 
         return response()->json($post, 201);
@@ -103,9 +100,9 @@ class PostController extends Controller
     public function show(Request $request, $index)
     {
         $user = $request->user();
-        $userId = $user?->id; // null-safe
+        $userId = $user?->id; 
 
-        // Build query: thêm withExists chỉ khi có user để tránh where user_id = null
+       
         $query = Post::with(['user', 'media'])
                     ->withCount(['reactions', 'comments', 'shares']);
 
@@ -132,7 +129,7 @@ class PostController extends Controller
             ? $post->reports()->where('reporter_id', $userId)->exists()
             : false;
 
-        // Nếu đã report và user không phải admin => trả 404 (giả lập "ẩn" với reporter)
+        // Nếu đã report và user không phải admin => trả 404 
         if ($isReportedByCurrentUser && (! $user || $user->role !== Role::ADMIN)) {
             return response()->json(['message' => 'Post not found'], 404);
         }
@@ -148,31 +145,29 @@ class PostController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // 1. Tìm bài viết
+       
         $post = Post::find($id);
 
         if (!$post) {
             return response()->json(['message' => 'Post not found'], 404);
         }
 
-        // 2. Check quyền chỉnh sửa
-        if ($post->user_id !== $user->id) { // Dùng user_id so sánh nhanh hơn gọi quan hệ $post->user->id
+        // Check quyền chỉnh sửa
+        if ($post->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // 3. Validate dữ liệu
+        // Validate dữ liệu
         $request->validate([
             'content' => 'nullable|string',
             'media_url' => 'nullable|array',
             'media_url.*' => 'string',
         ]);
 
-        // 4. KIỂM TRA LOGIC: KHÔNG ĐƯỢC ĐỂ POST RỖNG
-        // Lấy nội dung dự kiến sau khi update
-        // Nếu request có gửi content thì lấy content mới, không thì lấy content cũ
+        // Không được rỗng
+       
         $newContent = $request->has('content') ? $request->input('content') : $post->content;
         
-        // Nếu request có gửi media_url thì đếm số lượng mới, không thì đếm số lượng cũ
         $newMediaCount = 0;
         if ($request->has('media_url')) {
             $dataMedia = $request->input('media_url');
@@ -188,30 +183,26 @@ class PostController extends Controller
             ], 422);
         }
 
-        // 5. Cập nhật nội dung
+        //Cập nhật nội dung
         if ($request->has('content')) {
             $post->content = $request->input('content');
         }
         
         $post->save();
 
-        // 6. Xử lý Media
-        // Chỉ xử lý khi key 'media_url' tồn tại trong request (kể cả mảng rỗng)
+        
         if ($request->has('media_url')) {
-            // B1: Xóa toàn bộ media cũ của post này
-            // Dùng each->delete() để đảm bảo kích hoạt event xóa file (nếu bạn có cài đặt trong Model Media)
+           
             $post->media()->each(function($media) {
                 $media->delete();
             });
 
-            // B2: Thêm media mới (nếu mảng không rỗng)
             $newMediaUrls = $request->input('media_url');
             if (!empty($newMediaUrls) && is_array($newMediaUrls)) {
                 (new MediaController)->store($request, $post->id);
             }
         }
 
-        // 7. Load lại quan hệ để trả về frontend cập nhật UI ngay lập tức
         $post->load(['media', 'user', 'comments', 'reactions']);
 
         return response()->json([

@@ -9,7 +9,6 @@ class Conversation extends Model
 {
     use HasFactory;
 
-    // optional: constants to avoid magic strings in code
     public const TYPE_PRIVATE = 'private';
     public const TYPE_GROUP = 'group';
 

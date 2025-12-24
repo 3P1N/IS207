@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\Post;
 class UserController extends Controller{
     public function show(Request $request, User $user){
-        /** @var User|null $viewer */
+
         $viewer = $request->user();
         if(!$viewer){
             return response()->JSON(['message'=>"UnAuthorized"],401);
@@ -18,13 +18,13 @@ class UserController extends Controller{
             return response()->json(['message'=>'user not found'],404);
         }
         
-        // --- 1. Xác định trạng thái quan hệ bạn bè ---
-        $friendStatus = 'none';    // mặc định: không có quan hệ gì
-        $friendshipId = null;      // để FE dùng nếu cần (unfriend / cancel request)
+   
+        $friendStatus = 'none';    
+        $friendshipId = null;     
         $isOwnProfile = $viewer && $viewer->id === $user->id;
 
         if ($isOwnProfile) {
-            // Chính chủ profile
+            
             $friendStatus = 'self';
         } elseif ($viewer) {
             // Có người đăng nhập và đang xem profile của người khác
@@ -33,12 +33,11 @@ class UserController extends Controller{
             if ($friendship) {
                 $friendshipId = $friendship->id;
 
-                // CHÚ Ý: thay 'accepted' / 'pending' cho khớp với DB của bạn
                 if ($friendship->status === 'accepted') {
                     $friendStatus = 'friends';
 
                 } elseif ($friendship->status === 'pending') {
-                    // Nếu mình là người gửi lời mời
+                   
                     if ($friendship->user_id === $viewer->id) {
                         $friendStatus = 'outgoing_request';   // mình gửi lời mời
                     } else {
@@ -48,8 +47,7 @@ class UserController extends Controller{
             }
         }
 
-        // --- 2. Đếm bạn bè & bạn chung ---
-        // allFriends() là helper bạn nói là đã có trong model User
+       
         $friendsOfUser = $user->allFriends();
         $friendsCount  = $friendsOfUser->count();
 
@@ -60,20 +58,19 @@ class UserController extends Controller{
             $mutualCount      = $viewerFriendsIds->intersect($userFriendIds)->count();
         }
 
-        // --- 3. Trả về JSON cho FE ---
         return response()->json([
             'user' => [
                 'id'                   => $user->id,
                 'name'                 => $user->name,
                 'email'                => $user->email,
-                'avatarUrl'            => $user->avatarUrl, // đúng tên cột trong DB
+                'avatarUrl'            => $user->avatarUrl, 
                 'gender'               => $user->gender,
                 'role'                 => $user->role,
                 'is_Violated'          => $user->is_Violated,
                 'joinDate'             => optional($user->created_at)->format('d/m/Y'),
 
-                'friend_status'        => $friendStatus,    // none/self/friends/outgoing_request/incoming_request
-                'friendship_id'        => $friendshipId,    // để unfriend / cancel nếu cần
+                'friend_status'        => $friendStatus,    
+                'friendship_id'        => $friendshipId, 
                 'friends_count'        => $friendsCount,
                 'mutual_friends_count' => $mutualCount,
                 'is_own_profile'       => $isOwnProfile,
@@ -127,10 +124,8 @@ class UserController extends Controller{
     }
     public function updateProfile(Request $request, User $user)
     {
-        // Lấy user đang đăng nhập
         $user = $request->user();
         
-        // Lấy dữ liệu formData từ body: { formData: { ... } }
         $data = $request->only([
             'name',
             'email',
